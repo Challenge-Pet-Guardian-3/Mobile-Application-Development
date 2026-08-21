@@ -6,8 +6,6 @@ Mobile
 
 - Criar página dedicada ao animal (Colocar histórico e afins lá) / Remover Histórico Clínico da Home
 
-- Ver como nós vamos fazer a página para Veterinário
-
 - Colocar algo parecido com o painel de contribuição do Github / Ranking na página Family Pet
 
 
