@@ -1,0 +1,33 @@
+Mobile 
+
+- Colocar Home navbar no meio
+
+- Retirar/Refatorar Criação de Animais que está na Home e colocar na Family Pet 
+
+- Criar página dedicada ao animal (Colocar histórico e afins lá) / Remover Histórico Clínico da Home
+
+- Ver como nós vamos fazer a página para Veterinário
+
+- Colocar algo parecido com o painel de contribuição do Github / Ranking na página Family Pet
+
+
+
+Mentoria Clyvo
+
+- Fazer um app mais focado no pet (Com a pontuação direcionada ao Pet ao invés do usuário)
+
+- Remover a parte do veterinário e Usuário criar tarefas para o pet 
+
+- Ter uma assistente de IA para dar dicas e pegar o histórico do pet e afins 
+
+- Ter uma página voltada para Treinamento / Educação do pet / acompanhamento da saúde e peso dos pets - Add Pontuação para os treinamentos realizados
+  (Uma página parecido com as Dicas)
+
+- Página para rotina do pet / Tarefas recorrentes
+
+- Assistente realiza verificações com o passar do tempo / dá conselhos e dicas
+
+- Histórico de Consultas / Vacinais e afins do pet
+
+- Indicação de clinicas mais próximas e atendimento 24hrs / pronto socorro.
+
