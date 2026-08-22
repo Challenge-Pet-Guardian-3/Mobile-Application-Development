@@ -1,7 +1,9 @@
 # 📋 Backlog de Refatoração Mobile (3ª Sprint) - Azure Boards
 > **Projeto:** Clyvo Vet / PetGuardian  
 > **Disciplina:** Mobile Application Development (FIAP)  
-> **Epic Principal:** `Epic Mobile Pet Guardian - Arquitetura Pet-Centric`  
+> **Epic Principal:** `[EPIC] Epic Mobile Pet Guardian - Arquitetura Pet-Centric (Sprint 3)`  
+> **Start Date:** `2026-08-27`  
+> **Target Date:** `2026-09-01`  
 > **Diretrizes da Mentoria Clyvo:** App focado no Pet, pontuação no Pet, rotina familiar, página dedicada com histórico clínico/vacinal, página de Treinamento/Educação, Assistente de IA e busca de Clínicas 24h.
 
 ---
@@ -71,7 +73,9 @@
 ## 🏆 FEATURE 1: Mobile Refatoração e Arquitetura UI Pet-Centric
 * **Work Item Type:** `Feature`
 * **Parent Epic:** `Epic Mobile Pet Guardian - Arquitetura Pet-Centric (Sprint 3)`
-* **Tags:** `Mobile`, `Refactor`, `UI`, `PetCentric`, `Architecture`
+* **Tags:** `Mobile`
+* **Start Date:** `2026-08-27`
+* **Target Date:** `2026-08-28`
 * **Descrição:** Reestruturação da árvore de navegação com React Navigation aplicando a arquitetura Pet-Centric (Home com score e rotina, PetDetail com histórico clínico/vacinas, FamilyPet com cadastro, Training/Education, ClinicsSearch 24h e AiAssistant).
 
 ---
@@ -142,7 +146,9 @@
 ## 🏆 FEATURE 2: Infraestrutura de Rede e Autenticação (Java Backend & TanStack)
 * **Work Item Type:** `Feature`
 * **Parent Epic:** `Epic Mobile Pet Guardian - Arquitetura Pet-Centric (Sprint 3)`
-* **Tags:** `Mobile`, `Network`, `TanStackQuery`, `Auth`, `JWT`, `JavaBackend`
+* **Tags:** `Mobile`
+* **Start Date:** `2026-08-28`
+* **Target Date:** `2026-08-30`
 * **Descrição:** Configuração do cliente Axios integrado à API Spring Boot Java, TanStack Query Provider, gerenciamento de tokens JWT e persistência de sessão no AsyncStorage.
 
 ---
@@ -206,7 +212,9 @@
 ## 🏆 FEATURE 3: Integração de CRUDs Pet-Centric com Backend Java
 * **Work Item Type:** `Feature`
 * **Parent Epic:** `Epic Mobile Pet Guardian - Arquitetura Pet-Centric (Sprint 3)`
-* **Tags:** `Mobile`, `CRUD`, `PetCentric`, `BackendIntegration`, `TanStackQuery`
+* **Tags:** `Mobile`
+* **Start Date:** `2026-08-30`
+* **Target Date:** `2026-08-31`
 * **Descrição:** Implementação de ponta a ponta das 2 funcionalidades centrais conectadas à API Spring Boot Java via HTTP (Create, Read, Update, Delete) com dados 100% reais, estados de loading e invalidação de cache.
 
 ---
@@ -271,7 +279,9 @@
 ## 🏆 FEATURE 4: Documentação Técnica e Entrega da Sprint
 * **Work Item Type:** `Feature`
 * **Parent Epic:** `Epic Mobile Pet Guardian - Arquitetura Pet-Centric (Sprint 3)`
-* **Tags:** `Mobile`, `Documentation`, `Video`, `SprintDelivery`
+* **Tags:** `Mobile`
+* **Start Date:** `2026-08-31`
+* **Target Date:** `2026-09-01`
 * **Descrição:** Produção de documentação no repositório GitHub (README.md) com instruções de execução e gravação do vídeo demonstrativo de até 5 minutos conforme rubrica da FIAP.
 
 ---
