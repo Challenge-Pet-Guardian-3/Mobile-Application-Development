@@ -1,12 +1,9 @@
 Mobile 
 
-- Colocar Home navbar no meio
-
 - Retirar/Refatorar Criação de Animais que está na Home e colocar na Family Pet 
 
 - Criar página dedicada ao animal (Colocar histórico e afins lá) / Remover Histórico Clínico da Home
 
-- Colocar algo parecido com o painel de contribuição do Github / Ranking na página Family Pet
 
 
 
@@ -29,3 +26,4 @@ Mentoria Clyvo
 
 - Indicação de clinicas mais próximas e atendimento 24hrs / pronto socorro.
 
+- Remodelar e remover Veterinario vinculado com tarefas do pet (??)
