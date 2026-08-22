@@ -1,66 +1,66 @@
-# 🐾 PetGuardian
+# 🐾 PetGuardian — Mobile Application Development
 
-> A rotina do seu pet, organizada em família.
-
-*Projeto desenvolvido para o 1º Sprint de Mobile Application Development (FIAP).*
+> **Arquitetura Pet-Centric & Cuidado Familiar Colaborativo**
+> 
+> *Projeto desenvolvido para a 3ª Sprint do Challenge Clyvo 2026 (FIAP — 2TDSPG).*
 
 ---
 
 ## Repositório Github e Vídeo de Demonstração
 
-[Repositório Github](https://github.com/Challenge-Pet-Guardian-3/Mobile-Application-Development) | [Vídeo Youtube]()
+[Repositório Github](https://github.com/Challenge-Pet-Guardian-3/Mobile-Application-Development) | [Vídeo de Demonstração no YouTube]()
 
-## Link Repositório GitHub Classroom
-
-[Link Repositório](https://github.com/Challenge-Pet-Guardian/Mobile-Application-Development.git)
+---
 
 ## 📱 Sobre o Projeto
 
-O **PetGuardian** é um aplicativo mobile desenvolvido em **React Native com Expo**, focado em facilitar e gamificar a rotina de cuidados com animais de estimação. Através da criação de **"Famílias"** (grupos de cuidadores), os tutores podem sincronizar tarefas diárias, registrar o histórico clínico e acompanhar o desenvolvimento do pet de forma colaborativa, evitando falhas no cuidado ou doses duplicadas de medicação.
+O **PetGuardian** é um aplicativo mobile desenvolvido em **React Native com Expo e TypeScript**, estruturado sob as diretrizes da **Arquitetura Pet-Centric (Mentoria Clyvo 2026)**. O aplicativo centraliza o cuidado, a saúde e a gamificação no próprio animal, permitindo que os membros da família sincronizem a rotina diária, acessem prontuários clínicos e clínicas 24h, e conversem com a assistente de inteligência artificial preventiva.
 
 ---
 
 ## 🗺️ Telas e Navegação
 
-O aplicativo utiliza uma arquitetura de navegação híbrida para garantir a melhor experiência:
+O aplicativo utiliza navegação nativa com `@react-navigation/native-stack` e `@react-navigation/bottom-tabs`:
 
-```
-MainStack
-├── Welcome       → Ponto de entrada com verificação automática de sessão
-├── Login         → Autenticação de usuário com validação de campos (Zod)
-├── Register      → Cadastro de novos usuários com reset de sessão anterior no AsyncStorage
-└── Tabs (Navegação por Abas Inferiores)
-    ├── 🏠 Home        → Painel principal com tarefas dinâmicas, streak e histórico clínico
-    ├── 👨‍👩‍👧 Family      → FamilyStack (Gerenciamento de membros e Mural de Recados)
-    ├── 🐾 MeuPet      → Perfil detalhado e gerenciamento de múltiplos animais
-    ├── 💡 Dicas       → Central de artigos e cuidados curados
-    └── 👤 Perfil      → Dados do usuário, ranking da família e suporte técnico
+```text
+RootNavigator
+├── AuthStack (Rotas Públicas)
+│   ├── WelcomeScreen         → Ponto de entrada com introdução ao ecossistema
+│   ├── LoginScreen           → Autenticação real JWT consumindo API Java (/auth/login)
+│   └── RegisterScreen        → Cadastro com validação Zod e emissão de token (/auth/register)
+│
+└── AppStack (Rotas Protegidas com Abas Inferiores)
+    ├── 🏠 HomeScreen         → Resumo do Pet ativo, barra PetScoreBar, tarefas de hoje e atalhos de emergência
+    ├── 🐾 PetDetailScreen    → Ficha completa do Pet com histórico clínico, vacinas e pesagens
+    ├── 👨‍👩‍👧 FamilyPetScreen    → Gestão de múltiplos pets, cadastro de novos animais e co-cuidadores
+    ├── 🎓 TrainingScreen     → Módulos de treino e adestramento que somam pontos ao Score do Pet
+    ├── 🏥 ClinicsScreen      → Busca de clínicas veterinárias com filtro de emergência/pronto-socorro 24h
+    ├── 🤖 AiAssistantScreen  → Chat inteligente com RAG baseado no histórico do Pet
+    └── 👤 UserProfileScreen  → Perfil do tutor, configurações da conta e Logout
 ```
 
 ---
 
-## 📋 Funcionalidades Principais
+## 📋 Funcionalidades Principais & Arquitetura Pet-Centric
 
-### 🏠 Painel Home Inteligente
-- **Rotina Semanal Dinâmica:** As tarefas são filtradas automaticamente pelo dia da semana via `TaskService`.
-- **Sistema de XP & Ofensiva:** Ganho de pontos individuais e coletivos ao concluir tarefas, com contador de dias seguidos (Streak).
-- **Histórico Clínico Resumido:** Visualização rápida de peso, última vacina e consulta de todos os pets da família.
-- **Criação de Tarefas:** Formulário inline com overlay para adicionar novas tarefas diretamente na Home.
+### 🏠 Painel Home Pet-Centric
+- **Seletor de Pet Ativo:** Alternância rápida entre os animais da família.
+- **Barra de Score do Pet (`PetScoreBar`):** Visualização imediata do nível de bem-estar acumulado no animal.
+- **Rotina Diária Familiar:** Tarefas diárias de cuidado com conclusão reativa via TanStack Query (`useMutation`).
+- **Atalhos Rápidos:** Acesso direto ao chat com IA e busca de clínicas de emergência 24h.
 
-### 👨‍👩‍👧 Gestão de Família (Family Pet)
-- **Criar ou Entrar:** O usuário pode criar uma nova família ou entrar em uma existente via código de convite.
-- **Colaboração Real:** Mural de recados com suporte a criação, edição e exclusão de mensagens.
-- **Controle de Permissões:** Apenas o "Dono da Família" pode renomear o grupo e remover membros.
-- **Sessão Automática:** O app identifica se o usuário já pertence a uma família e recupera os dados automaticamente.
+### 🐾 Ficha e Prontuário Dedicado (`PetDetailScreen`)
+- **Histórico Clínico:** Consultas, diagnósticos e tratamentos do animal sem poluir a Home.
+- **Carteira de Vacinação:** Controle de imunizações e próximas doses.
+- **Evolução de Peso:** Histórico de pesagens com indicadores de saúde.
 
-### 🐶 Meu Pet
-- **Ficha Completa:** Cadastro de nome, raça, idade, peso, sexo, castração, vacinas, consultas, veterinário, alergias e medicamentos.
-- **Multi-Pet:** Suporte para vários animais com carrossel de seleção e avatares customizados (cachorro, gato, coelho).
+### 🎮 Gamificação Pet-Centric
+- **Score no Pet:** Cada tarefa de rotina cumprida e treino finalizado soma pontos diretamente ao animal.
+- **Ofensiva (Streak):** Acompanhamento da consistência no cuidado da família.
 
 ### 👤 Perfil do Usuário
-- **Ranking Individual:** Posição do usuário dentro da família com base no XP acumulado.
-- **Edição de Perfil:** Modal com validação Zod que atualiza o nome em todas as referências do AsyncStorage (cuidadores e recados).
-- **FAQ e Suporte:** Modais de perguntas frequentes e envio de feedback para a equipe.
+- **Dados da Conta:** Informações do tutor e co-cuidadores vinculados.
+- **Logout Seguro:** Limpeza total do token JWT no AsyncStorage e reset de cache do TanStack Query.
 
 ---
 
@@ -144,19 +144,19 @@ Escaneie o QR Code com o **Expo Go** para visualizar o app.
 </tr>
 
 <tr>
+<td>Gustavo Okada</td>
+<td>563428</td>
+<td>2TDSPG</td>
+<td><a href="https://github.com/Gdev3356">Gustavo Okada</a></td>
+<td><a href="https://www.linkedin.com/in/gustavo-okada-53a3b8359/">Gustavo Okada</a></td>
+</tr>
+
+<tr>
 <td>Lucas Barros Gouveia</td>
 <td>566422</td>
 <td>2TDSPG</td>
 <td><a href="https://github.com/LuzBGouveia">LuzBGouveia</a></td>
 <td><a href="https://www.linkedin.com/in/lucas-barros-gouveia-09b147355/">Lucas Barros Gouveia</a></td>
-</tr>
-
-<tr>
-<td>Milton Marcelino</td>
-<td>564836</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/MiltonMarcelino">MiltonMarcelino</a></td>
-<td><a href="http://linkedin.com/in/milton-marcelino-250298142">Milton Marcelino</a></td>
 </tr>
 
 <tr>
@@ -168,11 +168,11 @@ Escaneie o QR Code com o **Expo Go** para visualizar o app.
 </tr>
 
 <tr>
-<td>Gustavo Okada</td>
-<td>563428</td>
+<td>Milton Marcelino</td>
+<td>564836</td>
 <td>2TDSPG</td>
-<td><a href="https://github.com/Gdev3356">GustavoOkada7268</a></td>
-<td><a href="https://www.linkedin.com/in/gustavo-okada-53a3b8359/">Gustavo Okada</a></td>
+<td><a href="https://github.com/MiltonMarcelino">MiltonMarcelino</a></td>
+<td><a href="http://linkedin.com/in/milton-marcelino-250298142">Milton Marcelino</a></td>
 </tr>
 
 </table>
