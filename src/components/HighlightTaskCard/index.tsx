@@ -6,10 +6,24 @@ import { Tarefa } from '../../types/models';
 interface HighlightTaskCardProps {
     tarefa: Tarefa | null;
     onComplete: (id: number) => void;
+    totalTarefasHoje?: number;
 }
 
-export function HighlightTaskCard({ tarefa, onComplete }: HighlightTaskCardProps) {
+export function HighlightTaskCard({ tarefa, onComplete, totalTarefasHoje = 0 }: HighlightTaskCardProps) {
     if (!tarefa) {
+        if (totalTarefasHoje === 0) {
+            return (
+                <View style={styles.cardEmpty}>
+                    <View style={styles.header}>
+                        <MaterialCommunityIcons name="calendar-blank-outline" size={20} color="#FFF" />
+                        <Text style={styles.label}>Nenhuma Tarefa</Text>
+                    </View>
+                    <Text style={styles.title}>Nada por aqui ainda</Text>
+                    <Text style={styles.time}>Cadastre uma tarefa para começar a pontuar hoje.</Text>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.cardDone}>
                 <View style={styles.header}>
@@ -56,6 +70,12 @@ const styles = StyleSheet.create({
         borderRadius: 24, 
         padding: 20, 
         elevation: 8 
+    },
+    cardEmpty: {
+        backgroundColor: '#94A3B8',
+        borderRadius: 24,
+        padding: 20,
+        elevation: 8
     },
     header: { 
         flexDirection: 'row', 

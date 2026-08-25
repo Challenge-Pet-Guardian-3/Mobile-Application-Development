@@ -1,10 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Platform, 
+  TextInput, 
+  KeyboardAvoidingView, 
+  Alert, 
+  ActivityIndicator 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { STORAGE_KEYS } from '../../constants/Keys';
 import { StatCard } from '../../components/StatCard';
 import { ProfileEditSchema } from '../../utils/schemas';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUsuario } from '../../hooks/useUsuario';
+import { useHome } from '../../hooks/useHome';
+import { useFamily } from '../../hooks/useFamily';
+import { api } from '../../services/api';
 import { z } from 'zod';
 
 const showAlert = (title: string, message: string) => {
@@ -16,16 +31,16 @@ const showAlert = (title: string, message: string) => {
 };
 
 export default function UserProfileScreen({ navigation }: any) {
-  const [nome, setNome] = useState('Carregando...');
-  const [email, setEmail] = useState('');
-  const [emFamilia, setEmFamilia] = useState(false);
-  const [xp, setXp] = useState(0); 
-  const [streak, setStreak] = useState(0); 
-  const [meuRank, setMeuRank] = useState('---');
+  const { signOut, userData, updateUserData } = useAuth();
+  const { usuario, isLoading: carregandoUsuario, updateUsuario, isUpdating } = useUsuario();
+  const { xpTotal, ofensivaTotal, temFamilia } = useHome();
+  const { familia } = useFamily();
+
+  const [nome, setNome] = useState(userData?.nome || 'Tutor PetGuardian');
+  const [email, setEmail] = useState(userData?.email || '');
 
   const [janelaAberta, setJanelaAberta] = useState<'nenhum' | 'editar' | 'faq' | 'contato'>('nenhum');
-  
-  // Consolidação de estados locais em objetos estruturados
+
   const [editForm, setEditForm] = useState({
     nome: '',
     email: '',
@@ -42,164 +57,141 @@ export default function UserProfileScreen({ navigation }: any) {
 
   const [msgContato, setMsgContato] = useState('');
 
-  // Atualização genérica de inputs e limpeza automática de erros
+  // Cálculo de Ranking dinâmico baseado no XP dos cuidadores da família
+  const rankingPosicao = useMemo(() => {
+    if (!temFamilia) return '---';
+    const listaCuidadores = familia?.cuidadores || [];
+    if (listaCuidadores.length === 0) return xpTotal > 0 ? '1º' : '---';
+
+    const cuidadoresComPontos = listaCuidadores.map((c: any) => {
+      const nomeLimpo = (c.nome || '').replace(' (Você)', '').trim().toLowerCase();
+      const isEu = 
+        (userData?.id && (c.usuarioId === userData.id || c.id === userData.id)) ||
+        (userData?.nome && nomeLimpo === userData.nome.trim().toLowerCase());
+
+      const pontosMembro = isEu ? Number(xpTotal || c.xp || c.pontos || 0) : Number(c.xp || c.pontos || 0);
+
+      return {
+        ...c,
+        isEu,
+        pontosCalculados: pontosMembro
+      };
+    });
+
+    cuidadoresComPontos.sort((a: any, b: any) => b.pontosCalculados - a.pontosCalculados);
+
+    const index = cuidadoresComPontos.findIndex((c: any) => c.isEu);
+    if (index >= 0) {
+      return `${index + 1}º`;
+    }
+
+    return xpTotal > 0 ? '1º' : '---';
+  }, [temFamilia, xpTotal, familia, userData]);
+
   const handleEditChange = useCallback((campo: keyof typeof editForm, valor: string) => {
     setEditForm(prev => ({ ...prev, [campo]: valor }));
     setEditErros(prev => ({ ...prev, [campo]: '' }));
   }, []);
 
-  // Busca e processamento dos dados do usuário
-  const carregarUsuario = useCallback(async () => {
-    try {
-      let nomeUsuario = 'Usuário';
-      const userDataString = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        nomeUsuario = userData.nome || 'Usuário';
-        setNome(nomeUsuario);
-        setEmail(userData.email || '');
-        setEditForm({
-          nome: userData.nome || '',
-          email: userData.email || '',
-          senha: userData.senha || '',
-          confirmarSenha: userData.senha || ''
-        });
-      }
-
-      const FamiliaAtiva = await AsyncStorage.getItem(STORAGE_KEYS.FAMILIA_ATIVA);
-      setEmFamilia(FamiliaAtiva === 'sim');
-
-      const ofensivaSalva = await AsyncStorage.getItem(STORAGE_KEYS.OFENSIVA_DIAS);
-      if (ofensivaSalva) setStreak(Number(ofensivaSalva));
-
-      const cuidadoresString = await AsyncStorage.getItem(STORAGE_KEYS.CUIDADORES);
-      if (cuidadoresString && FamiliaAtiva === 'sim') {
-        const listaCuidadores = JSON.parse(cuidadoresString);
-        
-        const meuPerfil = listaCuidadores.find((c: any) => c.nome.replace(' (Você)', '').trim() === nomeUsuario.trim());
-        if (meuPerfil) {
-          setXp(meuPerfil.xp || 0); 
-        }
-
-        const listaOrdenada = [...listaCuidadores].sort((a: any, b: any) => {
-            const xpA = a.xp || 0;
-            const xpB = b.xp || 0;
-            if (xpB !== xpA) return xpB - xpA;
-            return Number(a.id) - Number(b.id);
-        });
-        
-        const posicao = listaOrdenada.findIndex((c: any) => c.nome.replace(' (Você)', '').trim() === nomeUsuario.trim());
-        
-        if (posicao !== -1) {
-          setMeuRank(`${posicao + 1}º`);
-        } else {
-          setMeuRank('---');
-        }
-      } else {
-        setMeuRank('---');
-        setXp(0);
-      }
-
-    } catch (error) {
-      console.log(error);
-    }
-  }, []);
-
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      carregarUsuario();
-    });
-    return unsubscribe;
-  }, [navigation, carregarUsuario]);
+    if (userData) {
+      setNome(userData.nome || 'Tutor PetGuardian');
+      setEmail(userData.email || '');
+    }
+  }, [userData]);
 
-  // Handler de logout memoizado
   const handleLogout = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.LOGADO);
-      navigation.replace('Welcome');
+      await signOut();
     } catch (error) {
       console.error(error);
     }
-  }, [navigation]);
+  }, [signOut]);
 
-  // Fechamento de modal e limpeza de erros
+  const handleAbrirEdicao = useCallback(() => {
+    setEditForm({
+      nome: userData?.nome || '',
+      email: userData?.email || '',
+      senha: '',
+      confirmarSenha: ''
+    });
+    setJanelaAberta('editar');
+  }, [userData]);
+
   const handleFecharModal = useCallback(() => {
     setJanelaAberta('nenhum');
     setEditErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
     setMsgContato('');
   }, []);
 
-  // Salvar edições do perfil memoizado
   const salvarEdicao = useCallback(async () => {
     setEditErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
 
     try {
-      ProfileEditSchema.parse({ 
-        nome: editForm.nome.trim(), 
-        email: editForm.email.trim(), 
-        senha: editForm.senha, 
-        confirmarSenha: editForm.confirmarSenha 
+      ProfileEditSchema.parse({
+        nome: editForm.nome.trim(),
+        email: editForm.email.trim(),
+        senha: editForm.senha,
+        confirmarSenha: editForm.confirmarSenha
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const novosErros = { nome: '', email: '', senha: '', confirmarSenha: '' };
         error.issues.forEach((err) => {
           const field = err.path[0] as keyof typeof novosErros;
-          if (field) {
-            novosErros[field] = err.message;
-          }
+          if (field) novosErros[field] = err.message;
         });
         setEditErros(novosErros);
       }
       return;
     }
-    
+
     try {
-      const nomeAntigo = nome.trim();
-      const nomeNovo = editForm.nome.trim();
-      const userDataString = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      const userData = userDataString ? JSON.parse(userDataString) : {};
-      const novosDados = { ...userData, nome: nomeNovo, email: editForm.email.trim(), senha: editForm.senha };
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(novosDados));
-      
-      const cuidadoresString = await AsyncStorage.getItem(STORAGE_KEYS.CUIDADORES);
-      if (cuidadoresString) {
-        let listaCuidadores = JSON.parse(cuidadoresString);
-        listaCuidadores = listaCuidadores.map((c: any) => {
-          const nomeNaLista = c.nome.replace(' (Você)', '').trim();
-          if (nomeNaLista === nomeAntigo) return { ...c, nome: nomeNovo };
-          return c;
-        });
-        await AsyncStorage.setItem(STORAGE_KEYS.CUIDADORES, JSON.stringify(listaCuidadores));
+      const primeiroEndereco = usuario?.enderecos?.[0];
+
+      const resposta = await updateUsuario({
+        nome: editForm.nome.trim(),
+        email: editForm.email.trim(),
+        senha: editForm.senha ? editForm.senha : undefined,
+        ddd: usuario?.ddd || '11',
+        numeroTelefone: usuario?.numeroTelefone || '999999999',
+        endereco: {
+          cep: primeiroEndereco?.cep || '01001-000',
+          numero: primeiroEndereco?.numero || '100',
+        },
+      });
+
+      // Sincroniza o novo Token JWT no Axios e no Storage
+      if (resposta?.token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${resposta.token}`;
+        if (Platform.OS === 'web') {
+          localStorage.setItem('@PetGuardian:token', resposta.token);
+        } else {
+          await AsyncStorage.setItem('@PetGuardian:token', resposta.token);
+        }
       }
 
-      const recadosString = await AsyncStorage.getItem(STORAGE_KEYS.RECADOS);
-      if (recadosString) {
-        let listaRecados = JSON.parse(recadosString);
-        listaRecados = listaRecados.map((r: any) => {
-          if (r.autor.trim() === nomeAntigo) return { ...r, autor: nomeNovo };
-          return r;
-        });
-        await AsyncStorage.setItem(STORAGE_KEYS.RECADOS, JSON.stringify(listaRecados));
-      }
-      
-      setNome(nomeNovo);
-      setEmail(editForm.email);
-      showAlert('Sucesso', 'Perfil atualizado!');
+      const novoUserData = { 
+        ...userData, 
+        nome: editForm.nome.trim(), 
+        email: editForm.email.trim()
+      };
+      await updateUserData(novoUserData as any);
+
+      showAlert('Sucesso', 'Perfil atualizado com sucesso!');
       setJanelaAberta('nenhum');
-    } catch (error) {
-      showAlert('Erro', 'Não foi possível salvar.');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Não foi possível salvar os dados no servidor.';
+      showAlert('Erro na API', msg);
     }
-  }, [nome, editForm]);
+  }, [editForm, usuario, userData, updateUsuario, updateUserData]);
 
-  // Enviar feedback de contato memoizado
   const enviarContato = useCallback(() => {
     if (!msgContato.trim()) {
       showAlert('Aviso', 'Escreva uma mensagem antes de enviar.');
       return;
     }
-    showAlert('Mensagem Enviada!', 'A equipe entrará em contato em breve.');
+    showAlert('Mensagem Enviada!', 'A equipe PetGuardian entrará em contato em breve.');
     setMsgContato('');
     setJanelaAberta('nenhum');
   }, [msgContato]);
@@ -208,10 +200,14 @@ export default function UserProfileScreen({ navigation }: any) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={styles.headerBg} />
+        
+        {/* Foto de Perfil e Identificação */}
         <View style={styles.profileInfo}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatarIconWrapper}><Ionicons name="person" size={50} color="#FFF" /></View>
-            <TouchableOpacity style={styles.editBadge} onPress={() => setJanelaAberta('editar')}>
+            <View style={styles.avatarIconWrapper}>
+              <Ionicons name="person" size={50} color="#FFF" />
+            </View>
+            <TouchableOpacity style={styles.editBadge} onPress={handleAbrirEdicao}>
               <MaterialCommunityIcons name="pencil" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -219,40 +215,70 @@ export default function UserProfileScreen({ navigation }: any) {
           <Text style={styles.userEmail}>{email}</Text>
         </View>
 
+        {/* Estatísticas com Ranking Dinâmico */}
         <View style={styles.statsRow}>
-          <StatCard icon="fire" label="Ofensiva" value={emFamilia ? `${streak} dias` : '0 dias'} color={emFamilia ? "#FF9600" : "#A0AEC0"} />
-          <StatCard icon="star" label="Meu XP" value={emFamilia ? xp : '0'} color={emFamilia ? "#1CB0F6" : "#A0AEC0"} />
-          <StatCard icon="medal" label="Ranking" value={emFamilia ? meuRank : "---"} color={emFamilia ? "#58CC02" : "#A0AEC0"} />
+          <StatCard 
+            icon="fire" 
+            label="Ofensiva" 
+            value={`${ofensivaTotal} dias`} 
+            color="#FF9600" 
+          />
+          <StatCard 
+            icon="star" 
+            label="Meu XP" 
+            value={xpTotal} 
+            color="#1CB0F6" 
+          />
+          <StatCard 
+            icon="medal" 
+            label="Ranking" 
+            value={rankingPosicao} 
+            color="#58CC02" 
+          />
         </View>
 
-        {!emFamilia && (
-          <Text style={styles.avisoSemFamilia}>Entre ou crie uma família para começar a ganhar pontos!</Text>
+        {!temFamilia && (
+          <Text style={styles.avisoSemFamilia}>Entre ou crie uma família para começar a pontuar no ranking!</Text>
         )}
 
+        {/* Menu de Configurações */}
         <View style={styles.menuContainer}>
           <Text style={styles.menuTitle}>Conta</Text>
-          <TouchableOpacity style={styles.menuItem} onPress={() => setJanelaAberta('editar')}>
-            <View style={styles.menuIconWrapper}><Ionicons name="person-outline" size={22} color="#0066FF" /></View>
+          
+          <TouchableOpacity style={styles.menuItem} onPress={handleAbrirEdicao}>
+            <View style={styles.menuIconWrapper}>
+              <Ionicons name="person-outline" size={22} color="#0066FF" />
+            </View>
             <Text style={styles.menuText}>Gerenciar Perfil & Segurança</Text>
             <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem} onPress={() => setJanelaAberta('faq')}>
-            <View style={styles.menuIconWrapper}><Ionicons name="help-buoy-outline" size={22} color="#0066FF" /></View>
+            <View style={styles.menuIconWrapper}>
+              <Ionicons name="help-buoy-outline" size={22} color="#0066FF" />
+            </View>
             <Text style={styles.menuText}>Perguntas Frequentes</Text>
             <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem} onPress={() => setJanelaAberta('contato')}>
-            <View style={styles.menuIconWrapper}><Ionicons name="chatbubbles-outline" size={22} color="#0066FF" /></View>
+            <View style={styles.menuIconWrapper}>
+              <Ionicons name="chatbubbles-outline" size={22} color="#0066FF" />
+            </View>
             <Text style={styles.menuText}>Contato / Suporte</Text>
             <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
           </TouchableOpacity>
+
           <TouchableOpacity style={[styles.menuItem, { marginTop: 20 }]} onPress={handleLogout}>
-            <View style={[styles.menuIconWrapper, { backgroundColor: '#FFF5F5' }]}><Ionicons name="log-out-outline" size={22} color="#E53E3E" /></View>
-            <Text style={[styles.menuText, { color: '#E53E3E' }]} >Sair da Conta</Text>
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#FFF5F5' }]}>
+              <Ionicons name="log-out-outline" size={22} color="#E53E3E" />
+            </View>
+            <Text style={[styles.menuText, { color: '#E53E3E' }]}>Sair da Conta</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
+      {/* Modal: Editar Perfil */}
       {janelaAberta === 'editar' && (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -262,32 +288,63 @@ export default function UserProfileScreen({ navigation }: any) {
                 <Ionicons name="close" size={24} color="#718096" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.inputLabel}>Nome Completo</Text>
-              <TextInput style={[styles.modalInput, editErros.nome !== '' ? styles.inputErro : null]} value={editForm.nome} onChangeText={(t) => handleEditChange('nome', t)} />
+              <TextInput 
+                style={[styles.modalInput, editErros.nome !== '' ? styles.inputErro : null]} 
+                value={editForm.nome} 
+                onChangeText={(t) => handleEditChange('nome', t)} 
+              />
               {editErros.nome !== '' && <Text style={styles.erroTexto}>{editErros.nome}</Text>}
 
               <Text style={styles.inputLabel}>E-mail</Text>
-              <TextInput style={[styles.modalInput, editErros.email !== '' ? styles.inputErro : null]} value={editForm.email} onChangeText={(t) => handleEditChange('email', t)} keyboardType="email-address" autoCapitalize="none" />
+              <TextInput 
+                style={[styles.modalInput, editErros.email !== '' ? styles.inputErro : null]} 
+                value={editForm.email} 
+                onChangeText={(t) => handleEditChange('email', t)} 
+                keyboardType="email-address" 
+                autoCapitalize="none" 
+              />
               {editErros.email !== '' && <Text style={styles.erroTexto}>{editErros.email}</Text>}
 
-              <Text style={styles.inputLabel}>Senha</Text>
-              <TextInput style={[styles.modalInput, editErros.senha !== '' ? styles.inputErro : null]} value={editForm.senha} onChangeText={(t) => handleEditChange('senha', t)} secureTextEntry />
+              <Text style={styles.inputLabel}>Nova Senha (opcional)</Text>
+              <TextInput 
+                style={[styles.modalInput, editErros.senha !== '' ? styles.inputErro : null]} 
+                value={editForm.senha} 
+                placeholder="Deixe em branco para manter a atual"
+                placeholderTextColor="#A0AEC0"
+                onChangeText={(t) => handleEditChange('senha', t)} 
+                secureTextEntry 
+              />
               {editErros.senha !== '' && <Text style={styles.erroTexto}>{editErros.senha}</Text>}
 
-              <Text style={styles.inputLabel}>Confirmar Senha</Text>
-              <TextInput style={[styles.modalInput, editErros.confirmarSenha !== '' ? styles.inputErro : null]} value={editForm.confirmarSenha} onChangeText={(t) => handleEditChange('confirmarSenha', t)} secureTextEntry />
+              <Text style={styles.inputLabel}>Confirmar Nova Senha</Text>
+              <TextInput 
+                style={[styles.modalInput, editErros.confirmarSenha !== '' ? styles.inputErro : null]} 
+                value={editForm.confirmarSenha} 
+                onChangeText={(t) => handleEditChange('confirmarSenha', t)} 
+                secureTextEntry 
+              />
               {editErros.confirmarSenha !== '' && <Text style={styles.erroTexto}>{editErros.confirmarSenha}</Text>}
 
-              <TouchableOpacity style={styles.modalBtnSalvar} onPress={salvarEdicao}>
-                <Text style={styles.modalBtnSalvarText}>Salvar Alterações</Text>
+              <TouchableOpacity
+                style={[styles.modalBtnSalvar, (isUpdating || carregandoUsuario) && { opacity: 0.7 }]}
+                onPress={salvarEdicao}
+                disabled={isUpdating || carregandoUsuario}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.modalBtnSalvarText}>Salvar Alterações</Text>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
       )}
 
+      {/* Modal: FAQ */}
       {janelaAberta === 'faq' && (
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxHeight: '85%' }]}>
@@ -301,13 +358,12 @@ export default function UserProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
-              
               <View style={styles.faqCard}>
                 <View style={styles.faqQuestionRow}>
                   <Ionicons name="people-outline" size={20} color="#0066FF" />
                   <Text style={styles.faqQuestion}>Como convidar familiares?</Text>
                 </View>
-                <Text style={styles.faqAnswer}>Na aba "Family Pet", clique em "Convidar Familiar" para gerar um código seguro. Compartilhe este código para eles entrarem na sua família e cuidarem do pet juntos.</Text>
+                <Text style={styles.faqAnswer}>Na aba "Family Pet", você pode compartilhar o código de convite da sua família para que outros cuidadores entrem no grupo.</Text>
               </View>
 
               <View style={styles.faqCard}>
@@ -315,7 +371,7 @@ export default function UserProfileScreen({ navigation }: any) {
                   <Ionicons name="checkmark-done-circle-outline" size={22} color="#0066FF" />
                   <Text style={styles.faqQuestion}>Se eu fizer uma tarefa, os outros veem?</Text>
                 </View>
-                <Text style={styles.faqAnswer}>Sim! A rotina do animal é sincronizada. Se você marcar que já deu a ração, todos os outros tutores saberão que o pet já foi alimentado, evitando dose dupla.</Text>
+                <Text style={styles.faqAnswer}>Sim! A rotina é centralizada. Quando você conclui uma tarefa, a pontuação é atualizada para todos os membros da família.</Text>
               </View>
 
               <View style={styles.faqCard}>
@@ -323,30 +379,22 @@ export default function UserProfileScreen({ navigation }: any) {
                   <Ionicons name="trophy-outline" size={20} color="#0066FF" />
                   <Text style={styles.faqQuestion}>Como funciona o Ranking e o XP?</Text>
                 </View>
-                <Text style={styles.faqAnswer}>Cada vez que você completa uma tarefa na Home, você ganha XP. O Ranking mostra a sua posição dentro da família. Quem cuidar mais do pet, fica em primeiro lugar!</Text>
-              </View>
-
-              <View style={styles.faqCard}>
-                <View style={styles.faqQuestionRow}>
-                  <Ionicons name="paw-outline" size={20} color="#0066FF" />
-                  <Text style={styles.faqQuestion}>Posso ter mais de um pet na família?</Text>
-                </View>
-                <Text style={styles.faqAnswer}>Com certeza! Vá até a tela "Meu Pet", deslize os avatares dos animais para o lado e clique no botão tracejado "Novo" para adicionar outro bichinho à família.</Text>
+                <Text style={styles.faqAnswer}>Cada tarefa diária concluída soma XP ao seu perfil e atualiza a sua classificação em tempo real na família.</Text>
               </View>
 
               <View style={styles.faqCard}>
                 <View style={styles.faqQuestionRow}>
                   <Ionicons name="flame-outline" size={20} color="#0066FF" />
-                  <Text style={styles.faqQuestion}>O que significa o foguinho de Ofensiva?</Text>
+                  <Text style={styles.faqQuestion}>O que é a Ofensiva da Semana?</Text>
                 </View>
-                <Text style={styles.faqAnswer}>É o seu combo de dias seguidos cuidando do pet! Conclua pelo menos uma tarefa principal por dia na Home para manter a chama acesa e não perder a sua ofensiva.</Text>
+                <Text style={styles.faqAnswer}>É a sequência contínua de dias em que as tarefas dos pets foram cumpridas.</Text>
               </View>
-
             </ScrollView>
           </View>
         </View>
       )}
 
+      {/* Modal: Suporte */}
       {janelaAberta === 'contato' && (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -357,8 +405,15 @@ export default function UserProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.contatoDesc}>Encontrou um problema? Envie sua mensagem para nossa equipe de desenvolvimento.</Text>
-              <TextInput style={[styles.modalInput, { height: 160, textAlignVertical: 'top', paddingTop: 16 }]} placeholder="Descreva aqui o que precisa..." placeholderTextColor="#A0AEC0" value={msgContato} onChangeText={setMsgContato} multiline />
+              <Text style={styles.contatoDesc}>Encontrou algum problema ou tem sugestões? Envie uma mensagem para a equipe PetGuardian.</Text>
+              <TextInput 
+                style={[styles.modalInput, { height: 140, textAlignVertical: 'top', paddingTop: 16 }]} 
+                placeholder="Descreva sua mensagem aqui..." 
+                placeholderTextColor="#A0AEC0" 
+                value={msgContato} 
+                onChangeText={setMsgContato} 
+                multiline 
+              />
               <TouchableOpacity style={styles.modalBtnSalvar} onPress={enviarContato}>
                 <Ionicons name="paper-plane-outline" size={20} color="#FFF" style={{marginRight: 8}} />
                 <Text style={styles.modalBtnSalvarText}>Enviar Feedback</Text>
@@ -367,7 +422,6 @@ export default function UserProfileScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       )}
-
     </View>
   );
 }

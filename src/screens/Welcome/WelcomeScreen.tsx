@@ -1,26 +1,9 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEYS } from "../../constants/Keys";
 
 export default function WelcomeScreen({ navigation }: any) {
-
-    useEffect(() => {
-        const verificarSessaoAtiva = async () => {
-            try {
-                const logado = await AsyncStorage.getItem(STORAGE_KEYS.LOGADO);
-                if (logado === "sim") {
-                    navigation.replace("Tabs");
-                }
-            } catch (error) {
-                console.log("Erro ao recuperar sessão:", error);
-            }
-        };
-
-        verificarSessaoAtiva();
-    }, [navigation]);
 
     // Handlers de navegação memoizados
     const handleRegister = useCallback(() => {

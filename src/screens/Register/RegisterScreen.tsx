@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, KeyboardAvoidingView, ScrollView, ActivityIndicator } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { STORAGE_KEYS } from '../../constants/Keys';
 import { RegisterSchema } from '../../utils/schemas';
+import { api } from '../../services/api';
 import { z } from 'zod';
 
 type Props = {
@@ -11,7 +10,6 @@ type Props = {
 };
 
 export default function RegisterScreen({ navigation }: Props) {
-  // Consolidação de estados em objetos estruturados
   const [form, setForm] = useState({
     nome: '',
     email: '',
@@ -26,13 +24,13 @@ export default function RegisterScreen({ navigation }: Props) {
     confirmarSenha: ''
   });
 
-  // Atualização genérica de inputs e limpeza automática de erros
+  const [loading, setLoading] = useState(false);
+
   const handleChange = useCallback((campo: keyof typeof form, valor: string) => {
     setForm(prev => ({ ...prev, [campo]: valor }));
     setErros(prev => ({ ...prev, [campo]: '' }));
   }, []);
 
-  // Handler de registro memoizado
   const handleRegister = useCallback(async () => {
     setErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
 
@@ -58,32 +56,40 @@ export default function RegisterScreen({ navigation }: Props) {
     }
 
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      await AsyncStorage.removeItem(STORAGE_KEYS.FAMILIA_ATIVA);
+      setLoading(true);
 
-      const userData = { nome: form.nome.trim(), email: form.email.trim(), senha: form.senha };
+      // Payload exatamente como o Java UsuarioRequest espera
+      const payload = {
+        nome: form.nome.trim(),
+        email: form.email.trim(),
+        senha: form.senha,
+        ddd: "11",
+        numeroTelefone: "987654321",
+        endereco: {
+          cep: "01310100",
+          numero: "100"
+        }
+      };
 
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+      await api.post('/usuarios', payload);
 
       if (Platform.OS === 'web') {
-        window.alert('Conta criada! Faça o login para entrar na família.');
+        window.alert('Conta criada com sucesso! Faça login para continuar.');
       } else {
-        Alert.alert('Sucesso!', 'Conta criada! Faça o login para entrar na família.');
+        Alert.alert('Sucesso!', 'Conta criada com sucesso! Faça login para continuar.');
       }
-      navigation.goBack();
-    } catch (e) {
+      navigation.navigate('Login');
+    } catch (e: any) {
+      const msg = e.response?.data?.message || 'Não foi possível cadastrar na API Java. Verifique a conexão com o servidor.';
       if (Platform.OS === 'web') {
-        window.alert('Não foi possível criar a conta.');
+        window.alert(msg);
       } else {
-        Alert.alert('Erro', 'Não foi possível criar a conta.');
+        Alert.alert('Erro ao Cadastrar', msg);
       }
+    } finally {
+      setLoading(false);
     }
   }, [form, navigation]);
-
-  // Handler de navegação memoizado
-  const handleGoBack = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
 
   return (
     <KeyboardAvoidingView style={styles.mainContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -122,7 +128,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <Text style={styles.inputLabel}>Senha</Text>
             <TextInput
               style={[styles.input, erros.senha !== '' ? styles.inputErro : null]}
-              placeholder="Crie uma senha forte"
+              placeholder="Crie uma senha forte (mínimo 6 dígitos)"
               placeholderTextColor="#A0AEC0"
               secureTextEntry
               value={form.senha}
@@ -141,13 +147,21 @@ export default function RegisterScreen({ navigation }: Props) {
             />
             {erros.confirmarSenha !== '' && <Text style={styles.erroTexto}>{erros.confirmarSenha}</Text>}
 
-            <TouchableOpacity style={[styles.button, styles.buttonShadow]} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Cadastrar</Text>
+            <TouchableOpacity 
+              style={[styles.button, styles.buttonShadow, loading && { opacity: 0.7 }]} 
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Cadastrar no Servidor</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Já faz parte de uma família? </Text>
-              <TouchableOpacity onPress={handleGoBack}>
+              <Text style={styles.footerText}>Já tem uma conta? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.linkText}>Fazer Login</Text>
               </TouchableOpacity>
             </View>
@@ -166,13 +180,13 @@ const styles = StyleSheet.create({
   headerContainer: { alignItems: 'center', marginBottom: 30, marginTop: 10 },
   title: { fontSize: 28, fontWeight: '800', color: '#1A202C', marginBottom: 8 },
   subtitle: { fontSize: 16, color: '#718096', textAlign: 'center', paddingHorizontal: 10 },
-  formContainer: { width: '100%', backgroundColor: '#FFFFFF', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#EDF2F7', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  formContainer: { width: '100%', backgroundColor: '#FFFFFF', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#EDF2F7', elevation: 3 },
   inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 },
   input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', padding: 16, borderRadius: 16, marginBottom: 20, fontSize: 16, color: '#2D3748' },
   inputErro: { borderColor: '#E53E3E', borderWidth: 1.5, backgroundColor: '#FFF5F5' },
   erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 8, fontWeight: '500' },
   button: { backgroundColor: '#0066FF', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 10 },
-  buttonShadow: { shadowColor: '#0066FF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  buttonShadow: { elevation: 6 },
   buttonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: '#718096', fontSize: 15 },

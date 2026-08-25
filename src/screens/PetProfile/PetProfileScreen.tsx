@@ -1,26 +1,85 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput, KeyboardAvoidingView, Image, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Platform, 
+  TextInput, 
+  KeyboardAvoidingView, 
+  Image, 
+  Alert, 
+  ActivityIndicator 
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-import { STORAGE_KEYS } from '../../constants/Keys';
-import { Pet } from '../../types/models';
 import { AVATARES_DISPONIVEIS, getAvatarById } from '../../constants/Avatares';
 import { PetSchema } from '../../utils/schemas';
+import { usePets, PetBackend } from '../../hooks/usePets';
+
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+  if (Platform.OS === 'web') {
+    const confirmou = window.confirm(`${title}\n${message}`);
+    if (confirmou) onConfirm();
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: onConfirm },
+    ]);
+  }
+};
+
+const aplicarMascaraDataBr = (valor: string): string => {
+  const nums = valor.replace(/\D/g, '').slice(0, 8);
+  if (nums.length <= 2) return nums;
+  if (nums.length <= 4) return `${nums.slice(0, 2)}/${nums.slice(2)}`;
+  return `${nums.slice(0, 2)}/${nums.slice(2, 4)}/${nums.slice(4, 8)}`;
+};
+
+const isoParaBr = (iso?: string | null): string => {
+  if (!iso || !iso.trim()) return '';
+  const clean = iso.trim();
+  if (clean.includes('-')) {
+    const [ano, mes, dia] = clean.split('-');
+    if (ano && mes && dia && ano.length === 4) {
+      return `${dia}/${mes}/${ano}`;
+    }
+  }
+  return clean;
+};
+
+const brParaIso = (br?: string | null): string | null => {
+  if (!br || !br.trim()) return null;
+  const clean = br.trim();
+  if (clean.includes('/')) {
+    const [dia, mes, ano] = clean.split('/');
+    if (dia && mes && ano && ano.length === 4) {
+      return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+  return null;
+};
 
 interface PetFormState {
   avatarId: string;
   nome: string;
   raca: string;
   idade: string;
-  peso: string;
   sexo: string;
   castrado: string;
+  peso: string;
   ultimaVacina: string;
   ultimaConsulta: string;
-  veterinario: string;
-  alergias: string;
-  medicamentos: string;
 }
 
 const initialFormState: PetFormState = {
@@ -28,64 +87,67 @@ const initialFormState: PetFormState = {
   nome: '',
   raca: '',
   idade: '',
+  sexo: 'Macho',
+  castrado: 'Sim',
   peso: '',
-  sexo: '',
-  castrado: '',
   ultimaVacina: '',
   ultimaConsulta: '',
-  veterinario: '',
-  alergias: '',
-  medicamentos: '',
 };
 
 export default function PetProfileScreen() {
-  const [meusPets, setMeusPets] = useState<Pet[]>([]);
-  const [petAtualId, setPetAtualId] = useState<string | null>(null);
+  const { 
+    pets, 
+    isLoading, 
+    createPet, 
+    updatePet, 
+    deletePet, 
+    isCreating, 
+    isUpdating, 
+    isDeleting 
+  } = usePets();
+
+  const [petAtualId, setPetAtualId] = useState<number | null>(null);
+  const [modoCriacao, setModoCriacao] = useState(false);
   const [form, setForm] = useState<PetFormState>(initialFormState);
 
-  const selecionarPet = useCallback((pet: Pet) => {
-    setPetAtualId(pet.id || null);
+  const selecionarPet = useCallback((pet: PetBackend) => {
+    setModoCriacao(false);
+    setPetAtualId(pet.id ?? null);
     setForm({
-      avatarId: pet.avatarId || '1',
+      avatarId: pet.avatarId ? String(pet.avatarId) : '1',
       nome: pet.nome || '',
       raca: pet.raca || '',
-      idade: pet.idade || '',
-      peso: pet.peso || '',
-      sexo: pet.sexo || '',
-      castrado: pet.castrado || '',
-      ultimaVacina: pet.ultimaVacina || '',
-      ultimaConsulta: pet.ultimaConsulta || '',
-      veterinario: pet.veterinario || '',
-      alergias: pet.alergias || '',
-      medicamentos: pet.medicamentos || '',
+      idade: pet.idade != null ? `${pet.idade} anos` : '',
+      sexo: pet.sexo === 'M' ? 'Macho' : 'Fêmea',
+      castrado: pet.castrado ? 'Sim' : 'Não',
+      peso: pet.peso != null ? String(pet.peso) : '',
+      ultimaVacina: isoParaBr(pet.ultimaVacina),
+      ultimaConsulta: isoParaBr(pet.ultimaConsulta),
     });
   }, []);
 
-  const carregarPets = useCallback(async () => {
-    try {
-      const dados = await AsyncStorage.getItem(STORAGE_KEYS.LISTA_PETS);
-      if (dados) {
-        const lista: Pet[] = JSON.parse(dados);
-        setMeusPets(lista);
-        if (lista.length > 0) {
-          selecionarPet(lista[0]);
-        }
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [selecionarPet]);
-
-  useEffect(() => {
-    carregarPets();
-  }, [carregarPets]);
-
   const prepararNovoPet = useCallback(() => {
+    setModoCriacao(true);
     setPetAtualId(null);
     setForm(initialFormState);
   }, []);
 
+  useEffect(() => {
+    if (pets && pets.length > 0) {
+      if (modoCriacao) return; // Não sobrescreve quando o usuário clicar em + Novo
+      const petExiste = pets.some(p => p.id === petAtualId);
+      if (petAtualId === null || !petExiste) {
+        selecionarPet(pets[0]);
+      }
+    } else {
+      prepararNovoPet();
+    }
+  }, [pets, petAtualId, modoCriacao, selecionarPet, prepararNovoPet]);
+
   const handleInputChange = useCallback((campo: keyof PetFormState, valor: string) => {
+    if (campo === 'ultimaVacina' || campo === 'ultimaConsulta') {
+      valor = aplicarMascaraDataBr(valor);
+    }
     setForm(prev => ({ ...prev, [campo]: valor }));
   }, []);
 
@@ -93,130 +155,91 @@ export default function PetProfileScreen() {
     const result = PetSchema.safeParse(form);
     if (!result.success) {
       const primeiroErro = result.error.issues[0].message;
-      Alert.alert('Erro de Validação', primeiroErro);
+      showAlert('Erro de Validação', primeiroErro);
       return;
     }
 
-    const { 
-      avatarId, nome, raca, idade, peso, sexo, castrado, 
-      ultimaVacina, ultimaConsulta, veterinario, 
-      alergias, medicamentos 
-    } = result.data;
+    const isoVacina = brParaIso(form.ultimaVacina);
+    const isoConsulta = brParaIso(form.ultimaConsulta);
 
-    // Normalizações rápidas pós-validação para salvar de forma limpa e padronizada
-    let castradoNormalizado = castrado;
-    if (castradoNormalizado) {
-      castradoNormalizado = ['sim', 's', 'yes', 'y'].includes(castradoNormalizado.toLowerCase()) ? 'Sim' : 'Não';
+    if (form.ultimaVacina.trim() && !isoVacina) {
+      showAlert('Data Inválida', 'Data da vacina deve estar no formato DD/MM/AAAA');
+      return;
     }
 
-    let sexoNormalizado = sexo;
-    if (sexoNormalizado) {
-      sexoNormalizado = ['macho', 'm', 'male'].includes(sexoNormalizado.toLowerCase()) ? 'Macho' : 'Fêmea';
+    if (form.ultimaConsulta.trim() && !isoConsulta) {
+      showAlert('Data Inválida', 'Data da consulta deve estar no formato DD/MM/AAAA');
+      return;
     }
 
-    let pesoNormalizado = peso;
-    if (pesoNormalizado && /^\d+([.,]\d+)?$/.test(pesoNormalizado)) {
-      pesoNormalizado = `${pesoNormalizado.replace(',', '.')} kg`;
-    }
+    const { nome, raca, idade, sexo, castrado } = result.data;
+    const idadeNumero = parseInt(idade.replace(/\D/g, ''), 10) || 1;
+    const sexoChar: 'M' | 'F' = sexo.toLowerCase().startsWith('m') ? 'M' : 'F';
+    const isCastrado = ['sim', 's', 'true'].includes(castrado.toLowerCase());
 
-    let idadeNormalizado = idade;
-    if (idadeNormalizado && /^\d+$/.test(idadeNormalizado)) {
-      const num = Number(idadeNormalizado);
-      idadeNormalizado = num === 1 ? '1 ano' : `${num} anos`;
-    }
+    const pesoNumero = form.peso.trim() 
+      ? Number(form.peso.replace(/[^\d.,]/g, '').replace(',', '.')) 
+      : null;
 
-    let vetNormalizado = veterinario;
-    if (vetNormalizado) {
-      const apenasNumeros = vetNormalizado.replace(/\D/g, '');
-      if (apenasNumeros.length > 0) {
-        let numeroSemDDI = apenasNumeros;
-        if (apenasNumeros.startsWith('55') && apenasNumeros.length > 11) {
-          numeroSemDDI = apenasNumeros.substring(2);
-        }
-        // Aplica formatação automática se digitado apenas números
-        if (vetNormalizado === apenasNumeros) {
-          if (numeroSemDDI.length === 11) {
-            vetNormalizado = `(${numeroSemDDI.substring(0, 2)}) ${numeroSemDDI.substring(2, 7)}-${numeroSemDDI.substring(7)}`;
-          } else if (numeroSemDDI.length === 10) {
-            vetNormalizado = `(${numeroSemDDI.substring(0, 2)}) ${numeroSemDDI.substring(2, 6)}-${numeroSemDDI.substring(6)}`;
-          }
-        }
-      }
-    }
-
-    const dadosDoFormulario: Pet = { 
-      id: petAtualId || Date.now().toString(),
-      avatarId,
-      nome,
-      raca,
-      idade: idadeNormalizado,
-      peso: pesoNormalizado,
-      sexo: sexoNormalizado,
-      castrado: castradoNormalizado,
-      ultimaVacina,
-      ultimaConsulta,
-      veterinario: vetNormalizado,
-      alergias,
-      medicamentos
+    const payload: Omit<PetBackend, 'id'> = {
+      nome: nome.trim(),
+      idade: idadeNumero,
+      raca: raca.trim(),
+      porte: 'MEDIO',
+      sexo: sexoChar,
+      castrado: isCastrado,
+      avatarId: parseInt(form.avatarId, 10) || 1,
+      peso: isNaN(pesoNumero as number) ? null : pesoNumero,
+      ultimaVacina: isoVacina,
+      ultimaConsulta: isoConsulta,
     };
 
     try {
-      let novaLista = [...meusPets];
-      if (petAtualId) {
-        novaLista = novaLista.map(p => p.id === petAtualId ? dadosDoFormulario : p);
+      if (!modoCriacao && petAtualId) {
+        await updatePet({ ...payload, id: petAtualId });
+        showAlert('Sucesso!', 'Pet atualizado com sucesso.');
       } else {
-        novaLista.push(dadosDoFormulario);
+        const novo = await createPet(payload);
+        setModoCriacao(false);
+        if (novo?.id) {
+          setPetAtualId(novo.id);
+        }
+        showAlert('Sucesso!', 'Novo pet cadastrado com sucesso!');
       }
-      setMeusPets(novaLista);
-      setPetAtualId(dadosDoFormulario.id ?? null);
-      await AsyncStorage.setItem(STORAGE_KEYS.LISTA_PETS, JSON.stringify(novaLista));
-      Alert.alert('Sucesso!', 'Perfil salvo com sucesso.');
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar.');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Erro ao salvar pet no servidor.';
+      showAlert('Erro na API', msg);
     }
-  }, [form, petAtualId, meusPets]);
+  }, [form, modoCriacao, petAtualId, updatePet, createPet]);
 
   const excluirPet = useCallback(async () => {
+    if (!petAtualId) return;
+
     try {
-      const novaLista = meusPets.filter(p => p.id !== petAtualId);
-      setMeusPets(novaLista);
-      await AsyncStorage.setItem(STORAGE_KEYS.LISTA_PETS, JSON.stringify(novaLista));
-      
-      if (novaLista.length > 0) {
-        selecionarPet(novaLista[0]);
-      } else {
-        prepararNovoPet();
-      }
-      
-      if (Platform.OS !== 'web') {
-        Alert.alert('Pronto', 'Pet removido com sucesso.');
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível excluir.');
+      await deletePet(petAtualId);
+      prepararNovoPet();
+      showAlert('Sucesso', 'Pet removido com sucesso.');
+    } catch (error: any) {
+      showAlert('Erro na API', 'Não foi possível excluir o pet.');
     }
-  }, [meusPets, petAtualId, selecionarPet, prepararNovoPet]);
+  }, [petAtualId, deletePet, prepararNovoPet]);
 
   const confirmarExclusao = useCallback(() => {
     if (!petAtualId) return;
-
-    if (Platform.OS === 'web') {
-      const confirmou = window.confirm(`Tem certeza que deseja remover o(a) ${form.nome} da sua lista?`);
-      if (confirmou) {
-        excluirPet();
-      }
-    } else {
-      Alert.alert(
-        "Excluir Pet",
-        `Tem certeza que deseja remover o(a) ${form.nome} da sua lista?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Excluir", style: "destructive", onPress: excluirPet }
-        ]
-      );
-    }
+    showConfirm('Excluir Pet', `Tem certeza que deseja remover o(a) ${form.nome}?`, excluirPet);
   }, [petAtualId, form.nome, excluirPet]);
 
-  const avatarAtual = getAvatarById(form.avatarId);
+  const avatarAtual = getAvatarById(form.avatarId) || AVATARES_DISPONIVEIS[0].imagem;
+  const processando = isCreating || isUpdating || isDeleting;
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingWrapper}>
+        <ActivityIndicator size="large" color="#0066FF" />
+        <Text style={styles.loadingText}>Buscando pets no servidor...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
@@ -226,38 +249,40 @@ export default function PetProfileScreen() {
           <Header title="Meus Pets" />
         </View>
 
+        {/* Carrossel Superior de Pets */}
         <View style={styles.carrosselContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listaDePets}>
-            {meusPets.map((pet) => {
-              const avatarImage = getAvatarById(pet.avatarId);
+            {pets.map((pet) => {
+              const avatarKey = pet.avatarId ? String(pet.avatarId) : '1';
+              const avatarImage = getAvatarById(avatarKey) || AVATARES_DISPONIVEIS[0].imagem;
+              const isSelected = !modoCriacao && petAtualId === pet.id;
+
               return (
-                <TouchableOpacity key={pet.id ?? '0'} onPress={() => selecionarPet(pet)} style={styles.itemPetCarrossel}>
-                  <View style={[styles.miniAvatarBorda, petAtualId === pet.id && styles.miniAvatarSelecionado]}>
-                    {avatarImage ? (
-                      <Image source={avatarImage} style={styles.miniAvatarImg} />
-                    ) : (
-                      <MaterialCommunityIcons name="paw" size={24} color="#A0AEC0" />
-                    )}
+                <TouchableOpacity key={pet.id} onPress={() => selecionarPet(pet)} style={styles.itemPetCarrossel}>
+                  <View style={[styles.miniAvatarBorda, isSelected && styles.miniAvatarSelecionado]}>
+                    <Image source={avatarImage} style={styles.miniAvatarImg} resizeMode="cover" />
                   </View>
-                  <Text style={[styles.miniAvatarTexto, petAtualId === pet.id && styles.miniAvatarTextoSelecionado]}>
+                  <Text style={[styles.miniAvatarTexto, isSelected && styles.miniAvatarTextoSelecionado]} numberOfLines={1}>
                     {(pet.nome || '').split(' ')[0]}
                   </Text>
                 </TouchableOpacity>
               );
             })}
             
+            {/* Botão + Novo */}
             <TouchableOpacity onPress={prepararNovoPet} style={styles.itemPetCarrossel}>
-              <View style={[styles.miniAvatarBorda, styles.botaoNovoPet, petAtualId === null && styles.miniAvatarSelecionado]}>
-                <MaterialCommunityIcons name="plus" size={30} color={petAtualId === null ? "#0066FF" : "#A0AEC0"} />
+              <View style={[styles.miniAvatarBorda, styles.botaoNovoPet, modoCriacao && styles.miniAvatarSelecionado]}>
+                <MaterialCommunityIcons name="plus" size={30} color={modoCriacao ? "#0066FF" : "#A0AEC0"} />
               </View>
-              <Text style={[styles.miniAvatarTexto, petAtualId === null && styles.miniAvatarTextoSelecionado]}>Novo</Text>
+              <Text style={[styles.miniAvatarTexto, modoCriacao && styles.miniAvatarTextoSelecionado]}>+ Novo</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
 
+        {/* Avatar Central Selecionado */}
         <View style={styles.avatarSection}>
           <View style={styles.imageWrapper}>
-            {avatarAtual ? <Image source={avatarAtual} style={styles.petImage} /> : <View style={styles.petImagePlaceholder}><MaterialCommunityIcons name="paw" size={40} color="#A0AEC0" /></View>}
+            <Image source={avatarAtual} style={styles.petImage} resizeMode="cover" />
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.avatarList}>
             {AVATARES_DISPONIVEIS.map((avatar) => (
@@ -266,78 +291,125 @@ export default function PetProfileScreen() {
                 onPress={() => handleInputChange('avatarId', avatar.id)} 
                 style={[styles.avatarOption, form.avatarId === avatar.id && styles.avatarOptionSelected]}
               >
-                <Image source={avatar.imagem} style={styles.avatarOptionImage} />
+                <Image source={avatar.imagem} style={styles.avatarOptionImage} resizeMode="cover" />
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
+        {/* Formulário de Identificação */}
         <View style={styles.formContainer}>
           <Text style={styles.inputLabel}>Nome do Pet</Text>
-          <TextInput style={styles.input} value={form.nome} onChangeText={(val) => handleInputChange('nome', val)} placeholder="Ex: Bob" />
+          <TextInput 
+            style={styles.input} 
+            value={form.nome} 
+            onChangeText={(val) => handleInputChange('nome', val)} 
+            placeholder="Ex: Bob" 
+          />
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={styles.inputLabel}>Raça</Text>
-              <TextInput style={styles.input} value={form.raca} onChangeText={(val) => handleInputChange('raca', val)} placeholder="Ex: Husky" />
+              <TextInput 
+                style={styles.input} 
+                value={form.raca} 
+                onChangeText={(val) => handleInputChange('raca', val)} 
+                placeholder="Ex: Husky" 
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inputLabel}>Idade</Text>
-              <TextInput style={styles.input} value={form.idade} onChangeText={(val) => handleInputChange('idade', val)} placeholder="Ex: 4 anos" />
+              <TextInput 
+                style={styles.input} 
+                value={form.idade} 
+                onChangeText={(val) => handleInputChange('idade', val)} 
+                placeholder="Ex: 4 anos" 
+              />
             </View>
           </View>
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={styles.inputLabel}>Peso</Text>
-              <TextInput style={styles.input} value={form.peso} onChangeText={(val) => handleInputChange('peso', val)} placeholder="Ex: 28 kg" />
+              <Text style={styles.inputLabel}>Sexo (Macho / Fêmea)</Text>
+              <TextInput 
+                style={styles.input} 
+                value={form.sexo} 
+                onChangeText={(val) => handleInputChange('sexo', val)} 
+                placeholder="Macho ou Fêmea" 
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Sexo</Text>
-              <TextInput style={styles.input} value={form.sexo} onChangeText={(val) => handleInputChange('sexo', val)} placeholder="Ex: Macho" />
+              <Text style={styles.inputLabel}>Castrado? (Sim / Não)</Text>
+              <TextInput 
+                style={styles.input} 
+                value={form.castrado} 
+                onChangeText={(val) => handleInputChange('castrado', val)} 
+                placeholder="Sim ou Não" 
+              />
             </View>
           </View>
+        </View>
+
+        {/* Formulário Clínico */}
+        <View style={[styles.formContainer, { marginTop: 16 }]}>
+          <Text style={[styles.inputLabel, { fontSize: 15, marginBottom: 14 }]}>Histórico Clínico</Text>
+
+          <Text style={styles.inputLabel}>Peso (kg)</Text>
+          <TextInput 
+            style={styles.input} 
+            value={form.peso} 
+            onChangeText={(val) => handleInputChange('peso', val)} 
+            placeholder="Ex: 8.5" 
+            keyboardType="decimal-pad"
+          />
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={styles.inputLabel}>Castrado?</Text>
-              <TextInput style={styles.input} value={form.castrado} onChangeText={(val) => handleInputChange('castrado', val)} placeholder="Sim ou Não" />
-            </View>
-            <View style={{ flex: 1 }}>
               <Text style={styles.inputLabel}>Última Vacina</Text>
-              <TextInput style={styles.input} value={form.ultimaVacina} onChangeText={(val) => handleInputChange('ultimaVacina', val)} placeholder="DD/MM/AAAA" />
+              <TextInput 
+                style={styles.input} 
+                value={form.ultimaVacina} 
+                onChangeText={(val) => handleInputChange('ultimaVacina', val)} 
+                placeholder="DD/MM/AAAA" 
+                maxLength={10}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Última Consulta</Text>
+              <TextInput 
+                style={styles.input} 
+                value={form.ultimaConsulta} 
+                onChangeText={(val) => handleInputChange('ultimaConsulta', val)} 
+                placeholder="DD/MM/AAAA" 
+                maxLength={10}
+                keyboardType="numeric"
+              />
             </View>
           </View>
 
-          <View style={styles.secaoSaude}>
-            <Text style={styles.tituloSaude}>Histórico e Cuidados</Text>
-            
-            <View style={styles.row}>
-              <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={styles.inputLabel}>Veterinário</Text>
-                <TextInput style={styles.input} value={form.veterinario} onChangeText={(val) => handleInputChange('veterinario', val)} placeholder="Nome/Tel" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Última Consulta</Text>
-                <TextInput style={styles.input} value={form.ultimaConsulta} onChangeText={(val) => handleInputChange('ultimaConsulta', val)} placeholder="DD/MM/AAAA" />
-              </View>
-            </View>
-
-            <Text style={styles.inputLabel}>Alergias ou Restrições</Text>
-            <TextInput style={styles.input} value={form.alergias} onChangeText={(val) => handleInputChange('alergias', val)} placeholder="Ex: Alergia a picada de pulga..." />
-
-            <Text style={styles.inputLabel}>Medicamentos Contínuos</Text>
-            <TextInput style={styles.input} value={form.medicamentos} onChangeText={(val) => handleInputChange('medicamentos', val)} placeholder="Remédios que ele toma sempre" />
-          </View>
-
-          <TouchableOpacity style={styles.btnSalvar} onPress={salvarDadosPet}>
-            <Text style={styles.btnSalvarText}>{petAtualId ? 'Atualizar Informações' : 'Cadastrar Pet'}</Text>
+          <TouchableOpacity 
+            style={[styles.btnSalvar, processando && { opacity: 0.7 }]} 
+            onPress={salvarDadosPet}
+            disabled={processando}
+          >
+            {processando ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.btnSalvarText}>
+                {modoCriacao || !petAtualId ? 'Cadastrar Novo Pet' : 'Salvar Alterações'}
+              </Text>
+            )}
           </TouchableOpacity>
 
-          {petAtualId && (
-            <TouchableOpacity style={styles.btnExcluir} onPress={confirmarExclusao}>
+          {!modoCriacao && petAtualId && (
+            <TouchableOpacity 
+              style={styles.btnExcluir} 
+              onPress={confirmarExclusao}
+              disabled={processando}
+            >
               <MaterialCommunityIcons name="trash-can-outline" size={20} color="#FF3B30" />
-              <Text style={styles.btnExcluirText}>Remover este Pet</Text>
+              <Text style={styles.btnExcluirText}>Remover Pet</Text>
             </TouchableOpacity>
           )}
 
@@ -349,6 +421,8 @@ export default function PetProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
+  loadingWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFA' },
+  loadingText: { marginTop: 12, fontSize: 15, color: '#718096', fontWeight: '500' },
   carrosselContainer: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EDF2F7', backgroundColor: '#FFF' },
   listaDePets: { paddingHorizontal: 20, gap: 15, alignItems: 'center' },
   itemPetCarrossel: { alignItems: 'center', width: 64 },
@@ -361,7 +435,6 @@ const styles = StyleSheet.create({
   avatarSection: { alignItems: 'center', marginTop: 20, marginBottom: 20 },
   imageWrapper: { position: 'relative', marginBottom: 15 },
   petImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: '#FFF' },
-  petImagePlaceholder: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFF' },
   avatarList: { paddingHorizontal: 20, gap: 12, alignItems: 'center' },
   avatarOption: { width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: 'transparent', padding: 2 },
   avatarOptionSelected: { borderColor: '#0066FF' },
@@ -370,8 +443,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   inputLabel: { fontSize: 13, fontWeight: '700', color: '#4A5568', marginBottom: 8, marginLeft: 4 },
   input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 14, marginBottom: 15, fontSize: 15, color: '#2D3748' },
-  secaoSaude: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
-  tituloSaude: { fontSize: 16, fontWeight: 'bold', color: '#1A202C', marginBottom: 15 },
   btnSalvar: { backgroundColor: '#0066FF', paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 10 },
   btnSalvarText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   btnExcluir: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, gap: 5 },
