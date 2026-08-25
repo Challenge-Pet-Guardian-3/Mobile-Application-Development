@@ -14,13 +14,11 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { StatCard } from '../../components/StatCard';
-import { ProfileEditSchema } from '../../utils/schemas';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUsuario } from '../../hooks/useUsuario';
 import { useHome } from '../../hooks/useHome';
 import { useFamily } from '../../hooks/useFamily';
 import { api } from '../../services/api';
-import { z } from 'zod';
 
 const showAlert = (title: string, message: string) => {
   if (Platform.OS === 'web') {
@@ -28,6 +26,25 @@ const showAlert = (title: string, message: string) => {
   } else {
     Alert.alert(title, message);
   }
+};
+
+// Funções de Máscara
+const maskPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
+
+const maskCEP = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+const maskUF = (value: string) => {
+  return value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
 };
 
 export default function UserProfileScreen({ navigation }: any) {
@@ -44,20 +61,22 @@ export default function UserProfileScreen({ navigation }: any) {
   const [editForm, setEditForm] = useState({
     nome: '',
     email: '',
+    telefone: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    estado: ''
   });
 
-  const [editErros, setEditErros] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: ''
-  });
-
+  const [editErros, setEditErros] = useState<Record<string, string>>({});
+  const [salvandoTudo, setSalvandoTudo] = useState(false);
   const [msgContato, setMsgContato] = useState('');
 
-  // Cálculo de Ranking dinâmico baseado no XP dos cuidadores da família
   const rankingPosicao = useMemo(() => {
     if (!temFamilia) return '---';
     const listaCuidadores = familia?.cuidadores || [];
@@ -79,17 +98,18 @@ export default function UserProfileScreen({ navigation }: any) {
     });
 
     cuidadoresComPontos.sort((a: any, b: any) => b.pontosCalculados - a.pontosCalculados);
-
     const index = cuidadoresComPontos.findIndex((c: any) => c.isEu);
-    if (index >= 0) {
-      return `${index + 1}º`;
-    }
-
-    return xpTotal > 0 ? '1º' : '---';
+    return index >= 0 ? `${index + 1}º` : (xpTotal > 0 ? '1º' : '---');
   }, [temFamilia, xpTotal, familia, userData]);
 
   const handleEditChange = useCallback((campo: keyof typeof editForm, valor: string) => {
-    setEditForm(prev => ({ ...prev, [campo]: valor }));
+    let valorFormatado = valor;
+
+    if (campo === 'telefone') valorFormatado = maskPhone(valor);
+    if (campo === 'cep') valorFormatado = maskCEP(valor);
+    if (campo === 'estado') valorFormatado = maskUF(valor);
+
+    setEditForm(prev => ({ ...prev, [campo]: valorFormatado }));
     setEditErros(prev => ({ ...prev, [campo]: '' }));
   }, []);
 
@@ -108,60 +128,94 @@ export default function UserProfileScreen({ navigation }: any) {
     }
   }, [signOut]);
 
-  const handleAbrirEdicao = useCallback(() => {
-    setEditForm({
-      nome: userData?.nome || '',
-      email: userData?.email || '',
+  const handleAbrirEdicao = useCallback(async () => {
+    const formBase = {
+      nome: userData?.nome || usuario?.nome || '',
+      email: userData?.email || usuario?.email || '',
+      telefone: maskPhone(usuario?.telefone || ''),
       senha: '',
-      confirmarSenha: ''
-    });
+      confirmarSenha: '',
+      cep: '',
+      logradouro: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      estado: ''
+    };
+
+    try {
+      const { data: end } = await api.get('/enderecos/me');
+      if (end) {
+        formBase.cep = maskCEP(end.cep || '');
+        formBase.logradouro = end.logradouro || '';
+        formBase.numero = end.numero || '';
+        formBase.complemento = end.complemento || '';
+        formBase.bairro = end.bairro || '';
+        formBase.cidade = end.cidade || '';
+        formBase.estado = maskUF(end.estado || '');
+      }
+    } catch {
+      // 404 inicial é normal caso o usuário não tenha endereço cadastrado ainda
+    }
+
+    setEditForm(formBase);
     setJanelaAberta('editar');
-  }, [userData]);
+  }, [userData, usuario]);
 
   const handleFecharModal = useCallback(() => {
     setJanelaAberta('nenhum');
-    setEditErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
+    setEditErros({});
     setMsgContato('');
   }, []);
 
   const salvarEdicao = useCallback(async () => {
-    setEditErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
+    const novosErros: Record<string, string> = {};
 
-    try {
-      ProfileEditSchema.parse({
-        nome: editForm.nome.trim(),
-        email: editForm.email.trim(),
-        senha: editForm.senha,
-        confirmarSenha: editForm.confirmarSenha
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const novosErros = { nome: '', email: '', senha: '', confirmarSenha: '' };
-        error.issues.forEach((err) => {
-          const field = err.path[0] as keyof typeof novosErros;
-          if (field) novosErros[field] = err.message;
-        });
-        setEditErros(novosErros);
+    if (!editForm.nome.trim()) novosErros.nome = 'O nome é obrigatório.';
+    if (!editForm.email.trim()) novosErros.email = 'O e-mail é obrigatório.';
+    if (editForm.senha && editForm.senha.length < 6) {
+      novosErros.senha = 'A nova senha deve ter no mínimo 6 dígitos.';
+    }
+    if (editForm.senha && editForm.senha !== editForm.confirmarSenha) {
+      novosErros.confirmarSenha = 'As senhas não coincidem.';
+    }
+
+    const preencheuEndereco = editForm.logradouro.trim() || editForm.cidade.trim() || editForm.cep.trim() || editForm.estado.trim();
+
+    if (preencheuEndereco) {
+      if (!editForm.cep.trim() || editForm.cep.replace(/\D/g, '').length < 8) {
+        novosErros.cep = 'Informe um CEP válido com 8 dígitos.';
       }
+      if (!editForm.logradouro.trim()) {
+        novosErros.logradouro = 'O logradouro é obrigatório.';
+      }
+      if (!editForm.cidade.trim()) {
+        novosErros.cidade = 'A cidade é obrigatória.';
+      }
+      if (!editForm.estado.trim() || editForm.estado.length < 2) {
+        novosErros.estado = 'Informe a UF (2 letras).';
+      }
+    }
+
+    if (Object.keys(novosErros).length > 0) {
+      setEditErros(novosErros);
       return;
     }
 
     try {
-      const primeiroEndereco = usuario?.enderecos?.[0];
+      setSalvandoTudo(true);
 
-      const resposta = await updateUsuario({
+      // 1. Atualizar dados do Usuário
+      const payloadUsuario = {
         nome: editForm.nome.trim(),
-        email: editForm.email.trim(),
-        senha: editForm.senha ? editForm.senha : undefined,
-        ddd: usuario?.ddd || '11',
-        numeroTelefone: usuario?.numeroTelefone || '999999999',
-        endereco: {
-          cep: primeiroEndereco?.cep || '01001-000',
-          numero: primeiroEndereco?.numero || '100',
-        },
-      });
+        email: editForm.email.trim().toLowerCase(),
+        senha: editForm.senha.trim() ? editForm.senha : null,
+        telefone: editForm.telefone.trim() ? editForm.telefone.trim() : null
+      };
 
-      // Sincroniza o novo Token JWT no Axios e no Storage
+      const resposta = await updateUsuario(payloadUsuario);
+
       if (resposta?.token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${resposta.token}`;
         if (Platform.OS === 'web') {
@@ -171,20 +225,35 @@ export default function UserProfileScreen({ navigation }: any) {
         }
       }
 
+      // 2. Atualizar Endereço
+      if (preencheuEndereco) {
+        await api.put('/enderecos/me', {
+          logradouro: editForm.logradouro.trim(),
+          numero: editForm.numero.trim() || null,
+          complemento: editForm.complemento.trim() || null,
+          bairro: editForm.bairro.trim() || null,
+          cidade: editForm.cidade.trim(),
+          estado: editForm.estado.trim().toUpperCase(),
+          cep: editForm.cep.trim()
+        });
+      }
+
       const novoUserData = { 
         ...userData, 
         nome: editForm.nome.trim(), 
-        email: editForm.email.trim()
+        email: editForm.email.trim().toLowerCase()
       };
       await updateUserData(novoUserData as any);
 
-      showAlert('Sucesso', 'Perfil atualizado com sucesso!');
+      showAlert('Sucesso', 'Perfil e endereço atualizados com sucesso!');
       setJanelaAberta('nenhum');
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'Não foi possível salvar os dados no servidor.';
+      const msg = error.response?.data?.message || 'Não foi possível salvar os dados no servidor. Verifique os campos preenchidos.';
       showAlert('Erro na API', msg);
+    } finally {
+      setSalvandoTudo(false);
     }
-  }, [editForm, usuario, userData, updateUsuario, updateUserData]);
+  }, [editForm, userData, updateUsuario, updateUserData]);
 
   const enviarContato = useCallback(() => {
     if (!msgContato.trim()) {
@@ -201,7 +270,7 @@ export default function UserProfileScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={styles.headerBg} />
         
-        {/* Foto de Perfil e Identificação */}
+        {/* Avatar e Identificação */}
         <View style={styles.profileInfo}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarIconWrapper}>
@@ -215,26 +284,11 @@ export default function UserProfileScreen({ navigation }: any) {
           <Text style={styles.userEmail}>{email}</Text>
         </View>
 
-        {/* Estatísticas com Ranking Dinâmico */}
+        {/* Estatísticas */}
         <View style={styles.statsRow}>
-          <StatCard 
-            icon="fire" 
-            label="Ofensiva" 
-            value={`${ofensivaTotal} dias`} 
-            color="#FF9600" 
-          />
-          <StatCard 
-            icon="star" 
-            label="Meu XP" 
-            value={xpTotal} 
-            color="#1CB0F6" 
-          />
-          <StatCard 
-            icon="medal" 
-            label="Ranking" 
-            value={rankingPosicao} 
-            color="#58CC02" 
-          />
+          <StatCard icon="fire" label="Ofensiva" value={`${ofensivaTotal} dias`} color="#FF9600" />
+          <StatCard icon="star" label="Meu XP" value={xpTotal} color="#1CB0F6" />
+          <StatCard icon="medal" label="Ranking" value={rankingPosicao} color="#58CC02" />
         </View>
 
         {!temFamilia && (
@@ -249,7 +303,7 @@ export default function UserProfileScreen({ navigation }: any) {
             <View style={styles.menuIconWrapper}>
               <Ionicons name="person-outline" size={22} color="#0066FF" />
             </View>
-            <Text style={styles.menuText}>Gerenciar Perfil & Segurança</Text>
+            <Text style={styles.menuText}>Gerenciar Perfil & Endereço</Text>
             <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
           </TouchableOpacity>
 
@@ -278,7 +332,7 @@ export default function UserProfileScreen({ navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* Modal: Editar Perfil */}
+      {/* Modal: Editar Perfil e Endereço */}
       {janelaAberta === 'editar' && (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -289,51 +343,153 @@ export default function UserProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              
+              {/* DADOS PESSOAIS */}
+              <Text style={styles.secaoTitulo}>Dados Pessoais</Text>
+
               <Text style={styles.inputLabel}>Nome Completo</Text>
               <TextInput 
-                style={[styles.modalInput, editErros.nome !== '' ? styles.inputErro : null]} 
+                style={[styles.modalInput, editErros.nome ? styles.inputErro : null]} 
                 value={editForm.nome} 
                 onChangeText={(t) => handleEditChange('nome', t)} 
               />
-              {editErros.nome !== '' && <Text style={styles.erroTexto}>{editErros.nome}</Text>}
+              {editErros.nome && <Text style={styles.erroTexto}>{editErros.nome}</Text>}
 
               <Text style={styles.inputLabel}>E-mail</Text>
               <TextInput 
-                style={[styles.modalInput, editErros.email !== '' ? styles.inputErro : null]} 
+                style={[styles.modalInput, editErros.email ? styles.inputErro : null]} 
                 value={editForm.email} 
                 onChangeText={(t) => handleEditChange('email', t)} 
                 keyboardType="email-address" 
                 autoCapitalize="none" 
               />
-              {editErros.email !== '' && <Text style={styles.erroTexto}>{editErros.email}</Text>}
+              {editErros.email && <Text style={styles.erroTexto}>{editErros.email}</Text>}
+
+              <Text style={styles.inputLabel}>Telefone / Celular</Text>
+              <TextInput 
+                style={styles.modalInput} 
+                placeholder="(11) 98765-4321"
+                placeholderTextColor="#A0AEC0"
+                value={editForm.telefone} 
+                onChangeText={(t) => handleEditChange('telefone', t)} 
+                keyboardType="phone-pad"
+                maxLength={15}
+              />
 
               <Text style={styles.inputLabel}>Nova Senha (opcional)</Text>
               <TextInput 
-                style={[styles.modalInput, editErros.senha !== '' ? styles.inputErro : null]} 
+                style={[styles.modalInput, editErros.senha ? styles.inputErro : null]} 
                 value={editForm.senha} 
-                placeholder="Deixe em branco para manter a atual"
-                placeholderTextColor="#A0AEC0"
+                placeholder="Deixe em branco para manter a atual" 
+                placeholderTextColor="#A0AEC0" 
                 onChangeText={(t) => handleEditChange('senha', t)} 
                 secureTextEntry 
               />
-              {editErros.senha !== '' && <Text style={styles.erroTexto}>{editErros.senha}</Text>}
+              {editErros.senha && <Text style={styles.erroTexto}>{editErros.senha}</Text>}
 
               <Text style={styles.inputLabel}>Confirmar Nova Senha</Text>
               <TextInput 
-                style={[styles.modalInput, editErros.confirmarSenha !== '' ? styles.inputErro : null]} 
+                style={[styles.modalInput, editErros.confirmarSenha ? styles.inputErro : null]} 
                 value={editForm.confirmarSenha} 
                 onChangeText={(t) => handleEditChange('confirmarSenha', t)} 
                 secureTextEntry 
               />
-              {editErros.confirmarSenha !== '' && <Text style={styles.erroTexto}>{editErros.confirmarSenha}</Text>}
+              {editErros.confirmarSenha && <Text style={styles.erroTexto}>{editErros.confirmarSenha}</Text>}
 
-              <TouchableOpacity
-                style={[styles.modalBtnSalvar, (isUpdating || carregandoUsuario) && { opacity: 0.7 }]}
-                onPress={salvarEdicao}
-                disabled={isUpdating || carregandoUsuario}
+              {/* ENDEREÇO RESIDENCIAL */}
+              <Text style={[styles.secaoTitulo, { marginTop: 15 }]}>Endereço Residencial</Text>
+
+              <Text style={styles.inputLabel}>CEP</Text>
+              <TextInput 
+                style={[styles.modalInput, editErros.cep ? styles.inputErro : null]} 
+                placeholder="00000-000"
+                placeholderTextColor="#A0AEC0"
+                value={editForm.cep} 
+                onChangeText={(t) => handleEditChange('cep', t)} 
+                keyboardType="numeric"
+                maxLength={9}
+              />
+              {editErros.cep && <Text style={styles.erroTexto}>{editErros.cep}</Text>}
+
+              <Text style={styles.inputLabel}>Logradouro (Rua / Avenida)</Text>
+              <TextInput 
+                style={[styles.modalInput, editErros.logradouro ? styles.inputErro : null]} 
+                placeholder="Ex: Av. Paulista"
+                placeholderTextColor="#A0AEC0"
+                value={editForm.logradouro} 
+                onChangeText={(t) => handleEditChange('logradouro', t)} 
+              />
+              {editErros.logradouro && <Text style={styles.erroTexto}>{editErros.logradouro}</Text>}
+
+              <View style={styles.rowInputs}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.inputLabel}>Número</Text>
+                  <TextInput 
+                    style={styles.modalInput} 
+                    placeholder="100"
+                    placeholderTextColor="#A0AEC0"
+                    value={editForm.numero} 
+                    onChangeText={(t) => handleEditChange('numero', t)} 
+                    maxLength={10}
+                  />
+                </View>
+                <View style={{ flex: 1.5 }}>
+                  <Text style={styles.inputLabel}>Complemento</Text>
+                  <TextInput 
+                    style={styles.modalInput} 
+                    placeholder="Apto 42"
+                    placeholderTextColor="#A0AEC0"
+                    value={editForm.complemento} 
+                    onChangeText={(t) => handleEditChange('complemento', t)} 
+                    maxLength={60}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.inputLabel}>Bairro</Text>
+              <TextInput 
+                style={styles.modalInput} 
+                placeholder="Bela Vista"
+                placeholderTextColor="#A0AEC0"
+                value={editForm.bairro} 
+                onChangeText={(t) => handleEditChange('bairro', t)} 
+                maxLength={80}
+              />
+
+              <View style={styles.rowInputs}>
+                <View style={{ flex: 2, marginRight: 8 }}>
+                  <Text style={styles.inputLabel}>Cidade</Text>
+                  <TextInput 
+                    style={[styles.modalInput, editErros.cidade ? styles.inputErro : null]} 
+                    placeholder="São Paulo"
+                    placeholderTextColor="#A0AEC0"
+                    value={editForm.cidade} 
+                    onChangeText={(t) => handleEditChange('cidade', t)} 
+                  />
+                  {editErros.cidade && <Text style={styles.erroTexto}>{editErros.cidade}</Text>}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>UF</Text>
+                  <TextInput 
+                    style={[styles.modalInput, editErros.estado ? styles.inputErro : null]} 
+                    placeholder="SP"
+                    maxLength={2}
+                    autoCapitalize="characters"
+                    placeholderTextColor="#A0AEC0"
+                    value={editForm.estado} 
+                    onChangeText={(t) => handleEditChange('estado', t)} 
+                  />
+                  {editErros.estado && <Text style={styles.erroTexto}>{editErros.estado}</Text>}
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.modalBtnSalvar, (salvandoTudo || isUpdating || carregandoUsuario) && { opacity: 0.7 }]} 
+                onPress={salvarEdicao} 
+                disabled={salvandoTudo || isUpdating || carregandoUsuario}
               >
-                {isUpdating ? (
+                {salvandoTudo || isUpdating ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
                   <Text style={styles.modalBtnSalvarText}>Salvar Alterações</Text>
@@ -357,44 +513,20 @@ export default function UserProfileScreen({ navigation }: any) {
                 <Ionicons name="close" size={24} color="#718096" />
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.faqCard}>
                 <View style={styles.faqQuestionRow}>
                   <Ionicons name="people-outline" size={20} color="#0066FF" />
                   <Text style={styles.faqQuestion}>Como convidar familiares?</Text>
                 </View>
-                <Text style={styles.faqAnswer}>Na aba "Family Pet", você pode compartilhar o código de convite da sua família para que outros cuidadores entrem no grupo.</Text>
-              </View>
-
-              <View style={styles.faqCard}>
-                <View style={styles.faqQuestionRow}>
-                  <Ionicons name="checkmark-done-circle-outline" size={22} color="#0066FF" />
-                  <Text style={styles.faqQuestion}>Se eu fizer uma tarefa, os outros veem?</Text>
-                </View>
-                <Text style={styles.faqAnswer}>Sim! A rotina é centralizada. Quando você conclui uma tarefa, a pontuação é atualizada para todos os membros da família.</Text>
-              </View>
-
-              <View style={styles.faqCard}>
-                <View style={styles.faqQuestionRow}>
-                  <Ionicons name="trophy-outline" size={20} color="#0066FF" />
-                  <Text style={styles.faqQuestion}>Como funciona o Ranking e o XP?</Text>
-                </View>
-                <Text style={styles.faqAnswer}>Cada tarefa diária concluída soma XP ao seu perfil e atualiza a sua classificação em tempo real na família.</Text>
-              </View>
-
-              <View style={styles.faqCard}>
-                <View style={styles.faqQuestionRow}>
-                  <Ionicons name="flame-outline" size={20} color="#0066FF" />
-                  <Text style={styles.faqQuestion}>O que é a Ofensiva da Semana?</Text>
-                </View>
-                <Text style={styles.faqAnswer}>É a sequência contínua de dias em que as tarefas dos pets foram cumpridas.</Text>
+                <Text style={styles.faqAnswer}>Na aba "Family Pet", compartilhe o código da família para incluir novos tutores.</Text>
               </View>
             </ScrollView>
           </View>
         </View>
       )}
 
-      {/* Modal: Suporte */}
+      {/* Modal: Contato */}
       {janelaAberta === 'contato' && (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -405,10 +537,10 @@ export default function UserProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.contatoDesc}>Encontrou algum problema ou tem sugestões? Envie uma mensagem para a equipe PetGuardian.</Text>
+              <Text style={styles.contatoDesc}>Envie sua mensagem para a equipe de suporte do PetGuardian.</Text>
               <TextInput 
-                style={[styles.modalInput, { height: 140, textAlignVertical: 'top', paddingTop: 16 }]} 
-                placeholder="Descreva sua mensagem aqui..." 
+                style={[styles.modalInput, { height: 120, textAlignVertical: 'top', paddingTop: 16 }]} 
+                placeholder="Descreva sua dúvida ou problema..." 
                 placeholderTextColor="#A0AEC0" 
                 value={msgContato} 
                 onChangeText={setMsgContato} 
@@ -416,7 +548,7 @@ export default function UserProfileScreen({ navigation }: any) {
               />
               <TouchableOpacity style={styles.modalBtnSalvar} onPress={enviarContato}>
                 <Ionicons name="paper-plane-outline" size={20} color="#FFF" style={{marginRight: 8}} />
-                <Text style={styles.modalBtnSalvarText}>Enviar Feedback</Text>
+                <Text style={styles.modalBtnSalvarText}>Enviar Mensagem</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -444,18 +576,20 @@ const styles = StyleSheet.create({
   menuText: { flex: 1, marginLeft: 15, fontSize: 16, color: '#2D3748', fontWeight: '600' },
   modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10, 22, 40, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 1000 },
   modalContent: { width: '100%', backgroundColor: '#FFF', borderRadius: 24, padding: 24, elevation: 10, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#1A202C' },
   closeBtn: { padding: 4, backgroundColor: '#F7FAFC', borderRadius: 20 },
-  inputLabel: { fontSize: 14, fontWeight: '700', color: '#4A5568', marginBottom: 8, marginLeft: 4 },
-  modalInput: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 18, fontSize: 16, color: '#2D3748' },
+  secaoTitulo: { fontSize: 16, fontWeight: '800', color: '#0066FF', marginBottom: 12, marginTop: 5 },
+  inputLabel: { fontSize: 13, fontWeight: '700', color: '#4A5568', marginBottom: 6, marginLeft: 2 },
+  modalInput: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginBottom: 14, fontSize: 15, color: '#2D3748' },
+  rowInputs: { flexDirection: 'row', justifyContent: 'space-between' },
   inputErro: { borderColor: '#E53E3E', borderWidth: 1.5, backgroundColor: '#FFF5F5' },
-  erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 8, fontWeight: '500' },
-  modalBtnSalvar: { backgroundColor: '#0066FF', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 5, flexDirection: 'row', justifyContent: 'center' },
+  erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -10, marginBottom: 12, marginLeft: 4, fontWeight: '500' },
+  modalBtnSalvar: { backgroundColor: '#0066FF', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center' },
   modalBtnSalvarText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  faqCard: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#EDF2F7' },
-  faqQuestionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  faqQuestion: { fontWeight: 'bold', color: '#1A202C', fontSize: 16, marginLeft: 8, flex: 1 },
-  faqAnswer: { color: '#4A5568', fontSize: 14, lineHeight: 22 },
-  contatoDesc: { color: '#718096', marginBottom: 20, fontSize: 15, lineHeight: 22 },
+  faqCard: { backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, marginBottom: 14, borderWidth: 1, borderColor: '#EDF2F7' },
+  faqQuestionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  faqQuestion: { fontWeight: 'bold', color: '#1A202C', fontSize: 15, marginLeft: 8, flex: 1 },
+  faqAnswer: { color: '#4A5568', fontSize: 13, lineHeight: 20 },
+  contatoDesc: { color: '#718096', marginBottom: 16, fontSize: 14, lineHeight: 20 },
 });

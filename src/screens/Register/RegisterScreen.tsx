@@ -1,5 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, KeyboardAvoidingView, ScrollView, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert, 
+  Platform, 
+  KeyboardAvoidingView, 
+  ScrollView, 
+  ActivityIndicator 
+} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RegisterSchema } from '../../utils/schemas';
 import { api } from '../../services/api';
@@ -58,17 +69,12 @@ export default function RegisterScreen({ navigation }: Props) {
     try {
       setLoading(true);
 
-      // Payload exatamente como o Java UsuarioRequest espera
+      // Payload mapeado para o UsuarioRequest Java
       const payload = {
         nome: form.nome.trim(),
-        email: form.email.trim(),
+        email: form.email.trim().toLowerCase(),
         senha: form.senha,
-        ddd: "11",
-        numeroTelefone: "987654321",
-        endereco: {
-          cep: "01310100",
-          numero: "100"
-        }
+        telefone: null
       };
 
       await api.post('/usuarios', payload);
