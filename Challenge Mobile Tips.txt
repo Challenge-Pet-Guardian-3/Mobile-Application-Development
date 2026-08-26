@@ -1,29 +1,25 @@
 Mobile 
 
-- Retirar/Refatorar Criação de Animais que está na Home e colocar na Family Pet 
+- Retirar/Refatorar Criação de Animais e colocar na Family Pet 
 
-- Criar página dedicada ao animal (Colocar histórico e afins lá) / Remover Histórico Clínico da Home
+- Criar página ao animal (+histórico) / Remover Histórico Clínico da Home
 
 
 
 
 Mentoria Clyvo
 
-- Fazer um app mais focado no pet (Com a pontuação direcionada ao Pet ao invés do usuário)
+- Fazer um app mais focado no pet (Pontuação direcionada ao Pet)
+
+- Ter uma página para Treinamento / Educação do pet - Add Pontuação para os treinamentos realizados (Inspirado em Trilhas Duolingo)
+
+- Funcionalidade Tarefas recorrentes (Rotina do pet)
+
+- Histórico de Saúde do Pet
+
 
 - Remover a parte do veterinário e Usuário criar tarefas para o pet 
 
-- Ter uma assistente de IA para dar dicas e pegar o histórico do pet e afins 
-
-- Ter uma página voltada para Treinamento / Educação do pet / acompanhamento da saúde e peso dos pets - Add Pontuação para os treinamentos realizados
-  (Uma página parecido com as Dicas)
-
-- Página para rotina do pet / Tarefas recorrentes
-
-- Assistente realiza verificações com o passar do tempo / dá conselhos e dicas
-
-- Histórico de Consultas / Vacinais e afins do pet
-
 - Indicação de clinicas mais próximas e atendimento 24hrs / pronto socorro.
 
-- Remodelar e remover Veterinario vinculado com tarefas do pet (??)
+- Ter uma assistente de IA para dar dicas e pegar o histórico do pet e afins 
