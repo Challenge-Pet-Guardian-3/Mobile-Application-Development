@@ -1,8 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { STORAGE_KEYS } from '../../constants/Keys';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useSession } from '../../hooks/useSession';
+import { CustomInput } from '../../components/CustomInput';
+import { CustomButton } from '../../components/CustomButton';
 import { LoginSchema } from '../../utils/schemas';
 import { z } from 'zod';
 
@@ -12,15 +23,18 @@ type Props = {
 
 const showAlert = (title: string, message: string) => {
   if (Platform.OS === 'web') {
-    window.alert(message);
+    window.alert(`${title}\n${message}`);
   } else {
     Alert.alert(title, message);
   }
 };
 
 export default function LoginScreen({ navigation }: Props) {
+  const { login, isLoading } = useSession();
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const [emailErro, setEmailErro] = useState('');
   const [senhaErro, setSenhaErro] = useState('');
@@ -29,7 +43,7 @@ export default function LoginScreen({ navigation }: Props) {
     setEmailErro('');
     setSenhaErro('');
 
-    const emailFormatado = email.trim();
+    const emailFormatado = email.trim().toLowerCase();
 
     try {
       LoginSchema.parse({ email: emailFormatado, senha });
@@ -44,29 +58,17 @@ export default function LoginScreen({ navigation }: Props) {
     }
 
     try {
-      const userDataString = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-
-        if (userData.email?.trim() !== emailFormatado) {
-          setEmailErro('E-mail não cadastrado.');
-          showAlert('Erro', 'E-mail não cadastrado.');
-        } else if (userData.senha !== senha) {
-          setSenhaErro('Senha incorreta.');
-          showAlert('Erro', 'Senha incorreta.');
-        } else {
-          // Grava o estado de login ativo para o F5 funcionar
-          await AsyncStorage.setItem(STORAGE_KEYS.LOGADO, 'sim');
-          navigation.navigate('Tabs');
-        }
+      await login({ email: emailFormatado, senha });
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 404) {
+        setEmailErro('E-mail não encontrado na base de dados.');
+        showAlert('Usuário não encontrado', 'Verifique o e-mail digitado ou realize seu cadastro.');
       } else {
-        showAlert('Ops!', 'Nenhuma conta encontrada. Crie uma conta primeiro!');
+        showAlert('Erro de Conexão', 'Não foi possível conectar à API Java Spring Boot.');
       }
-    } catch (e) {
-      showAlert('Erro', 'Não foi possível acessar a conta.');
     }
-  }, [email, senha, navigation]);
+  }, [email, senha, login]);
 
   const handleNavigateToRegister = useCallback(() => {
     navigation.navigate('Register');
@@ -83,61 +85,70 @@ export default function LoginScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.contentWrapper}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          </TouchableOpacity>
 
           <View style={styles.headerContainer}>
-            <Text style={{ fontSize: 40, marginBottom: 10 }}>🐾</Text>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons name="paw" size={28} color="#2563EB" />
+            </View>
             <Text style={styles.title}>PetGuardian</Text>
-            <Text style={styles.subtitle}>Bem-vindo de volta!</Text>
+            <Text style={styles.subtitle}>Acesse sua conta para cuidar do seu pet em família</Text>
           </View>
 
           <View style={styles.formContainer}>
-
-            <Text style={styles.inputLabel}>E-mail</Text>
-            <TextInput
-              style={[styles.input, emailErro !== '' ? styles.inputErro : null]}
+            <CustomInput
+              label="E-mail"
               placeholder="seu@email.com"
-              placeholderTextColor="#A0AEC0"
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={(texto) => {
-                setEmail(texto);
+              onChangeText={(t) => {
+                setEmail(t);
                 setEmailErro('');
               }}
+              error={emailErro}
+              leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
             />
-            {emailErro !== '' && <Text style={styles.erroTexto}>{emailErro}</Text>}
 
-            <Text style={styles.inputLabel}>Senha</Text>
-            <TextInput
-              style={[styles.input, senhaErro !== '' ? styles.inputErro : null]}
-              placeholder="Sua senha"
-              placeholderTextColor="#A0AEC0"
-              secureTextEntry
+            <CustomInput
+              label="Senha"
+              placeholder="Sua senha secreta"
+              secureTextEntry={!mostrarSenha}
               value={senha}
-              onChangeText={(texto) => {
-                setSenha(texto);
+              onChangeText={(t) => {
+                setSenha(t);
                 setSenhaErro('');
               }}
+              error={senhaErro}
+              leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
+              rightIcon={
+                <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+                  <Ionicons
+                    name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
+              }
             />
-            {senhaErro !== '' && <Text style={styles.erroTexto}>{senhaErro}</Text>}
 
-            <TouchableOpacity style={[styles.button, styles.buttonShadow]} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Entrar</Text>
-            </TouchableOpacity>
+            <CustomButton
+              title="Entrar na Plataforma"
+              variant="primary"
+              isLoading={isLoading}
+              onPress={handleLogin}
+              style={{ marginTop: 6 }}
+            />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Ainda não tem conta? </Text>
               <TouchableOpacity onPress={handleNavigateToRegister}>
-                <Text style={styles.linkText}>Criar conta</Text>
+                <Text style={styles.linkText}>Cadastre-se</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={{ marginTop: 20, alignItems: 'center' }} onPress={handleGoBack}>
-              <Text style={{ color: '#A0AEC0', fontSize: 14 }}>← Voltar</Text>
-            </TouchableOpacity>
-
           </View>
-
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -147,19 +158,41 @@ export default function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: '#F8FAFC' },
   scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  contentWrapper: { width: '100%', maxWidth: 400, alignItems: 'center' },
-  headerContainer: { alignItems: 'center', marginBottom: 30, marginTop: 10 },
-  title: { fontSize: 32, fontWeight: '900', color: '#1A202C', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#718096', textAlign: 'center' },
-  formContainer: { width: '100%', backgroundColor: '#FFFFFF', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#EDF2F7', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3, },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 },
-  input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', padding: 16, borderRadius: 16, marginBottom: 20, fontSize: 16, color: '#2D3748' },
-  inputErro: { borderColor: '#E53E3E', borderWidth: 1.5, backgroundColor: '#FFF5F5' },
-  erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 8, fontWeight: '500' },
-  button: { backgroundColor: '#0066FF', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 10 },
-  buttonShadow: { shadowColor: '#0066FF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-  buttonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  footerText: { color: '#718096', fontSize: 15 },
-  linkText: { color: '#0066FF', fontWeight: '700', fontSize: 15 }
+  contentWrapper: { width: '100%', maxWidth: 420 },
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    marginBottom: 16,
+  },
+  headerContainer: { alignItems: 'center', marginBottom: 20 },
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  title: { fontSize: 26, fontWeight: '900', color: '#0F172A', marginBottom: 4 },
+  subtitle: { fontSize: 13, color: '#64748B', textAlign: 'center', paddingHorizontal: 15 },
+  formContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { color: '#64748B', fontSize: 13 },
+  linkText: { color: '#2563EB', fontWeight: '800', fontSize: 13 },
 });

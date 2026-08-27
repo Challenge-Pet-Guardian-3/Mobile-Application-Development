@@ -1,20 +1,39 @@
 # 🐾 PetGuardian — Mobile Application Development
 
-> **Arquitetura Pet-Centric & Cuidado Familiar Colaborativo**
-> 
+> **Arquitetura Pet-Centric & Cuidado Familiar Colaborativo**  
 > *Projeto desenvolvido para a 3ª Sprint do Challenge Clyvo 2026 (FIAP — 2TDSPG).*
 
 ---
 
-## Repositório Github e Vídeo de Demonstração
+## 🔗 Repositório GitHub e Vídeo de Demonstração
 
-[Repositório Github](https://github.com/Challenge-Pet-Guardian-3/Mobile-Application-Development) | [Vídeo de Demonstração no YouTube]()
+[Repositório GitHub](https://github.com/Challenge-Pet-Guardian-3/Mobile-Application-Development) | [Vídeo de Demonstração no YouTube]()
 
 ---
 
 ## 📱 Sobre o Projeto
 
-O **PetGuardian** é um aplicativo mobile desenvolvido em **React Native com Expo e TypeScript**, estruturado sob as diretrizes da **Arquitetura Pet-Centric (Mentoria Clyvo 2026)**. O aplicativo centraliza o cuidado, a saúde e a gamificação no próprio animal, permitindo que os membros da família sincronizem a rotina diária, acessem prontuários clínicos e clínicas 24h, e conversem com a assistente de inteligência artificial preventiva.
+O **PetGuardian** é um aplicativo mobile desenvolvido em **React Native com Expo e TypeScript**, integrado à **API RESTful Spring Boot (Java Advanced)** e estruturado sob as diretrizes da **Arquitetura Pet-Centric (Mentoria Clyvo 2026)**.
+
+O aplicativo centraliza o cuidado, a saúde e a gamificação no próprio animal, permitindo que os membros da família sincronizem a rotina diária, acessem prontuários clínicos e clínicas 24h, treinem seus animais em trilhas gamificadas (estilo Duolingo) e conversem com a assistente de inteligência artificial preventiva.
+
+---
+
+## 🏛️ Arquitetura e Estrutura do Código
+
+```text
+src/
+├── components/          → Componentes reutilizáveis (PetScoreBar, RoutineCard, Header, EmptyState, etc.)
+├── constants/           → Constantes de storage (Keys.ts) e avatares visuais (Avatares.ts)
+├── contexts/            → Gerenciamento global de sessão (AuthContext.tsx com React Context API)
+├── hooks/               → Custom hooks com TanStack Query (useSession, usePets, useTasks, useClinics, useAi)
+├── lib/                 → Configuração do TanStack Query (queryClient.ts e queryKeys.ts)
+├── routes/              → Navegação nativa (MainStack.tsx, tabs.tsx, types.ts)
+├── screens/             → Telas da aplicação (Home, PetDetail, FamilyPet, Training, Clinics, AI, Profile, Auth)
+├── services/            → Camada HTTP REST (http.ts com Axios Interceptors, auth, pets, tasks, users, clinics, ai)
+├── types/               → Tipagens TypeScript estritas espelhando a API Java (api, auth, user, pet, task, clinic, training, ai)
+└── utils/               → Schemas de validação Zod (schemas.ts)
+```
 
 ---
 
@@ -23,156 +42,89 @@ O **PetGuardian** é um aplicativo mobile desenvolvido em **React Native com Exp
 O aplicativo utiliza navegação nativa com `@react-navigation/native-stack` e `@react-navigation/bottom-tabs`:
 
 ```text
-RootNavigator
-├── AuthStack (Rotas Públicas)
+RootNavigator (MainStack)
+├── AuthStack (Rotas Públicas — Quando Deslogado)
 │   ├── WelcomeScreen         → Ponto de entrada com introdução ao ecossistema
-│   ├── LoginScreen           → Autenticação real JWT consumindo API Java (/auth/login)
-│   └── RegisterScreen        → Cadastro com validação Zod e emissão de token (/auth/register)
+│   ├── LoginScreen           → Autenticação real com a API Java Spring Boot (/usuarios/by-email)
+│   └── RegisterScreen        → Cadastro com validação Zod e endereço completo (/usuarios)
 │
-└── AppStack (Rotas Protegidas com Abas Inferiores)
-    ├── 🏠 HomeScreen         → Resumo do Pet ativo, barra PetScoreBar, tarefas de hoje e atalhos de emergência
-    ├── 🐾 PetDetailScreen    → Ficha completa do Pet com histórico clínico, vacinas e pesagens
-    ├── 👨‍👩‍👧 FamilyPetScreen    → Gestão de múltiplos pets, cadastro de novos animais e co-cuidadores
-    ├── 🎓 TrainingScreen     → Módulos de treino e adestramento que somam pontos ao Score do Pet
-    ├── 🏥 ClinicsScreen      → Busca de clínicas veterinárias com filtro de emergência/pronto-socorro 24h
-    ├── 🤖 AiAssistantScreen  → Chat inteligente com RAG baseado no histórico do Pet
-    └── 👤 UserProfileScreen  → Perfil do tutor, configurações da conta e Logout
+└── AppTabs (Rotas Protegidas — Quando Autenticado com Token JWT)
+    ├── 🏠 HomeScreen           → Resumo do Pet ativo, barra PetScoreBar, rotina de tarefas e atalhos rápidos
+    ├── 👥 FamilyStack          → Gestão de múltiplos pets, cadastro de animais e co-cuidadores
+    │   └── 🐾 PetDetailScreen  → Ficha completa do Pet com histórico clínico consolidado (GET /pets/{id}/historico) e edição
+    ├── 🤖 AiAssistantScreen    → (Botão Central) Chat com Inteligência Artificial para dicas e cuidados
+    ├── 🎓 TrainingScreen       → Módulos de treino e adestramento estilo Duolingo que somam pontos ao Pet
+    └── 👤 UserProfileScreen    → Perfil do tutor, pontos reais da API Java, Clínicas 24h e Logout
+        └── 🏥 ClinicsSearchScreen → Busca de clínicas com filtro de emergência/pronto-socorro 24h (Método iFood)
 ```
 
 ---
 
-## 📋 Funcionalidades Principais & Arquitetura Pet-Centric
+## 📋 Integração com a API Java Spring Boot (Java-Advanced)
 
-### 🏠 Painel Home Pet-Centric
-- **Seletor de Pet Ativo:** Alternância rápida entre os animais da família.
-- **Barra de Score do Pet (`PetScoreBar`):** Visualização imediata do nível de bem-estar acumulado no animal.
-- **Rotina Diária Familiar:** Tarefas diárias de cuidado com conclusão reativa via TanStack Query (`useMutation`).
-- **Atalhos Rápidos:** Acesso direto ao chat com IA e busca de clínicas de emergência 24h.
-
-### 🐾 Ficha e Prontuário Dedicado (`PetDetailScreen`)
-- **Histórico Clínico:** Consultas, diagnósticos e tratamentos do animal sem poluir a Home.
-- **Carteira de Vacinação:** Controle de imunizações e próximas doses.
-- **Evolução de Peso:** Histórico de pesagens com indicadores de saúde.
-
-### 🎮 Gamificação Pet-Centric
-- **Score no Pet:** Cada tarefa de rotina cumprida e treino finalizado soma pontos diretamente ao animal.
-- **Ofensiva (Streak):** Acompanhamento da consistência no cuidado da família.
-
-### 👤 Perfil do Usuário
-- **Dados da Conta:** Informações do tutor e co-cuidadores vinculados.
-- **Logout Seguro:** Limpeza total do token JWT no AsyncStorage e reset de cache do TanStack Query.
+| Recurso | Método & Endpoint | Descrição no Mobile |
+| :--- | :--- | :--- |
+| **Cadastro de Usuário** | `POST /usuarios` | Cadastro de tutor com validação de CEP, telefone e senha |
+| **Login do Usuário** | `GET /usuarios/by-email` | Autenticação por e-mail e emissão de sessão |
+| **Rede de Cuidados** | `GET /usuarios/{id}/rede-cuidado` | Exibição de pets, co-cuidadores e métricas familiares |
+| **Cadastro de Pet** | `POST /pets` | Criação de novo animal vinculado ao tutor logado |
+| **Listagem de Pets** | `GET /pets` | Listagem paginada e seleção de pet ativo |
+| **Histórico Consolidado** | `GET /pets/{id}/historico` | Prontuário de cuidados na tela dedicada `PetDetailScreen` |
+| **Atualização do Pet** | `PUT /pets/{id}` | Edição de dados do pet (porte, idade, sexo, castração) |
+| **Exclusão do Pet** | `DELETE /pets/{id}` | Remoção do animal com invalidação de cache reativo |
+| **Rotina de Tarefas** | `GET /tarefas` | Listagem das rotinas com status de conclusão |
+| **Criação de Tarefa** | `POST /tarefas` | Nova tarefa vinculada ao pet selecionado |
+| **Conclusão de Tarefa** | `PATCH /tarefas/{id}/concluir` | Conclusão em 1 toque com incremento de pontos no `PetScoreBar` |
+| **Pontos Totais** | `GET /tarefas/by-usuario/pontos` | Pontuação real exibida no Perfil do tutor |
 
 ---
 
 ## 📦 Tecnologias Utilizadas
 
 | Tecnologia | Finalidade |
-|-----------|-----------|
-| React Native | Framework principal do projeto |
-| Expo | Plataforma de desenvolvimento e execução nativa |
-| React Navigation | Navegação entre telas (Stack e Tabs) |
-| AsyncStorage | Banco de dados local para persistência de informações |
-| Zod | Validação de formulários (Login, Register e edição de perfil) |
-| Reanimated 3 | Animações suaves de interface (FadeInDown, ZoomIn) |
-| @expo/vector-icons | Biblioteca de ícones vetoriais |
-
----
-
-## 💾 Dados Persistidos (AsyncStorage)
-
-| Chave | Conteúdo |
-|-------|----------|
-| `@PetGuardian_UserData` | Dados da conta (Nome, E-mail, Senha) |
-| `@PetGuardian_Logado` | Status da sessão ativa |
-| `@PetGuardian_ListaPets` | Lista de todos os animais cadastrados |
-| `@Familia_Cuidadores` | Membros da família e seus respectivos XPs |
-| `@Familia_Recados` | Conteúdo do mural colaborativo |
-| `@PetGuardian_FamiliaAtiva` | Se o usuário pertence a uma família |
-| `@PetGuardian_NomeFamilia` | Nome da família |
-| `@PetGuardian_CodigoFamilia` | Código de convite gerado |
-| `@PetGuardian_PontosXP` | XP total acumulado pelo usuário |
-| `@PetGuardian_OfensivaDias` | Contador de dias consecutivos de cuidado |
-| `@PetGuardian_FamiliaTarefas` | Tarefas criadas para a Familia |
-| `@PetGuardian_Progresso_<data>` | Progresso diário das tarefas (reset automático) |
+|---|---|
+| **React Native (0.83.6)** | Framework principal mobile |
+| **Expo (v57)** | Plataforma de desenvolvimento e execução nativa |
+| **TypeScript (v5.9)** | Tipagem estrita de ponta a ponta sem `any` |
+| **TanStack React Query (v5)** | Gerenciamento de cache assíncrono, queries e mutations |
+| **Axios** | Cliente HTTP centralizado com interceptors de JWT e 401 |
+| **React Context API** | Gerenciamento global de sessão e autenticação |
+| **React Navigation (v7)** | Navegação nativa em Stacks e Bottom Tabs |
+| **AsyncStorage** | Armazenamento seguro de Token JWT e dados locais |
+| **Zod** | Validação de formulários |
+| **Reanimated 3** | Animações suaves de interface |
+| **@expo/vector-icons** | Biblioteca de ícones vetoriais |
 
 ---
 
 ## 🚀 Como Executar o Projeto
 
-### Pré-requisito
+### Pré-requisitos
+1. **Node.js** e **npm** instalados.
+2. Aplicativo **Expo Go** instalado no celular ou emulador Android/iOS configurado.
+3. API Spring Boot do projeto `Java-Advanced` em execução na porta `8080`.
 
-- Aplicativo **Expo Go** instalado no celular físico ou emulador configurado
-
-### Instalação e Execução
+### Execução
 
 ```bash
-# Clone o repositório
-git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-
-# Acesse a pasta
+# Acesse o diretório do projeto mobile
 cd Mobile-Application-Development
 
 # Instale as dependências
 npm install
 
-# Inicie o servidor
+# Inicie o Expo
 npx expo start
 ```
 
-Escaneie o QR Code com o **Expo Go** para visualizar o app.
-
 ---
 
-## 👥 Equipe de Desenvolvimento
+## 👥 Equipe de Desenvolvimento (Ordem Alfabética Estrita)
 
-
-<table>
-<tr>
-<th>Nome</th>
-<th>RM</th>
-<th>Turma</th>
-<th>GitHub</th>
-<th>LinkedIn</th>
-</tr>
-
-<tr>
-<td>Enzo Okuizumi</td>
-<td>561432</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/EnzoOkuizumiFiap">EnzoOkuizumiFiap</a></td>
-<td><a href="https://www.linkedin.com/in/enzo-okuizumi-b60292256/">Enzo Okuizumi</a></td>
-</tr>
-
-<tr>
-<td>Gustavo Okada</td>
-<td>563428</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/Gdev3356">Gustavo Okada</a></td>
-<td><a href="https://www.linkedin.com/in/gustavo-okada-53a3b8359/">Gustavo Okada</a></td>
-</tr>
-
-<tr>
-<td>Lucas Barros Gouveia</td>
-<td>566422</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/LuzBGouveia">LuzBGouveia</a></td>
-<td><a href="https://www.linkedin.com/in/lucas-barros-gouveia-09b147355/">Lucas Barros Gouveia</a></td>
-</tr>
-
-<tr>
-<td>Luna de Carvalho Guimarães</td>
-<td>562290</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/lunaguima">lunaguima</a></td>
-<td><a href="https://www.linkedin.com/in/luna-m-guimar%C3%A3es-1850ab173/">Luna M. Guimarães</a></td>
-</tr>
-
-<tr>
-<td>Milton Marcelino</td>
-<td>564836</td>
-<td>2TDSPG</td>
-<td><a href="https://github.com/MiltonMarcelino">MiltonMarcelino</a></td>
-<td><a href="http://linkedin.com/in/milton-marcelino-250298142">Milton Marcelino</a></td>
-</tr>
-
-</table>
+| Nome | RM | Turma | Papel Principal | GitHub | LinkedIn |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| **Enzo Okuizumi** | 561432 | 2TDSPG | Mobile Development, TanStack Query & Integração Java | [EnzoOkuizumiFiap](https://github.com/EnzoOkuizumiFiap) | [LinkedIn](https://www.linkedin.com/in/enzo-okuizumi-b60292256/) |
+| **Gustavo Okada** | 563428 | 2TDSPG | Java Advanced & .NET Observabilidade | [Gdev3356](https://github.com/Gdev3356) | [LinkedIn](https://www.linkedin.com/in/gustavo-okada-53a3b8359/) |
+| **Lucas Barros Gouveia** | 566422 | 2TDSPG | Database Advanced (Oracle PL/SQL) | [LuzBGouveia](https://github.com/LuzBGouveia) | [LinkedIn](https://www.linkedin.com/in/lucas-barros-gouveia-09b147355/) |
+| **Luna de Carvalho Guimarães** | 562290 | 2TDSPG | Disruptive Architectures (IA/IoT) & QA | [lunaguima](https://github.com/lunaguima) | [LinkedIn](https://www.linkedin.com/in/luna-m-guimar%C3%A3es-1850ab173/) |
+| **Milton Marcelino** | 564836 | 2TDSPG | DevOps Tools & Cloud Computing | [MiltonMarcelino](https://github.com/MiltonMarcelino) | [LinkedIn](http://linkedin.com/in/milton-marcelino-250298142) |

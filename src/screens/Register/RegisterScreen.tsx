@@ -1,8 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { STORAGE_KEYS } from '../../constants/Keys';
+import { Ionicons } from '@expo/vector-icons';
+import { useSession } from '../../hooks/useSession';
+import { CustomInput } from '../../components/CustomInput';
+import { CustomButton } from '../../components/CustomButton';
 import { RegisterSchema } from '../../utils/schemas';
 import { z } from 'zod';
 
@@ -10,44 +21,57 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
 export default function RegisterScreen({ navigation }: Props) {
-  // Consolidação de estados em objetos estruturados
+  const { register, isLoading } = useSession();
+
   const [form, setForm] = useState({
     nome: '',
     email: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    ddd: '11',
+    numeroTelefone: '987654321',
+    cep: '01310-100',
+    numero: '100',
   });
 
-  const [erros, setErros] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: ''
-  });
+  const [erros, setErros] = useState<Record<string, string>>({});
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  // Atualização genérica de inputs e limpeza automática de erros
   const handleChange = useCallback((campo: keyof typeof form, valor: string) => {
-    setForm(prev => ({ ...prev, [campo]: valor }));
-    setErros(prev => ({ ...prev, [campo]: '' }));
+    setForm((prev) => ({ ...prev, [campo]: valor }));
+    setErros((prev) => ({ ...prev, [campo]: '' }));
   }, []);
 
-  // Handler de registro memoizado
   const handleRegister = useCallback(async () => {
-    setErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
+    setErros({});
+
+    const payload = {
+      nome: form.nome.trim(),
+      email: form.email.trim().toLowerCase(),
+      senha: form.senha,
+      confirmarSenha: form.confirmarSenha,
+      ddd: form.ddd.replace(/\D/g, '') || '11',
+      numeroTelefone: form.numeroTelefone.replace(/\D/g, '') || '987654321',
+      cep: form.cep.replace(/\D/g, '') || '01310100',
+      numero: form.numero.trim() || '100',
+    };
 
     try {
-      RegisterSchema.parse({
-        nome: form.nome.trim(),
-        email: form.email.trim(),
-        senha: form.senha,
-        confirmarSenha: form.confirmarSenha
-      });
+      RegisterSchema.parse(payload);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const novosErros = { nome: '', email: '', senha: '', confirmarSenha: '' };
+        const novosErros: Record<string, string> = {};
         error.issues.forEach((err) => {
-          const field = err.path[0] as keyof typeof novosErros;
+          const field = err.path[0] as string;
           if (field) {
             novosErros[field] = err.message;
           }
@@ -58,92 +82,145 @@ export default function RegisterScreen({ navigation }: Props) {
     }
 
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      await AsyncStorage.removeItem(STORAGE_KEYS.FAMILIA_ATIVA);
-
-      const userData = { nome: form.nome.trim(), email: form.email.trim(), senha: form.senha };
-
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-
-      if (Platform.OS === 'web') {
-        window.alert('Conta criada! Faça o login para entrar na família.');
-      } else {
-        Alert.alert('Sucesso!', 'Conta criada! Faça o login para entrar na família.');
-      }
-      navigation.goBack();
-    } catch (e) {
-      if (Platform.OS === 'web') {
-        window.alert('Não foi possível criar a conta.');
-      } else {
-        Alert.alert('Erro', 'Não foi possível criar a conta.');
-      }
+      await register({
+        nome: payload.nome,
+        email: payload.email,
+        senha: payload.senha,
+        ddd: payload.ddd,
+        numeroTelefone: payload.numeroTelefone,
+        cep: payload.cep,
+        numero: payload.numero,
+      });
+      showAlert('Sucesso!', 'Sua conta foi criada com sucesso!');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Não foi possível cadastrar na API Java. Verifique a conexão.';
+      showAlert('Erro no Cadastro', msg);
     }
-  }, [form, navigation]);
+  }, [form, register]);
 
-  // Handler de navegação memoizado
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   return (
-    <KeyboardAvoidingView style={styles.mainContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={styles.mainContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.contentWrapper}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          </TouchableOpacity>
 
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Criar Conta</Text>
-            <Text style={styles.subtitle}>Preencha seus dados para começar a usar o PetGuardian.</Text>
+            <Text style={styles.subtitle}>Preencha seus dados para conectar sua família ao PetGuardian</Text>
           </View>
 
           <View style={styles.formContainer}>
-
-            <Text style={styles.inputLabel}>Seu Nome</Text>
-            <TextInput
-              style={[styles.input, erros.nome !== '' ? styles.inputErro : null]}
-              placeholder="Como quer ser chamado?"
-              placeholderTextColor="#A0AEC0"
+            <CustomInput
+              label="Nome Completo"
+              placeholder="Ex: Carlos Eduardo"
               value={form.nome}
-              onChangeText={(texto) => handleChange('nome', texto)}
+              onChangeText={(t) => handleChange('nome', t)}
+              error={erros.nome}
+              leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
             />
-            {erros.nome !== '' && <Text style={styles.erroTexto}>{erros.nome}</Text>}
 
-            <Text style={styles.inputLabel}>E-mail</Text>
-            <TextInput
-              style={[styles.input, erros.email !== '' ? styles.inputErro : null]}
+            <CustomInput
+              label="E-mail"
               placeholder="seu@email.com"
-              placeholderTextColor="#A0AEC0"
               keyboardType="email-address"
               autoCapitalize="none"
               value={form.email}
-              onChangeText={(texto) => handleChange('email', texto)}
+              onChangeText={(t) => handleChange('email', t)}
+              error={erros.email}
+              leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
             />
-            {erros.email !== '' && <Text style={styles.erroTexto}>{erros.email}</Text>}
 
-            <Text style={styles.inputLabel}>Senha</Text>
-            <TextInput
-              style={[styles.input, erros.senha !== '' ? styles.inputErro : null]}
-              placeholder="Crie uma senha forte"
-              placeholderTextColor="#A0AEC0"
-              secureTextEntry
+            <View style={styles.row}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <CustomInput
+                  label="DDD"
+                  placeholder="11"
+                  keyboardType="numeric"
+                  maxLength={2}
+                  value={form.ddd}
+                  onChangeText={(t) => handleChange('ddd', t)}
+                  error={erros.ddd}
+                />
+              </View>
+              <View style={{ flex: 3 }}>
+                <CustomInput
+                  label="Telefone"
+                  placeholder="987654321"
+                  keyboardType="numeric"
+                  maxLength={9}
+                  value={form.numeroTelefone}
+                  onChangeText={(t) => handleChange('numeroTelefone', t)}
+                  error={erros.numeroTelefone}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 2, marginRight: 8 }}>
+                <CustomInput
+                  label="CEP"
+                  placeholder="01310-100"
+                  value={form.cep}
+                  onChangeText={(t) => handleChange('cep', t)}
+                  error={erros.cep}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <CustomInput
+                  label="Número"
+                  placeholder="100"
+                  value={form.numero}
+                  onChangeText={(t) => handleChange('numero', t)}
+                  error={erros.numero}
+                />
+              </View>
+            </View>
+
+            <CustomInput
+              label="Senha"
+              placeholder="Mínimo 6 caracteres"
+              secureTextEntry={!mostrarSenha}
               value={form.senha}
-              onChangeText={(texto) => handleChange('senha', texto)}
+              onChangeText={(t) => handleChange('senha', t)}
+              error={erros.senha}
+              leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
+              rightIcon={
+                <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+                  <Ionicons
+                    name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
+              }
             />
-            {erros.senha !== '' && <Text style={styles.erroTexto}>{erros.senha}</Text>}
 
-            <Text style={styles.inputLabel}>Confirmar Senha</Text>
-            <TextInput
-              style={[styles.input, erros.confirmarSenha !== '' ? styles.inputErro : null]}
-              placeholder="Digite a senha novamente"
-              placeholderTextColor="#A0AEC0"
-              secureTextEntry
+            <CustomInput
+              label="Confirmar Senha"
+              placeholder="Repita a senha"
+              secureTextEntry={!mostrarSenha}
               value={form.confirmarSenha}
-              onChangeText={(texto) => handleChange('confirmarSenha', texto)}
+              onChangeText={(t) => handleChange('confirmarSenha', t)}
+              error={erros.confirmarSenha}
+              leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
             />
-            {erros.confirmarSenha !== '' && <Text style={styles.erroTexto}>{erros.confirmarSenha}</Text>}
 
-            <TouchableOpacity style={[styles.button, styles.buttonShadow]} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Cadastrar</Text>
-            </TouchableOpacity>
+            <CustomButton
+              title="Concluir Cadastro"
+              variant="primary"
+              isLoading={isLoading}
+              onPress={handleRegister}
+              style={{ marginTop: 6 }}
+            />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Já faz parte de uma família? </Text>
@@ -152,7 +229,6 @@ export default function RegisterScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
-
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -162,19 +238,33 @@ export default function RegisterScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: '#F8FAFC' },
   scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  contentWrapper: { width: '100%', maxWidth: 400, alignItems: 'center' },
-  headerContainer: { alignItems: 'center', marginBottom: 30, marginTop: 10 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1A202C', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#718096', textAlign: 'center', paddingHorizontal: 10 },
-  formContainer: { width: '100%', backgroundColor: '#FFFFFF', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#EDF2F7', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 },
-  input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', padding: 16, borderRadius: 16, marginBottom: 20, fontSize: 16, color: '#2D3748' },
-  inputErro: { borderColor: '#E53E3E', borderWidth: 1.5, backgroundColor: '#FFF5F5' },
-  erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 8, fontWeight: '500' },
-  button: { backgroundColor: '#0066FF', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 10 },
-  buttonShadow: { shadowColor: '#0066FF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-  buttonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  footerText: { color: '#718096', fontSize: 15 },
-  linkText: { color: '#0066FF', fontWeight: '700', fontSize: 15 }
+  contentWrapper: { width: '100%', maxWidth: 420 },
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    marginBottom: 16,
+  },
+  headerContainer: { alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 26, fontWeight: '900', color: '#0F172A', marginBottom: 4 },
+  subtitle: { fontSize: 13, color: '#64748B', textAlign: 'center', paddingHorizontal: 15 },
+  formContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  row: { flexDirection: 'row' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { color: '#64748B', fontSize: 13 },
+  linkText: { color: '#2563EB', fontWeight: '800', fontSize: 13 },
 });

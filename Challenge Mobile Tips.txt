@@ -20,6 +20,8 @@ Mentoria Clyvo
 
 - Remover a parte do veterinário e Usuário criar tarefas para o pet 
 
-- Indicação de clinicas mais próximas e atendimento 24hrs / pronto socorro.
+- Indicação de clinicas mais próximas e atendimento 24hrs / pronto socorro. (Método ifood - ter veterinárias, mas dar destaque apenas nas que pagam)
 
 - Ter uma assistente de IA para dar dicas e pegar o histórico do pet e afins 
+
+- Freemium

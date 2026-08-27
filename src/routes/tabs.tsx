@@ -1,45 +1,80 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 
 import Home from '../screens/Home/HomeScreen';
-import FamilyStack from './FamilyStack';
-import PetProfile from '../screens/PetProfile/PetProfileScreen';
-import DicasPet from '../screens/DicasPet/DicasPetScreen';
-import UserProfile from '../screens/UserProfile/UserProfileScreen';
+import FamilyPetScreen from '../screens/FamilyPet/FamilyPetScreen';
+import PetDetailScreen from '../screens/PetDetail/PetDetailScreen';
+import TrainingEducationScreen from '../screens/TrainingEducation/TrainingEducationScreen';
+import UserProfileScreen from '../screens/UserProfile/UserProfileScreen';
+import ClinicsSearchScreen from '../screens/ClinicsSearch/ClinicsSearchScreen';
+import AiAssistantScreen from '../screens/AiAssistant/AiAssistantScreen';
 
-const Tab = createBottomTabNavigator();
+import { AppTabParamList, FamilyStackParamList, ProfileStackParamList } from './types';
+
+const Tab = createBottomTabNavigator<AppTabParamList>();
+const FamilyStackNav = createNativeStackNavigator<FamilyStackParamList>();
+const ProfileStackNav = createNativeStackNavigator<ProfileStackParamList>();
+
+function FamilyStack() {
+  return (
+    <FamilyStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <FamilyStackNav.Screen name="FamilyMain" component={FamilyPetScreen} />
+      <FamilyStackNav.Screen name="PetDetail" component={PetDetailScreen} />
+    </FamilyStackNav.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <ProfileStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStackNav.Screen name="ProfileMain" component={UserProfileScreen} />
+      <ProfileStackNav.Screen name="Clinicas" component={ClinicsSearchScreen} />
+      <ProfileStackNav.Screen name="PetDetail" component={PetDetailScreen} />
+    </ProfileStackNav.Navigator>
+  );
+}
 
 export default function Tabs() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: '#000',
-          bottom: 20,
-          marginHorizontal: 20,
-          borderRadius: 17,
+          backgroundColor: '#0F172A',
+          bottom: Platform.OS === 'ios' ? 24 : 14,
+          marginHorizontal: 16,
+          borderRadius: 24,
           borderTopWidth: 0,
-          elevation: 5,
-          height: 60,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+          height: 64,
           position: 'absolute',
+          paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+          paddingTop: 8,
         },
-        tabBarActiveTintColor: '#0066ff',
-        tabBarInactiveTintColor: '#999'
+        tabBarActiveTintColor: '#38BDF8',
+        tabBarInactiveTintColor: '#64748B',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+        },
       }}
     >
       <Tab.Screen
         name="Home"
         component={Home}
         options={{
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="home" color={color} size={size} />
-          )
+            <MaterialCommunityIcons name="home-variant" color={color} size={size + 2} />
+          ),
         }}
       />
 
@@ -47,47 +82,50 @@ export default function Tabs() {
         name="Family"
         component={FamilyStack}
         options={{
-          title: 'Family Pet',
+          tabBarLabel: 'Family',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="users" color={color} size={size} />
-          )
+            <MaterialCommunityIcons name="account-group" color={color} size={size + 2} />
+          ),
         }}
       />
 
+      {/* BOTÃO CENTRAL DEDICADO PARA A IA ASSISTENTE */}
       <Tab.Screen
-        name="MeuPet"
-        component={PetProfile}
+        name="IA"
+        component={AiAssistantScreen}
         options={{
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={styles.centerButton}>
-              <MaterialCommunityIcons 
-                name="paw" 
-                size={35} 
-                color={focused ? '#0066ff' : '#000'} 
+            <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
+              <MaterialCommunityIcons
+                name="robot"
+                size={28}
+                color={focused ? '#FFFFFF' : '#93C5FD'}
               />
             </View>
-          )
+          ),
         }}
       />
 
       <Tab.Screen
-        name="Dicas"
-        component={DicasPet}
+        name="Treino"
+        component={TrainingEducationScreen}
         options={{
+          tabBarLabel: 'Trilhas',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="lightbulb-outline" color={color} size={size} />
-          )
+            <FontAwesome5 name="graduation-cap" color={color} size={size - 2} />
+          ),
         }}
       />
 
       <Tab.Screen
         name="Perfil"
-        component={UserProfile}
+        component={ProfileStack}
         options={{
+          tabBarLabel: 'Perfil',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" color={color} size={size} />
-          )
+            <Ionicons name="person" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -96,18 +134,25 @@ export default function Tabs() {
 
 const styles = StyleSheet.create({
   centerButton: {
-    width: 65,
-    height: 65,
-    backgroundColor: '#FFF',
-    borderRadius: 35,
+    width: 58,
+    height: 58,
+    backgroundColor: '#1E293B',
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Platform.OS === 'android' ? 30 : 20, 
-    borderWidth: 5,
-    borderColor: '#000', 
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
-      android: { elevation: 6 },
-    }),
-  }
+    marginBottom: Platform.OS === 'android' ? 20 : 16,
+    borderWidth: 3.5,
+    borderColor: '#0F172A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  centerButtonActive: {
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+  },
 });
