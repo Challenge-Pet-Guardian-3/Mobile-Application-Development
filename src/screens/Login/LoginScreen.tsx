@@ -61,9 +61,11 @@ export default function LoginScreen({ navigation }: Props) {
       await login({ email: emailFormatado, senha });
     } catch (error: any) {
       const status = error?.response?.status;
-      if (status === 404) {
-        setEmailErro('E-mail não encontrado na base de dados.');
-        showAlert('Usuário não encontrado', 'Verifique o e-mail digitado ou realize seu cadastro.');
+      if (status === 401) {
+        setEmailErro('E-mail ou senha incorretos.');
+        showAlert('Acesso negado', 'Verifique suas credenciais e tente novamente.');
+      } else if (status >= 500) {
+        showAlert('Erro de Servidor', 'Serviço indisponível. Tente mais tarde.');
       } else {
         showAlert('Erro de Conexão', 'Não foi possível conectar à API Java Spring Boot.');
       }

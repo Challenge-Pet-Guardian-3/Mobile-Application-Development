@@ -125,7 +125,7 @@ export default function FamilyPetScreen({ navigation }: any) {
         descricao: formTarefa.descricao.trim() || 'Cuidado diário da família',
         pontosTarefa: Number(formTarefa.pontos) || 15,
         prazo: prazoData.toISOString(),
-        usuarioId: user.id,
+        usuarioId: null,
         petId: petTargetId,
         status: 'PENDENTE',
       });
@@ -143,7 +143,7 @@ export default function FamilyPetScreen({ navigation }: any) {
     }
   }, [user, formTarefa, pets, createTaskMutation]);
 
-  // Enviar convite de co-cuidador (POST /pets/{id}/convidar-email)
+  // Enviar convite de co-cuidador (POST /pets/{id}/cuidadores)
   const handleEnviarConvite = useCallback(async () => {
     if (!user) return;
     if (!emailConvidado.trim() || !petConviteId) {

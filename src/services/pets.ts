@@ -1,6 +1,6 @@
 import { http } from './http';
 import { Page } from '../types/api';
-import { PetHistoryResponse, PetRequest, PetResponse } from '../types/pet';
+import { CoCuidadorResponse, PetHistoryResponse, PetRequest, PetResponse, TransferirResponsabilidadeRequest } from '../types/pet';
 
 export const PetService = {
   // Lista todos os pets paginados
@@ -48,29 +48,30 @@ export const PetService = {
     await http.delete(`/pets/${id}`);
   },
 
-  // Vincula um usuário a um pet
-  async vincularUsuario(petId: number, usuarioId: number, principal = false): Promise<void> {
-    await http.post(`/pets/${petId}/usuarios/${usuarioId}`, null, {
-      params: { principal },
+  // Care Circle: Lista cuidadores vinculados ao pet (GET /pets/{id}/cuidadores)
+  async getCuidadores(petId: number): Promise<CoCuidadorResponse[]> {
+    const response = await http.get<CoCuidadorResponse[]>(`/pets/${petId}/cuidadores`);
+    return response.data;
+  },
+
+  // Care Circle: Convida co-cuidador por e-mail (POST /pets/{id}/cuidadores)
+  async convidarPorEmail(petId: number, responsavelPrincipalId: number, email: string): Promise<CoCuidadorResponse> {
+    const response = await http.post<CoCuidadorResponse>(`/pets/${petId}/cuidadores`, {
+      responsavelPrincipalId,
+      email: email.trim().toLowerCase(),
+    });
+    return response.data;
+  },
+
+  // Care Circle: Desvincula um cuidador (DELETE /pets/{id}/cuidadores/{usuarioId})
+  async desvincularCuidador(petId: number, usuarioId: number, solicitanteId: number): Promise<void> {
+    await http.delete(`/pets/${petId}/cuidadores/${usuarioId}`, {
+      params: { solicitanteId },
     });
   },
 
-  // Desvincula um usuário de um pet
-  async desvincularUsuario(petId: number, usuarioId: number): Promise<void> {
-    await http.delete(`/pets/${petId}/usuarios/${usuarioId}`);
-  },
-
-  // Convida co-cuidador por e-mail
-  async convidarPorEmail(petId: number, responsavelPrincipalId: number, email: string): Promise<void> {
-    await http.post(`/pets/${petId}/convidar-email`, null, {
-      params: { responsavelPrincipalId, email: email.trim().toLowerCase() },
-    });
-  },
-
-  // Convida co-cuidador por ID
-  async convidarPorId(petId: number, responsavelPrincipalId: number, usuarioConvidadoId: number): Promise<void> {
-    await http.post(`/pets/${petId}/convidar`, null, {
-      params: { responsavelPrincipalId, usuarioConvidadoId },
-    });
+  // Care Circle: Transfere responsabilidade principal (PATCH /pets/{id}/responsavel-principal)
+  async transferirResponsabilidade(petId: number, request: TransferirResponsabilidadeRequest): Promise<void> {
+    await http.patch(`/pets/${petId}/responsavel-principal`, request);
   },
 };

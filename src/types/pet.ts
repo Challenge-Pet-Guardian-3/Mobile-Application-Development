@@ -34,3 +34,17 @@ export interface PetHistoryResponse {
   nomePet: string;
   tarefasConcluidas: TarefaResponse[];
 }
+
+export interface CoCuidadorResponse {
+  usuarioId: number;
+  nomeUsuario: string;
+  emailUsuario: string;
+  petId: number;
+  nomePet: string;
+  responsavelPrincipal: boolean;
+}
+
+export interface TransferirResponsabilidadeRequest {
+  responsavelAtualId: number;
+  novoResponsavelId: number;
+}

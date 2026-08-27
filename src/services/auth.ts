@@ -5,7 +5,7 @@ import { UsuarioRequest, UsuarioResponse } from '../types/user';
 import { LoginCredentials, RegisterCredentials } from '../types/auth';
 
 export const AuthService = {
-  // Realiza o cadastro (suporta tanto Spring Security /auth/register quanto /usuarios)
+  // Realiza o cadastro do tutor
   async register(data: RegisterCredentials): Promise<UsuarioResponse> {
     const payload: UsuarioRequest = {
       nome: data.nome.trim(),
@@ -19,56 +19,23 @@ export const AuthService = {
       },
     };
 
-    try {
-      // Tenta rota do Spring Security caso já configurada
-      const authRes = await http.post<{ user: UsuarioResponse; token?: string }>('/auth/register', payload);
-      if (authRes.data && authRes.data.user) {
-        if (authRes.data.token) {
-          await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, authRes.data.token);
-        }
-        return authRes.data.user;
-      }
-    } catch {
-      // Fallback para endpoint direto do UsuarioController
-    }
-
     const response = await http.post<UsuarioResponse>('/usuarios', payload);
     return response.data;
   },
 
-  // Realiza login (suporta tanto Spring Security /auth/login quanto busca /usuarios/by-email)
+  // Realiza login no Spring Security (POST /login)
   async login(credentials: LoginCredentials): Promise<{ user: UsuarioResponse; token: string }> {
     const emailFormatado = credentials.email.trim().toLowerCase();
 
-    try {
-      // Tenta rota do Spring Security caso configurada
-      const authRes = await http.post<{ user: UsuarioResponse; token: string }>('/auth/login', {
-        email: emailFormatado,
-        senha: credentials.senha,
-      });
-      if (authRes.data && authRes.data.user && authRes.data.token) {
-        const { user, token } = authRes.data;
-        await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-        await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
-        await AsyncStorage.setItem(STORAGE_KEYS.LOGADO, 'sim');
-        return { user, token };
-      }
-    } catch {
-      // Fallback para autenticação via UsuarioController
-    }
-
-    const response = await http.get<UsuarioResponse>('/usuarios/by-email', {
-      params: { email: emailFormatado },
+    const response = await http.post<{ token: string; user: UsuarioResponse }>('/login', {
+      email: emailFormatado,
+      senha: credentials.senha,
     });
 
-    const user = response.data;
-    const token = `jwt_token_${user.id}_${Date.now()}`;
-
+    const { user, token } = response.data;
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
     await AsyncStorage.setItem(STORAGE_KEYS.LOGADO, 'sim');
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
-
     return { user, token };
   },
 

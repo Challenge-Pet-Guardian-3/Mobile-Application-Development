@@ -65,9 +65,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = useCallback(async (credentials: RegisterCredentials) => {
     setIsLoading(true);
     try {
-      const createdUser = await AuthService.register(credentials);
-      // Após o cadastro bem-sucedido na API Java, realiza o login
-      const result = await AuthService.login({ email: createdUser.email });
+      await AuthService.register(credentials);
+      // Após o cadastro, realiza login com as mesmas credenciais
+      const result = await AuthService.login({ email: credentials.email, senha: credentials.senha });
       setUser(result.user);
       setToken(result.token);
     } finally {

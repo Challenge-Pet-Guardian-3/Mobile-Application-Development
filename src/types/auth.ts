@@ -2,7 +2,7 @@ import { UsuarioResponse } from './user';
 
 export interface LoginCredentials {
   email: string;
-  senha?: string;
+  senha: string;
 }
 
 export interface RegisterCredentials {
