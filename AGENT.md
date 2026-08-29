@@ -458,12 +458,15 @@ export interface EnderecoResponse {
   estado: string;
 }
 
+export type UsuarioRole = 'COMUM' | 'PREMIUM';
+
 export interface UsuarioRequest {
   nome: string;
   email: string;
   senha: string;
   ddd: string;
   numeroTelefone: string;
+  role: UsuarioRole; // Padrão: 'PREMIUM'
   endereco: EnderecoRequest;
 }
 
@@ -471,6 +474,7 @@ export interface UsuarioResponse {
   id: number;
   nome: string;
   email: string;
+  role: UsuarioRole;
   ddd: string;
   numeroTelefone: string;
   enderecos: EnderecoResponse[];

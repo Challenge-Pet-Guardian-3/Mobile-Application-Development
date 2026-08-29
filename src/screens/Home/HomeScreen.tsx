@@ -130,10 +130,11 @@ export default function Home({ navigation }: any) {
           <Header subtitle="Visão Geral do Cuidado" />
           <EmptyState
             iconName="dog"
-            iconColor="#2563EB"
+            iconColor="#10B981"
             title="Nenhum Pet Cadastrado"
             description="Cadastre seu primeiro pet na aba Family Pet para desbloquear a rotina de cuidados e o score de bem-estar."
             buttonText="Cadastrar Pet na Family"
+            buttonColor="#10B981"
             onButtonPress={handleNavigateToFamily}
           />
         </ScrollView>

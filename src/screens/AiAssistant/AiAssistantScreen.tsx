@@ -13,8 +13,10 @@ import {
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { PremiumLockCard } from '../../components/PremiumLockCard';
 import { usePets } from '../../hooks/usePets';
 import { useAiChat, useAiInsights } from '../../hooks/useAiAssistant';
+import { useSession } from '../../hooks/useSession';
 import { PetResponse } from '../../types/pet';
 
 const SUGESTOES_RAPIDAS = [
@@ -27,6 +29,7 @@ const SUGESTOES_RAPIDAS = [
 ];
 
 export default function AiAssistantScreen() {
+  const { user } = useSession();
   const { data: petsData } = usePets();
   const pets: PetResponse[] = petsData?.content || [];
 
@@ -79,6 +82,26 @@ export default function AiAssistantScreen() {
     sendMessage(promptToSend);
     setInputText('');
   };
+
+  if (user?.role === 'COMUM') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerPad}>
+          <Header subtitle="Orientação Preventiva & Saúde" />
+        </View>
+        <PremiumLockCard
+          title="Assistente IA Exclusivo Premium ⭐"
+          description="A IA Preventiva de Saúde com insights personalizados e orientações clínicas para seus pets está disponível exclusivamente para assinantes Premium."
+          benefits={[
+            'Insights automáticos de saúde preventiva',
+            'Dúvidas sobre dosagens, nutrição e vacinas',
+            'Orientações contextuais por animal',
+          ]}
+          iconName="robot"
+        />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

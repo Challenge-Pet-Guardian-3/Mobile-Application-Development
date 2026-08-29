@@ -61,7 +61,7 @@ export default function WelcomeScreen({ navigation }: Props) {
       <View style={styles.footer}>
         <CustomButton
           title="Criar conta grátis →"
-          variant="primary"
+          variant="success"
           onPress={handleRegister}
           style={{ width: '100%', marginBottom: 12 }}
         />

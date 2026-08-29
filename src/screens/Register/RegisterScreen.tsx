@@ -14,7 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
 import { CustomInput } from '../../components/CustomInput';
 import { CustomButton } from '../../components/CustomButton';
+import { RoleSelector } from '../../components/RoleSelector';
 import { RegisterSchema } from '../../utils/schemas';
+import { UsuarioRole } from '../../types/user';
 import { z } from 'zod';
 
 type Props = {
@@ -32,13 +34,24 @@ const showAlert = (title: string, message: string) => {
 export default function RegisterScreen({ navigation }: Props) {
   const { register, isLoading } = useSession();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    nome: string;
+    email: string;
+    senha: string;
+    confirmarSenha: string;
+    ddd: string;
+    numeroTelefone: string;
+    role: UsuarioRole;
+    cep: string;
+    numero: string;
+  }>({
     nome: '',
     email: '',
     senha: '',
     confirmarSenha: '',
     ddd: '11',
     numeroTelefone: '987654321',
+    role: 'PREMIUM',
     cep: '01310-100',
     numero: '100',
   });
@@ -46,7 +59,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [erros, setErros] = useState<Record<string, string>>({});
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  const handleChange = useCallback((campo: keyof typeof form, valor: string) => {
+  const handleChange = useCallback((campo: keyof typeof form, valor: any) => {
     setForm((prev) => ({ ...prev, [campo]: valor }));
     setErros((prev) => ({ ...prev, [campo]: '' }));
   }, []);
@@ -61,6 +74,7 @@ export default function RegisterScreen({ navigation }: Props) {
       confirmarSenha: form.confirmarSenha,
       ddd: form.ddd.replace(/\D/g, '') || '11',
       numeroTelefone: form.numeroTelefone.replace(/\D/g, '') || '987654321',
+      role: form.role,
       cep: form.cep.replace(/\D/g, '') || '01310100',
       numero: form.numero.trim() || '100',
     };
@@ -88,6 +102,7 @@ export default function RegisterScreen({ navigation }: Props) {
         senha: payload.senha,
         ddd: payload.ddd,
         numeroTelefone: payload.numeroTelefone,
+        role: payload.role,
         cep: payload.cep,
         numero: payload.numero,
       });
@@ -119,6 +134,14 @@ export default function RegisterScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.formContainer}>
+            {/* Seletor de Perfil Reutilizável (DRY / Clean Code) */}
+            <RoleSelector
+              value={form.role}
+              onChange={(newRole) => handleChange('role', newRole)}
+              variant="cards"
+              label="Escolha seu Perfil de Tutor:"
+            />
+
             <CustomInput
               label="Nome Completo"
               placeholder="Ex: Carlos Eduardo"
@@ -216,7 +239,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
             <CustomButton
               title="Concluir Cadastro"
-              variant="primary"
+              variant="success"
               isLoading={isLoading}
               onPress={handleRegister}
               style={{ marginTop: 6 }}

@@ -26,6 +26,14 @@ export function usePetHistory(id?: number) {
   });
 }
 
+export function usePetPontos(id?: number) {
+  return useQuery({
+    queryKey: id ? queryKeys.pets.pontos(id) : ['pets', 'pontos', 'null'],
+    queryFn: () => (id ? PetService.getPetPontos(id) : Promise.reject('ID não fornecido')),
+    enabled: !!id,
+  });
+}
+
 export function useCreatePet() {
   const queryClient = useQueryClient();
 

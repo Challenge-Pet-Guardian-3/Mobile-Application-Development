@@ -1,3 +1,5 @@
+export type UsuarioRole = 'COMUM' | 'PREMIUM';
+
 export interface EnderecoRequest {
   cep: string;
   numero: string;
@@ -19,6 +21,7 @@ export interface UsuarioRequest {
   senha: string;
   ddd: string;
   numeroTelefone: string;
+  role: UsuarioRole;
   endereco: EnderecoRequest;
 }
 
@@ -26,6 +29,7 @@ export interface UsuarioResponse {
   id: number;
   nome: string;
   email: string;
+  role: UsuarioRole;
   ddd: string;
   numeroTelefone: string;
   enderecos: EnderecoResponse[];

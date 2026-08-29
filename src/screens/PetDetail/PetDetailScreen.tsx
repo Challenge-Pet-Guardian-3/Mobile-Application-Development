@@ -14,11 +14,13 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { CustomInput } from '../../components/CustomInput';
+import { BaseModal } from '../../components/BaseModal';
 import { getAvatarById } from '../../constants/Avatares';
 
 import { usePets, usePetHistory, useUpdatePet, useDeletePet } from '../../hooks/usePets';
 import { PetPorte, PetResponse } from '../../types/pet';
 import { useSession } from '../../hooks/useSession';
+import { formatarIdadePet, normalizarDataNascParaIso, formatarIsoParaBr } from '../../utils/petUtils';
 
 export default function PetDetailScreen({ navigation, route }: any) {
   const { user } = useSession();
@@ -51,7 +53,7 @@ export default function PetDetailScreen({ navigation, route }: any) {
   const [editForm, setEditForm] = useState({
     nome: '',
     raca: '',
-    idade: '1',
+    dataNasc: '',
     porte: 'MEDIO' as PetPorte,
     sexo: 'M',
     castrado: false,
@@ -63,7 +65,7 @@ export default function PetDetailScreen({ navigation, route }: any) {
     setEditForm({
       nome: activePet.nome,
       raca: activePet.raca,
-      idade: String(activePet.idade),
+      dataNasc: formatarIsoParaBr(activePet.dataNasc),
       porte: activePet.porte || 'MEDIO',
       sexo: activePet.sexo || 'M',
       castrado: activePet.castrado || false,
@@ -79,13 +81,15 @@ export default function PetDetailScreen({ navigation, route }: any) {
       return;
     }
 
+    const dataNasc = normalizarDataNascParaIso(editForm.dataNasc || activePet.dataNasc || '');
+
     try {
       await updatePetMutation.mutateAsync({
         id: activePet.id,
         data: {
           nome: editForm.nome.trim(),
+          dataNasc,
           raca: editForm.raca.trim(),
-          idade: Number(editForm.idade) || 0,
           porte: editForm.porte,
           sexo: editForm.sexo,
           castrado: editForm.castrado,
@@ -206,7 +210,7 @@ export default function PetDetailScreen({ navigation, route }: any) {
                   <Text style={styles.tagText}>Porte {activePet.porte}</Text>
                 </View>
                 <View style={styles.tagBadge}>
-                  <Text style={styles.tagText}>{activePet.idade} {activePet.idade === 1 ? 'ano' : 'anos'}</Text>
+                  <Text style={styles.tagText}>{formatarIdadePet(activePet.dataNasc, activePet.idade)}</Text>
                 </View>
                 <View style={styles.tagBadge}>
                   <Text style={styles.tagText}>{activePet.sexo === 'M' ? 'Macho' : 'Fêmea'}</Text>
@@ -271,108 +275,100 @@ export default function PetDetailScreen({ navigation, route }: any) {
       </ScrollView>
 
       {/* Modal de Edição de Ficha do Pet */}
-      {modalEdicaoVisivel && (
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Editar Ficha de {activePet?.nome}</Text>
+      <BaseModal
+        visible={modalEdicaoVisivel}
+        onClose={() => setModalEdicaoVisivel(false)}
+        title={`Editar Ficha de ${activePet?.nome || 'Pet'}`}
+        subtitle="Atualize os dados clínicos e cadastrais do animal"
+      >
+        <CustomInput
+          label="Nome do Pet"
+          value={editForm.nome}
+          onChangeText={(t) => setEditForm((p) => ({ ...p, nome: t }))}
+        />
 
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-                <CustomInput
-                  label="Nome do Pet"
-                  value={editForm.nome}
-                  onChangeText={(t) => setEditForm((p) => ({ ...p, nome: t }))}
-                />
+        <CustomInput
+          label="Raça"
+          value={editForm.raca}
+          onChangeText={(t) => setEditForm((p) => ({ ...p, raca: t }))}
+        />
 
-                <CustomInput
-                  label="Raça"
-                  value={editForm.raca}
-                  onChangeText={(t) => setEditForm((p) => ({ ...p, raca: t }))}
-                />
+        <CustomInput
+          label="Data de Nascimento"
+          placeholder="DD/MM/AAAA (ex: 15/05/2023)"
+          value={editForm.dataNasc}
+          onChangeText={(t) => setEditForm((p) => ({ ...p, dataNasc: t }))}
+        />
 
-                <CustomInput
-                  label="Idade (anos)"
-                  keyboardType="numeric"
-                  value={editForm.idade}
-                  onChangeText={(t) => setEditForm((p) => ({ ...p, idade: t }))}
-                />
-
-                {/* Porte */}
-                <Text style={styles.fieldLabel}>Porte do Animal</Text>
-                <View style={styles.porteRow}>
-                  {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((porte) => (
-                    <TouchableOpacity
-                      key={porte}
-                      style={[styles.porteBtn, editForm.porte === porte && styles.porteBtnSelected]}
-                      onPress={() => setEditForm((p) => ({ ...p, porte }))}
-                    >
-                      <Text
-                        style={[
-                          styles.porteBtnText,
-                          editForm.porte === porte && styles.porteBtnTextSelected,
-                        ]}
-                      >
-                        {porte}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Castrado */}
-                <Text style={styles.fieldLabel}>Castrado?</Text>
-                <View style={styles.porteRow}>
-                  <TouchableOpacity
-                    style={[styles.porteBtn, editForm.castrado && styles.porteBtnSelected]}
-                    onPress={() => setEditForm((p) => ({ ...p, castrado: true }))}
-                  >
-                    <Text
-                      style={[
-                        styles.porteBtnText,
-                        editForm.castrado && styles.porteBtnTextSelected,
-                      ]}
-                    >
-                      Sim
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.porteBtn, !editForm.castrado && styles.porteBtnSelected]}
-                    onPress={() => setEditForm((p) => ({ ...p, castrado: false }))}
-                  >
-                    <Text
-                      style={[
-                        styles.porteBtnText,
-                        !editForm.castrado && styles.porteBtnTextSelected,
-                      ]}
-                    >
-                      Não
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  style={styles.btnModalCancel}
-                  onPress={() => setModalEdicaoVisivel(false)}
-                >
-                  <Text style={styles.btnModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.btnModalConfirm}
-                  onPress={handleSalvarEdicao}
-                >
-                  <Text style={styles.btnModalConfirmText}>Salvar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+        {/* Porte */}
+        <Text style={styles.fieldLabel}>Porte do Animal</Text>
+        <View style={styles.porteRow}>
+          {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((porte) => (
+            <TouchableOpacity
+              key={porte}
+              style={[styles.porteBtn, editForm.porte === porte && styles.porteBtnSelected]}
+              onPress={() => setEditForm((p) => ({ ...p, porte }))}
+            >
+              <Text
+                style={[
+                  styles.porteBtnText,
+                  editForm.porte === porte && styles.porteBtnTextSelected,
+                ]}
+              >
+                {porte}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        {/* Castrado */}
+        <Text style={styles.fieldLabel}>Castrado?</Text>
+        <View style={styles.porteRow}>
+          <TouchableOpacity
+            style={[styles.porteBtn, editForm.castrado && styles.porteBtnSelected]}
+            onPress={() => setEditForm((p) => ({ ...p, castrado: true }))}
+          >
+            <Text
+              style={[
+                styles.porteBtnText,
+                editForm.castrado && styles.porteBtnTextSelected,
+              ]}
+            >
+              Sim
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.porteBtn, !editForm.castrado && styles.porteBtnSelected]}
+            onPress={() => setEditForm((p) => ({ ...p, castrado: false }))}
+          >
+            <Text
+              style={[
+                styles.porteBtnText,
+                !editForm.castrado && styles.porteBtnTextSelected,
+              ]}
+            >
+              Não
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.modalButtonsRow}>
+          <TouchableOpacity
+            style={styles.btnModalCancel}
+            onPress={() => setModalEdicaoVisivel(false)}
+          >
+            <Text style={styles.btnModalCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnModalConfirm}
+            onPress={handleSalvarEdicao}
+          >
+            <Text style={styles.btnModalConfirmText}>Salvar</Text>
+          </TouchableOpacity>
+        </View>
+      </BaseModal>
     </View>
   );
 }
@@ -439,9 +435,6 @@ const styles = StyleSheet.create({
   historyItemDate: { fontSize: 10, color: '#94A3B8', marginTop: 1 },
   historyPoints: { backgroundColor: '#ECFDF5', paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8 },
   historyPointsText: { fontSize: 11, fontWeight: '800', color: '#059669' },
-  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', justifyContent: 'center', padding: 20, zIndex: 999 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 22, elevation: 10 },
-  modalTitle: { fontSize: 18, fontWeight: '900', color: '#0F172A', marginBottom: 16, textAlign: 'center' },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: '#334155', marginTop: 8, marginBottom: 6 },
   porteRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   porteBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center' },

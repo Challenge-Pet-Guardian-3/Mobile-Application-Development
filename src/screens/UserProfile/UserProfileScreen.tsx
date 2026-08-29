@@ -17,7 +17,12 @@ import { CustomButton } from '../../components/CustomButton';
 import { useSession } from '../../hooks/useSession';
 import { useUserPoints } from '../../hooks/useTasks';
 import { useRedeCuidado } from '../../hooks/useRedeCuidado';
+import { RoleBadge } from '../../components/RoleBadge';
+import { RoleSelector } from '../../components/RoleSelector';
+import { StatCard } from '../../components/StatCard';
+import { BaseModal } from '../../components/BaseModal';
 import { useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
+import { UsuarioRole } from '../../types/user';
 
 export default function UserProfileScreen({ navigation }: any) {
   const { user, logout } = useSession();
@@ -37,12 +42,22 @@ export default function UserProfileScreen({ navigation }: any) {
   const [lembretesSaude, setLembretesSaude] = useState(true);
 
   // Form de Edição do Usuário
-  const [formEdit, setFormEdit] = useState({
+  const [formEdit, setFormEdit] = useState<{
+    nome: string;
+    email: string;
+    senha: string;
+    ddd: string;
+    numeroTelefone: string;
+    role: UsuarioRole;
+    cep: string;
+    numero: string;
+  }>({
     nome: '',
     email: '',
     senha: '',
     ddd: '11',
     numeroTelefone: '',
+    role: 'PREMIUM',
     cep: '01310100',
     numero: '100',
   });
@@ -57,6 +72,7 @@ export default function UserProfileScreen({ navigation }: any) {
       senha: '',
       ddd: user.ddd || '11',
       numeroTelefone: user.numeroTelefone || '',
+      role: user.role || 'PREMIUM',
       cep: endereco?.cep || '01310100',
       numero: endereco?.numero || '100',
     });
@@ -80,6 +96,7 @@ export default function UserProfileScreen({ navigation }: any) {
           senha: formEdit.senha.trim() || '123456',
           ddd: formEdit.ddd.replace(/\D/g, '') || '11',
           numeroTelefone: formEdit.numeroTelefone.replace(/\D/g, '') || '987654321',
+          role: formEdit.role || 'PREMIUM',
           endereco: {
             cep: formEdit.cep.replace(/\D/g, '') || '01310100',
             numero: formEdit.numero.trim() || '100',
@@ -147,6 +164,10 @@ export default function UserProfileScreen({ navigation }: any) {
           <Text style={styles.userName}>{user?.nome || 'Tutor Responsável'}</Text>
           <Text style={styles.userEmail}>{user?.email || 'email@petguardian.com'}</Text>
 
+          <View style={styles.roleBadgeBox}>
+            <RoleBadge role={user?.role} />
+          </View>
+
           <View style={styles.infoPillsRow}>
             <View style={styles.infoPill}>
               <Ionicons name="call-outline" size={12} color="#64748B" />
@@ -173,31 +194,27 @@ export default function UserProfileScreen({ navigation }: any) {
 
         {/* Estatísticas Gamificadas */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: '#FFF7ED' }]}>
-              <MaterialCommunityIcons name="star" size={18} color="#D97706" />
-            </View>
-            <Text style={styles.statVal}>{pontosTotais !== undefined ? `${pontosTotais}` : '0'}</Text>
-            <Text style={styles.statLabel}>Pontos XP</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: '#EFF6FF' }]}>
-              <MaterialCommunityIcons name="paw" size={18} color="#2563EB" />
-            </View>
-            <Text style={styles.statVal}>{redeCuidado?.pets?.length ? `${redeCuidado.pets.length}` : '1'}</Text>
-            <Text style={styles.statLabel}>Pets Família</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: '#ECFDF5' }]}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#059669" />
-            </View>
-            <Text style={styles.statVal}>
-              {redeCuidado?.totalTarefasConcluidas ? `${redeCuidado.totalTarefasConcluidas}` : '0'}
-            </Text>
-            <Text style={styles.statLabel}>Concluídas</Text>
-          </View>
+          <StatCard
+            iconName="star"
+            iconColor="#D97706"
+            iconBgColor="#FFF7ED"
+            value={pontosTotais !== undefined ? `${pontosTotais}` : '0'}
+            label="Pontos XP"
+          />
+          <StatCard
+            iconName="paw"
+            iconColor="#2563EB"
+            iconBgColor="#EFF6FF"
+            value={redeCuidado?.pets?.length ? `${redeCuidado.pets.length}` : '1'}
+            label="Pets Família"
+          />
+          <StatCard
+            iconName="check-circle"
+            iconColor="#059669"
+            iconBgColor="#ECFDF5"
+            value={redeCuidado?.totalTarefasConcluidas ? `${redeCuidado.totalTarefasConcluidas}` : '0'}
+            label="Concluídas"
+          />
         </View>
 
         {/* Rede Familiar & Cuidadores */}
@@ -346,166 +363,148 @@ export default function UserProfileScreen({ navigation }: any) {
       </ScrollView>
 
       {/* Modal de Edição de Perfil */}
-      {modalEditarPerfil && (
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Editar Meu Perfil</Text>
-              <Text style={styles.modalSub}>Atualize suas informações cadastrais na API Java</Text>
+      <BaseModal
+        visible={modalEditarPerfil}
+        onClose={() => setModalEditarPerfil(false)}
+        title="Editar Meu Perfil"
+        subtitle="Atualize suas informações cadastrais na API Java"
+      >
+        <RoleSelector
+          value={formEdit.role}
+          onChange={(r) => setFormEdit((p) => ({ ...p, role: r }))}
+          variant="compact"
+          label="Perfil do Tutor:"
+        />
 
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
-                <CustomInput
-                  label="Nome Completo"
-                  placeholder="Seu nome"
-                  value={formEdit.nome}
-                  onChangeText={(t) => setFormEdit((p) => ({ ...p, nome: t }))}
-                  leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
-                />
+        <CustomInput
+          label="Nome Completo"
+          placeholder="Seu nome"
+          value={formEdit.nome}
+          onChangeText={(t) => setFormEdit((p) => ({ ...p, nome: t }))}
+          leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
+        />
 
-                <CustomInput
-                  label="E-mail"
-                  placeholder="seu@email.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={formEdit.email}
-                  onChangeText={(t) => setFormEdit((p) => ({ ...p, email: t }))}
-                  leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
-                />
+        <CustomInput
+          label="E-mail"
+          placeholder="seu@email.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={formEdit.email}
+          onChangeText={(t) => setFormEdit((p) => ({ ...p, email: t }))}
+          leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
+        />
 
-                <View style={styles.row}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <CustomInput
-                      label="DDD"
-                      placeholder="11"
-                      keyboardType="numeric"
-                      maxLength={2}
-                      value={formEdit.ddd}
-                      onChangeText={(t) => setFormEdit((p) => ({ ...p, ddd: t }))}
-                    />
-                  </View>
-                  <View style={{ flex: 3 }}>
-                    <CustomInput
-                      label="Telefone"
-                      placeholder="987654321"
-                      keyboardType="numeric"
-                      maxLength={9}
-                      value={formEdit.numeroTelefone}
-                      onChangeText={(t) => setFormEdit((p) => ({ ...p, numeroTelefone: t }))}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.row}>
-                  <View style={{ flex: 2, marginRight: 8 }}>
-                    <CustomInput
-                      label="CEP"
-                      placeholder="01310-100"
-                      value={formEdit.cep}
-                      onChangeText={(t) => setFormEdit((p) => ({ ...p, cep: t }))}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <CustomInput
-                      label="Número"
-                      placeholder="100"
-                      value={formEdit.numero}
-                      onChangeText={(t) => setFormEdit((p) => ({ ...p, numero: t }))}
-                    />
-                  </View>
-                </View>
-
-                <CustomInput
-                  label="Nova Senha (opcional)"
-                  placeholder="Deixe em branco para manter a atual"
-                  secureTextEntry
-                  value={formEdit.senha}
-                  onChangeText={(t) => setFormEdit((p) => ({ ...p, senha: t }))}
-                  leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
-                />
-              </ScrollView>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  style={styles.btnModalCancel}
-                  onPress={() => setModalEditarPerfil(false)}
-                >
-                  <Text style={styles.btnModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.btnModalConfirm}
-                  onPress={handleSalvarPerfil}
-                >
-                  <Text style={styles.btnModalConfirmText}>Salvar Alterações</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+        <View style={styles.row}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <CustomInput
+              label="DDD"
+              placeholder="11"
+              keyboardType="numeric"
+              maxLength={2}
+              value={formEdit.ddd}
+              onChangeText={(t) => setFormEdit((p) => ({ ...p, ddd: t }))}
+            />
+          </View>
+          <View style={{ flex: 3 }}>
+            <CustomInput
+              label="Telefone"
+              placeholder="987654321"
+              keyboardType="numeric"
+              maxLength={9}
+              value={formEdit.numeroTelefone}
+              onChangeText={(t) => setFormEdit((p) => ({ ...p, numeroTelefone: t }))}
+            />
+          </View>
         </View>
-      )}
+
+        <View style={styles.row}>
+          <View style={{ flex: 2, marginRight: 8 }}>
+            <CustomInput
+              label="CEP"
+              placeholder="01310-100"
+              value={formEdit.cep}
+              onChangeText={(t) => setFormEdit((p) => ({ ...p, cep: t }))}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <CustomInput
+              label="Número"
+              placeholder="100"
+              value={formEdit.numero}
+              onChangeText={(t) => setFormEdit((p) => ({ ...p, numero: t }))}
+            />
+          </View>
+        </View>
+
+        <CustomInput
+          label="Nova Senha (opcional)"
+          placeholder="Deixe em branco para manter a atual"
+          secureTextEntry
+          value={formEdit.senha}
+          onChangeText={(t) => setFormEdit((p) => ({ ...p, senha: t }))}
+          leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
+        />
+
+        <View style={styles.modalButtonsRow}>
+          <TouchableOpacity
+            style={styles.btnModalCancel}
+            onPress={() => setModalEditarPerfil(false)}
+          >
+            <Text style={styles.btnModalCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnModalConfirm}
+            onPress={handleSalvarPerfil}
+          >
+            <Text style={styles.btnModalConfirmText}>Salvar Alterações</Text>
+          </TouchableOpacity>
+        </View>
+      </BaseModal>
 
       {/* Modal de FAQ */}
-      {modalFaq && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Perguntas Frequentes</Text>
-              <TouchableOpacity onPress={() => setModalFaq(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.faqItem}>
-                <Text style={styles.faqQ}>Como os pontos são creditados ao Pet?</Text>
-                <Text style={styles.faqA}>
-                  Ao concluir tarefas diárias na Home ou lições na aba de Trilhas, os pontos são registrados imediatamente na API Java e sobem a barra de bem-estar do pet ativo.
-                </Text>
-              </View>
-
-              <View style={styles.faqItem}>
-                <Text style={styles.faqQ}>Como convidar familiares?</Text>
-                <Text style={styles.faqA}>
-                  Acesse a aba Family Pet e clique no botão "+ Convidar Familiar" informando o e-mail cadastrado.
-                </Text>
-              </View>
-
-              <View style={styles.faqItem}>
-                <Text style={styles.faqQ}>Onde vejo o histórico clínico?</Text>
-                <Text style={styles.faqA}>
-                  Na aba Family Pet, toque no card do animal para abrir a Ficha Completa com todo o histórico consolidado.
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
+      <BaseModal
+        visible={modalFaq}
+        onClose={() => setModalFaq(false)}
+        title="Perguntas Frequentes"
+        subtitle="Dúvidas comuns sobre o PetGuardian"
+      >
+        <View style={styles.faqItem}>
+          <Text style={styles.faqQ}>Como os pontos são creditados ao Pet?</Text>
+          <Text style={styles.faqA}>
+            Ao concluir tarefas diárias na Home ou lições na aba de Trilhas, os pontos são registrados imediatamente na API Java e sobem a barra de bem-estar do pet ativo.
+          </Text>
         </View>
-      )}
+
+        <View style={styles.faqItem}>
+          <Text style={styles.faqQ}>Como convidar familiares?</Text>
+          <Text style={styles.faqA}>
+            Acesse a aba Family Pet e clique no botão "+ Convidar Familiar" informando o e-mail cadastrado.
+          </Text>
+        </View>
+
+        <View style={styles.faqItem}>
+          <Text style={styles.faqQ}>Onde vejo o histórico clínico?</Text>
+          <Text style={styles.faqA}>
+            Na aba Family Pet, toque no card do animal para abrir a Ficha Completa com todo o histórico consolidado.
+          </Text>
+        </View>
+      </BaseModal>
 
       {/* Modal de Termos de Uso */}
-      {modalTermos && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Termos & Privacidade</Text>
-              <TouchableOpacity onPress={() => setModalTermos(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.termsText}>
-                O PetGuardian respeita a privacidade dos dados de sua família e de seus animais de estimação. Todos os registros de saúde e rotina são sincronizados com segurança em nosso backend em nuvem.
-              </Text>
-              <Text style={[styles.termsText, { marginTop: 10 }]}>
-                As recomendações da IA Preventiva possuem caráter orientador e não substituem o diagnóstico de um médico veterinário presencial.
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      )}
+      <BaseModal
+        visible={modalTermos}
+        onClose={() => setModalTermos(false)}
+        title="Termos & Privacidade"
+        subtitle="Diretrizes do ecossistema Clyvo"
+      >
+        <Text style={styles.termsText}>
+          O PetGuardian respeita a privacidade dos dados de sua família e de seus animais de estimação. Todos os registros de saúde e rotina são sincronizados com segurança em nosso backend em nuvem.
+        </Text>
+        <Text style={[styles.termsText, { marginTop: 10 }]}>
+          As recomendações da IA Preventiva possuem caráter orientador e não substituem o diagnóstico de um médico veterinário presencial.
+        </Text>
+      </BaseModal>
     </View>
   );
 }
@@ -543,6 +542,7 @@ const styles = StyleSheet.create({
   avatarInitials: { fontSize: 24, fontWeight: '900', color: '#FFFFFF' },
   userName: { fontSize: 20, fontWeight: '900', color: '#0F172A' },
   userEmail: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  roleBadgeBox: { marginTop: 8 },
   infoPillsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 10 },
   infoPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F1F5F9', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10 },
   infoPillText: { fontSize: 11, color: '#64748B', fontWeight: '600' },
@@ -623,27 +623,11 @@ const styles = StyleSheet.create({
   menuText: { fontSize: 14, color: '#0F172A', fontWeight: '700' },
   menuSubText: { fontSize: 11, color: '#64748B', marginTop: 1 },
   row: { flexDirection: 'row' },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
-    justifyContent: 'center',
-    padding: 20,
-    zIndex: 999,
-  },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 22, elevation: 10 },
-  modalTitle: { fontSize: 18, fontWeight: '900', color: '#0F172A', textAlign: 'center', marginBottom: 2 },
-  modalSub: { fontSize: 12, color: '#64748B', textAlign: 'center', marginBottom: 14 },
   modalButtonsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   btnModalCancel: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center' },
   btnModalCancelText: { color: '#64748B', fontWeight: '700' },
   btnModalConfirm: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#2563EB', alignItems: 'center' },
   btnModalConfirmText: { color: '#FFFFFF', fontWeight: '800' },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 22, maxHeight: '80%', elevation: 10 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   faqItem: { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EDF2F7' },
   faqQ: { fontSize: 13, fontWeight: '800', color: '#2563EB', marginBottom: 4 },
   faqA: { fontSize: 12, color: '#475569', lineHeight: 18 },

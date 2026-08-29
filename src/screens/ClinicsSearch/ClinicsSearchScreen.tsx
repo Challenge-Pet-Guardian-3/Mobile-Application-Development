@@ -13,6 +13,7 @@ import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icon
 import { Header } from '../../components/Header';
 import { CustomInput } from '../../components/CustomInput';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { EmptyState } from '../../components/EmptyState';
 import { useClinics } from '../../hooks/useClinics';
 import { ClinicaResponse } from '../../types/clinic';
 
@@ -91,11 +92,12 @@ export default function ClinicsSearchScreen() {
         {isLoading ? (
           <LoadingSpinner message="Localizando clínicas veterinárias..." />
         ) : (clinicas || []).length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="hospital-box-outline" size={44} color="#CBD5E1" />
-            <Text style={styles.emptyTitle}>Nenhuma clínica encontrada</Text>
-            <Text style={styles.emptySub}>Tente alterar os filtros ou o termo de busca.</Text>
-          </View>
+          <EmptyState
+            iconName="hospital-box-outline"
+            iconColor="#94A3B8"
+            title="Nenhuma clínica encontrada"
+            description="Tente alterar os filtros ou o termo de busca para encontrar unidades próximas."
+          />
         ) : (
           (clinicas || []).map((clinica: ClinicaResponse) => (
             <View
@@ -179,9 +181,6 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#0F172A', borderColor: '#0F172A' },
   filterChipText: { fontSize: 12, fontWeight: '700', color: '#475569' },
   filterChipTextActive: { color: '#FFFFFF' },
-  emptyContainer: { alignItems: 'center', padding: 40, gap: 6 },
-  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#475569' },
-  emptySub: { fontSize: 12, color: '#94A3B8', textAlign: 'center' },
   clinicCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 22,

@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { CustomInput } from '../../components/CustomInput';
+import { BaseModal } from '../../components/BaseModal';
 import { getAvatarById } from '../../constants/Avatares';
 
 import { useSession } from '../../hooks/useSession';
@@ -22,6 +23,7 @@ import { useTasks, useCreateTask, useDeleteTask } from '../../hooks/useTasks';
 import { useRedeCuidado } from '../../hooks/useRedeCuidado';
 import { PetPorte, PetResponse } from '../../types/pet';
 import { TarefaResponse } from '../../types/task';
+import { normalizarDataNascParaIso } from '../../utils/petUtils';
 
 export default function FamilyPetScreen({ navigation }: any) {
   const { user } = useSession();
@@ -49,7 +51,7 @@ export default function FamilyPetScreen({ navigation }: any) {
   const [formPet, setFormPet] = useState({
     nome: '',
     raca: '',
-    idade: '1',
+    dataNasc: '',
     porte: 'MEDIO' as PetPorte,
     sexo: 'M',
     castrado: false,
@@ -76,11 +78,13 @@ export default function FamilyPetScreen({ navigation }: any) {
       return;
     }
 
+    const dataNasc = normalizarDataNascParaIso(formPet.dataNasc);
+
     try {
       await createPetMutation.mutateAsync({
         nome: formPet.nome.trim(),
+        dataNasc,
         raca: formPet.raca.trim(),
-        idade: Number(formPet.idade) || 0,
         porte: formPet.porte,
         sexo: formPet.sexo,
         castrado: formPet.castrado,
@@ -91,7 +95,7 @@ export default function FamilyPetScreen({ navigation }: any) {
       setFormPet({
         nome: '',
         raca: '',
-        idade: '1',
+        dataNasc: '',
         porte: 'MEDIO',
         sexo: 'M',
         castrado: false,
@@ -351,245 +355,219 @@ export default function FamilyPetScreen({ navigation }: any) {
       </ScrollView>
 
       {/* Modal de Cadastro de Pet */}
-      {modalNovoPet && (
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Cadastrar Novo Pet</Text>
+      <BaseModal
+        visible={modalNovoPet}
+        onClose={() => setModalNovoPet(false)}
+        title="Cadastrar Novo Pet"
+        subtitle="Adicione seu animal à família PetGuardian"
+      >
+        <CustomInput
+          label="Nome do Pet"
+          placeholder="Ex: Luna, Thor, Bob..."
+          value={formPet.nome}
+          onChangeText={(t) => setFormPet((p) => ({ ...p, nome: t }))}
+        />
 
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-                <CustomInput
-                  label="Nome do Pet"
-                  placeholder="Ex: Luna, Thor, Bob..."
-                  value={formPet.nome}
-                  onChangeText={(t) => setFormPet((p) => ({ ...p, nome: t }))}
-                />
+        <CustomInput
+          label="Raça"
+          placeholder="Ex: Golden Retriever, SRD, Poodle..."
+          value={formPet.raca}
+          onChangeText={(t) => setFormPet((p) => ({ ...p, raca: t }))}
+        />
 
-                <CustomInput
-                  label="Raça"
-                  placeholder="Ex: Golden Retriever, SRD, Poodle..."
-                  value={formPet.raca}
-                  onChangeText={(t) => setFormPet((p) => ({ ...p, raca: t }))}
-                />
+        <CustomInput
+          label="Data de Nascimento"
+          placeholder="DD/MM/AAAA (ex: 15/05/2023)"
+          value={formPet.dataNasc}
+          onChangeText={(t) => setFormPet((p) => ({ ...p, dataNasc: t }))}
+        />
 
-                <CustomInput
-                  label="Idade (anos)"
-                  placeholder="Ex: 2"
-                  keyboardType="numeric"
-                  value={formPet.idade}
-                  onChangeText={(t) => setFormPet((p) => ({ ...p, idade: t }))}
-                />
-
-                <Text style={styles.fieldLabel}>Porte</Text>
-                <View style={styles.porteRow}>
-                  {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((porte) => (
-                    <TouchableOpacity
-                      key={porte}
-                      style={[styles.porteBtn, formPet.porte === porte && styles.porteBtnSelected]}
-                      onPress={() => setFormPet((p) => ({ ...p, porte }))}
-                    >
-                      <Text
-                        style={[
-                          styles.porteBtnText,
-                          formPet.porte === porte && styles.porteBtnTextSelected,
-                        ]}
-                      >
-                        {porte}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <Text style={styles.fieldLabel}>Sexo</Text>
-                <View style={styles.porteRow}>
-                  <TouchableOpacity
-                    style={[styles.porteBtn, formPet.sexo === 'M' && styles.porteBtnSelected]}
-                    onPress={() => setFormPet((p) => ({ ...p, sexo: 'M' }))}
-                  >
-                    <Text
-                      style={[
-                        styles.porteBtnText,
-                        formPet.sexo === 'M' && styles.porteBtnTextSelected,
-                      ]}
-                    >
-                      Macho
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.porteBtn, formPet.sexo === 'F' && styles.porteBtnSelected]}
-                    onPress={() => setFormPet((p) => ({ ...p, sexo: 'F' }))}
-                  >
-                    <Text
-                      style={[
-                        styles.porteBtnText,
-                        formPet.sexo === 'F' && styles.porteBtnTextSelected,
-                      ]}
-                    >
-                      Fêmea
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  style={styles.btnModalCancel}
-                  onPress={() => setModalNovoPet(false)}
-                >
-                  <Text style={styles.btnModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.btnModalConfirm}
-                  onPress={handleCadastrarPet}
-                >
-                  <Text style={styles.btnModalConfirmText}>Cadastrar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+        <Text style={styles.fieldLabel}>Porte</Text>
+        <View style={styles.porteRow}>
+          {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((porte) => (
+            <TouchableOpacity
+              key={porte}
+              style={[styles.porteBtn, formPet.porte === porte && styles.porteBtnSelected]}
+              onPress={() => setFormPet((p) => ({ ...p, porte }))}
+            >
+              <Text
+                style={[
+                  styles.porteBtnText,
+                  formPet.porte === porte && styles.porteBtnTextSelected,
+                ]}
+              >
+                {porte}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        <Text style={styles.fieldLabel}>Sexo</Text>
+        <View style={styles.porteRow}>
+          <TouchableOpacity
+            style={[styles.porteBtn, formPet.sexo === 'M' && styles.porteBtnSelected]}
+            onPress={() => setFormPet((p) => ({ ...p, sexo: 'M' }))}
+          >
+            <Text
+              style={[
+                styles.porteBtnText,
+                formPet.sexo === 'M' && styles.porteBtnTextSelected,
+              ]}
+            >
+              Macho
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.porteBtn, formPet.sexo === 'F' && styles.porteBtnSelected]}
+            onPress={() => setFormPet((p) => ({ ...p, sexo: 'F' }))}
+          >
+            <Text
+              style={[
+                styles.porteBtnText,
+                formPet.sexo === 'F' && styles.porteBtnTextSelected,
+              ]}
+            >
+              Fêmea
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.modalButtonsRow}>
+          <TouchableOpacity
+            style={styles.btnModalCancel}
+            onPress={() => setModalNovoPet(false)}
+          >
+            <Text style={styles.btnModalCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnModalConfirm}
+            onPress={handleCadastrarPet}
+          >
+            <Text style={styles.btnModalConfirmText}>Cadastrar</Text>
+          </TouchableOpacity>
+        </View>
+      </BaseModal>
 
       {/* Modal de Criação de Tarefa do Pet */}
-      {modalNovaTarefa && (
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Criar Tarefa para o Pet</Text>
-
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-                <Text style={styles.fieldLabel}>Para qual Pet?</Text>
-                <View style={styles.porteRow}>
-                  {pets.map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={[styles.porteBtn, formTarefa.petId === p.id && styles.porteBtnSelected]}
-                      onPress={() => setFormTarefa((prev) => ({ ...prev, petId: p.id }))}
-                    >
-                      <Text
-                        style={[
-                          styles.porteBtnText,
-                          formTarefa.petId === p.id && styles.porteBtnTextSelected,
-                        ]}
-                      >
-                        {p.nome}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <CustomInput
-                  label="Título da Tarefa"
-                  placeholder="Ex: Passeio de 30min, Ração da tarde..."
-                  value={formTarefa.titulo}
-                  onChangeText={(t) => setFormTarefa((p) => ({ ...p, titulo: t }))}
-                />
-
-                <CustomInput
-                  label="Descrição detalhada"
-                  placeholder="Instruções ou remédios a dar..."
-                  value={formTarefa.descricao}
-                  onChangeText={(t) => setFormTarefa((p) => ({ ...p, descricao: t }))}
-                />
-
-                <CustomInput
-                  label="Pontos XP de Recompensa"
-                  placeholder="15"
-                  keyboardType="numeric"
-                  value={formTarefa.pontos}
-                  onChangeText={(t) => setFormTarefa((p) => ({ ...p, pontos: t }))}
-                />
-              </ScrollView>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  style={styles.btnModalCancel}
-                  onPress={() => setModalNovaTarefa(false)}
-                >
-                  <Text style={styles.btnModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.btnModalConfirm}
-                  onPress={handleCadastrarTarefa}
-                >
-                  <Text style={styles.btnModalConfirmText}>Criar Tarefa</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+      <BaseModal
+        visible={modalNovaTarefa}
+        onClose={() => setModalNovaTarefa(false)}
+        title="Criar Tarefa para o Pet"
+        subtitle="Defina rotinas de alimentação, passeios ou medicação"
+      >
+        <Text style={styles.fieldLabel}>Para qual Pet?</Text>
+        <View style={styles.porteRow}>
+          {pets.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={[styles.porteBtn, formTarefa.petId === p.id && styles.porteBtnSelected]}
+              onPress={() => setFormTarefa((prev) => ({ ...prev, petId: p.id }))}
+            >
+              <Text
+                style={[
+                  styles.porteBtnText,
+                  formTarefa.petId === p.id && styles.porteBtnTextSelected,
+                ]}
+              >
+                {p.nome}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        <CustomInput
+          label="Título da Tarefa"
+          placeholder="Ex: Passeio de 30min, Ração da tarde..."
+          value={formTarefa.titulo}
+          onChangeText={(t) => setFormTarefa((p) => ({ ...p, titulo: t }))}
+        />
+
+        <CustomInput
+          label="Descrição detalhada"
+          placeholder="Instruções ou remédios a dar..."
+          value={formTarefa.descricao}
+          onChangeText={(t) => setFormTarefa((p) => ({ ...p, descricao: t }))}
+        />
+
+        <CustomInput
+          label="Pontos XP de Recompensa"
+          placeholder="15"
+          keyboardType="numeric"
+          value={formTarefa.pontos}
+          onChangeText={(t) => setFormTarefa((p) => ({ ...p, pontos: t }))}
+        />
+
+        <View style={styles.modalButtonsRow}>
+          <TouchableOpacity
+            style={styles.btnModalCancel}
+            onPress={() => setModalNovaTarefa(false)}
+          >
+            <Text style={styles.btnModalCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnModalConfirm}
+            onPress={handleCadastrarTarefa}
+          >
+            <Text style={styles.btnModalConfirmText}>Criar Tarefa</Text>
+          </TouchableOpacity>
+        </View>
+      </BaseModal>
 
       {/* Modal de Convidar Co-Cuidador */}
-      {modalConvite && (
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Convidar Familiar</Text>
-              <Text style={styles.modalSub}>
-                Vincule um membro da família para compartilhar a rotina do animal.
+      <BaseModal
+        visible={modalConvite}
+        onClose={() => setModalConvite(false)}
+        title="Convidar Familiar"
+        subtitle="Vincule um membro da família para compartilhar a rotina do animal."
+      >
+        <CustomInput
+          label="E-mail do Familiar"
+          placeholder="familiar@email.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={emailConvidado}
+          onChangeText={setEmailConvidado}
+        />
+
+        <Text style={styles.fieldLabel}>Selecione o Pet</Text>
+        <View style={styles.porteRow}>
+          {pets.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={[styles.porteBtn, petConviteId === p.id && styles.porteBtnSelected]}
+              onPress={() => setPetConviteId(p.id)}
+            >
+              <Text
+                style={[
+                  styles.porteBtnText,
+                  petConviteId === p.id && styles.porteBtnTextSelected,
+                ]}
+              >
+                {p.nome}
               </Text>
-
-              <CustomInput
-                label="E-mail do Familiar"
-                placeholder="familiar@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={emailConvidado}
-                onChangeText={setEmailConvidado}
-              />
-
-              <Text style={styles.fieldLabel}>Selecione o Pet</Text>
-              <View style={styles.porteRow}>
-                {pets.map((p) => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[styles.porteBtn, petConviteId === p.id && styles.porteBtnSelected]}
-                    onPress={() => setPetConviteId(p.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.porteBtnText,
-                        petConviteId === p.id && styles.porteBtnTextSelected,
-                      ]}
-                    >
-                      {p.nome}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  style={styles.btnModalCancel}
-                  onPress={() => setModalConvite(false)}
-                >
-                  <Text style={styles.btnModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.btnModalConfirm}
-                  onPress={handleEnviarConvite}
-                >
-                  <Text style={styles.btnModalConfirmText}>Enviar Convite</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        <View style={styles.modalButtonsRow}>
+          <TouchableOpacity
+            style={styles.btnModalCancel}
+            onPress={() => setModalConvite(false)}
+          >
+            <Text style={styles.btnModalCancelText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnModalConfirm}
+            onPress={handleEnviarConvite}
+          >
+            <Text style={styles.btnModalConfirmText}>Enviar Convite</Text>
+          </TouchableOpacity>
+        </View>
+      </BaseModal>
     </View>
   );
 }
@@ -627,7 +605,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
-  btnAddPet: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
+  btnAddPet: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
   btnAddPetText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
   btnAddTask: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
   btnAddTaskText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
@@ -654,10 +632,6 @@ const styles = StyleSheet.create({
   caregiverRole: { fontSize: 11, color: '#64748B', marginTop: 2 },
   roleBadge: { backgroundColor: '#EFF6FF', paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8 },
   roleBadgeText: { fontSize: 10, fontWeight: '700', color: '#2563EB' },
-  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', justifyContent: 'center', padding: 20, zIndex: 999 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 22, elevation: 10 },
-  modalTitle: { fontSize: 18, fontWeight: '900', color: '#0F172A', marginBottom: 4, textAlign: 'center' },
-  modalSub: { fontSize: 12, color: '#64748B', textAlign: 'center', marginBottom: 14 },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: '#334155', marginTop: 8, marginBottom: 6 },
   porteRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   porteBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center' },
@@ -667,6 +641,6 @@ const styles = StyleSheet.create({
   modalButtonsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   btnModalCancel: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center' },
   btnModalCancelText: { color: '#64748B', fontWeight: '700' },
-  btnModalConfirm: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#2563EB', alignItems: 'center' },
+  btnModalConfirm: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#10B981', alignItems: 'center' },
   btnModalConfirmText: { color: '#FFFFFF', fontWeight: '800' },
 });

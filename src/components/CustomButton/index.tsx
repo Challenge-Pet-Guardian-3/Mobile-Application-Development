@@ -11,7 +11,7 @@ import {
 
 interface CustomButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
   isLoading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -30,6 +30,8 @@ export const CustomButton = memo(function CustomButton({
 }: CustomButtonProps) {
   const getButtonStyle = () => {
     switch (variant) {
+      case 'success':
+        return styles.btnSuccess;
       case 'secondary':
         return styles.btnSecondary;
       case 'outline':
@@ -91,6 +93,14 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  btnSuccess: {
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 3,
   },

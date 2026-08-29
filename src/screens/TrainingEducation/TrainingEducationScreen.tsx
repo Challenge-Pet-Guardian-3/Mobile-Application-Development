@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
+import { PremiumLockCard } from '../../components/PremiumLockCard';
 import { TrainingService } from '../../services/trainings';
 import { TrainingLesson, TrainingTrack } from '../../types/training';
 import { usePets } from '../../hooks/usePets';
@@ -34,8 +35,10 @@ export default function TrainingEducationScreen() {
   } | null>(null);
 
   useEffect(() => {
-    TrainingService.getTrilhas().then(setTrilhas);
-  }, []);
+    if (user?.role !== 'COMUM') {
+      TrainingService.getTrilhas(petAtivo?.id).then(setTrilhas);
+    }
+  }, [petAtivo?.id, user?.role]);
 
   const handleConcluirLicao = useCallback(async () => {
     if (!licaoSelecionada) return;
@@ -46,7 +49,7 @@ export default function TrainingEducationScreen() {
         licaoSelecionada.licao.id
       );
 
-      const atualizadas = await TrainingService.getTrilhas();
+      const atualizadas = await TrainingService.getTrilhas(petAtivo?.id);
       setTrilhas(atualizadas);
       setTotalXpGanho((prev) => prev + result.pontosGanhos);
       setLicaoSelecionada(null);
@@ -59,6 +62,27 @@ export default function TrainingEducationScreen() {
       Alert.alert('Erro', 'Não foi possível registrar a lição.');
     }
   }, [licaoSelecionada, petAtivo]);
+
+  // Se o usuário for Comum, exibe mensagem clara e amigável sobre o recurso Premium
+  if (user?.role === 'COMUM') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerPad}>
+          <Header title="Trilhas & Treinamento" />
+        </View>
+        <PremiumLockCard
+          title="Trilhas de Adestramento Premium ⭐"
+          description="As trilhas gamificadas de adestramento, lições interativas e ganho de XP acelerado são exclusivas para assinantes Premium."
+          benefits={[
+            'Módulos educativos completos com IA',
+            'Lições práticas e acompanhamento de XP',
+            'Assistente inteligente ilimitado',
+          ]}
+          iconName="crown"
+        />
+      </View>
+    );
+  }
 
   const trilhaAtual = trilhas[trilhaAtivaIndex] || trilhas[0];
 

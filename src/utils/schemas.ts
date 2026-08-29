@@ -13,6 +13,7 @@ export const RegisterSchema = z
     confirmarSenha: z.string().min(1, 'Confirme sua senha!'),
     ddd: z.string().min(2, 'DDD inválido').max(2, 'DDD deve ter 2 dígitos').default('11'),
     numeroTelefone: z.string().min(8, 'Telefone deve ter no mínimo 8 dígitos').default('987654321'),
+    role: z.enum(['COMUM', 'PREMIUM']).default('PREMIUM'),
     cep: z.string().default('01310100'),
     numero: z.string().default('100'),
   })
@@ -37,7 +38,7 @@ export const ProfileEditSchema = z
 export const PetSchema = z.object({
   nome: z.string().trim().min(1, 'O nome do pet é obrigatório!'),
   raca: z.string().trim().min(1, 'A raça do pet é obrigatória!'),
-  idade: z.coerce.number().min(0, 'Idade deve ser maior ou igual a zero!'),
+  dataNasc: z.string().optional(),
   porte: z.enum(['PEQUENO', 'MEDIO', 'GRANDE'], {
     error: 'Porte inválido. Escolha PEQUENO, MEDIO ou GRANDE.',
   }),

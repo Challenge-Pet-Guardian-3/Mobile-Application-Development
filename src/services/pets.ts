@@ -1,6 +1,6 @@
 import { http } from './http';
 import { Page } from '../types/api';
-import { CoCuidadorResponse, PetHistoryResponse, PetRequest, PetResponse, TransferirResponsabilidadeRequest } from '../types/pet';
+import { CoCuidadorResponse, PetHistoryResponse, PetPontuacaoResponse, PetRequest, PetResponse, TransferirResponsabilidadeRequest } from '../types/pet';
 
 export const PetService = {
   // Lista todos os pets paginados
@@ -28,6 +28,12 @@ export const PetService = {
   // Busca histórico consolidado de cuidados do pet
   async getPetHistory(id: number): Promise<PetHistoryResponse> {
     const response = await http.get<PetHistoryResponse>(`/pets/${id}/historico`);
+    return response.data;
+  },
+
+  // Consulta a pontuação total acumulada pelo pet (tarefas + aulas)
+  async getPetPontos(id: number): Promise<PetPontuacaoResponse> {
+    const response = await http.get<PetPontuacaoResponse>(`/pets/${id}/pontos`);
     return response.data;
   },
 

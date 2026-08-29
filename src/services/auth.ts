@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { http } from './http';
 import { STORAGE_KEYS } from '../constants/Keys';
 import { UsuarioRequest, UsuarioResponse } from '../types/user';
-import { LoginCredentials, RegisterCredentials } from '../types/auth';
+import { LoginCredentials, LoginResponse, RegisterCredentials } from '../types/auth';
 
 export const AuthService = {
   // Realiza o cadastro do tutor
@@ -13,6 +13,7 @@ export const AuthService = {
       senha: data.senha,
       ddd: data.ddd.replace(/\D/g, '') || '11',
       numeroTelefone: data.numeroTelefone.replace(/\D/g, '') || '987654321',
+      role: data.role || 'PREMIUM',
       endereco: {
         cep: data.cep.replace(/\D/g, '') || '01310100',
         numero: data.numero.trim() || '100',
@@ -24,10 +25,10 @@ export const AuthService = {
   },
 
   // Realiza login no Spring Security (POST /login)
-  async login(credentials: LoginCredentials): Promise<{ user: UsuarioResponse; token: string }> {
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const emailFormatado = credentials.email.trim().toLowerCase();
 
-    const response = await http.post<{ token: string; user: UsuarioResponse }>('/login', {
+    const response = await http.post<LoginResponse>('/login', {
       email: emailFormatado,
       senha: credentials.senha,
     });

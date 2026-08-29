@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import { AiMessage, AiPetInsight } from '../types/ai';
 import { PetResponse } from '../types/pet';
+import { calcularIdadePet } from '../utils/petUtils';
 
 // Base URL do microserviço Python (FastAPI / LangChain / RAG)
 const PYTHON_AI_URL = Platform.select({
@@ -16,25 +17,28 @@ const pythonClient = axios.create({
 });
 
 export const AiService = {
-  // Gera insights inteligentes baseados na raça, porte, idade e dados do pet
+  // Retorna recomendações preventivas baseadas no perfil do pet ativo
   async getInsightsDoPet(pet?: PetResponse | null): Promise<AiPetInsight[]> {
     if (!pet) {
       return [
         {
-          categoria: 'rotina',
-          titulo: 'Mantenha a rotina ativa!',
-          descricao: 'Cadastre e conclua as tarefas diárias do seu pet para somar pontos e manter a ofensiva em dia.',
+          categoria: 'saude',
+          titulo: 'Adicione um pet para orientações',
+          descricao: 'Cadastre seu animal de estimação para receber dicas personalizadas de saúde e nutrição por inteligência artificial.',
           urgencia: 'baixa',
         },
       ];
     }
+
+    const idadePet = calcularIdadePet(pet.dataNasc, pet.idade);
 
     try {
       // Tenta consultar o microserviço Python FastAPI
       const response = await pythonClient.post('/ai/insights', {
         nome: pet.nome,
         raca: pet.raca,
-        idade: pet.idade,
+        dataNasc: pet.dataNasc,
+        idade: idadePet,
         porte: pet.porte,
         sexo: pet.sexo,
         castrado: pet.castrado,
@@ -66,11 +70,11 @@ export const AiService = {
     }
 
     // Análise de Idade
-    if (pet.idade >= 7) {
+    if (idadePet >= 7) {
       insights.push({
         categoria: 'nutricao',
         titulo: 'Fase Sênior: Exames de Rotina',
-        descricao: `${pet.nome} tem ${pet.idade} anos e está na melhor idade. Um check-up com exames de sangue e ecocardiograma semestral garante longevidade.`,
+        descricao: `${pet.nome} tem ${idadePet} anos e está na melhor idade. Um check-up com exames de sangue e ecocardiograma semestral garante longevidade.`,
         urgencia: 'alta',
       });
     } else {
@@ -97,6 +101,8 @@ export const AiService = {
 
   // Responde perguntas do tutor via chat com contexto do pet
   async enviarMensagem(pergunta: string, pet?: PetResponse | null): Promise<AiMessage> {
+    const idadePet = pet ? calcularIdadePet(pet.dataNasc, pet.idade) : undefined;
+
     try {
       // Tenta enviar mensagem para o microserviço Python FastAPI
       const response = await pythonClient.post('/ai/chat', {
@@ -104,7 +110,8 @@ export const AiService = {
         petContext: pet ? {
           nome: pet.nome,
           raca: pet.raca,
-          idade: pet.idade,
+          dataNasc: pet.dataNasc,
+          idade: idadePet,
           porte: pet.porte,
           castrado: pet.castrado,
         } : null,

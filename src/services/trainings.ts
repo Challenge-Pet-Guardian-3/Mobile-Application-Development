@@ -1,3 +1,4 @@
+import { http } from './http';
 import { TrainingLesson, TrainingTrack } from '../types/training';
 
 const TRILHAS_TREINAMENTO: TrainingTrack[] = [
@@ -141,21 +142,77 @@ const TRILHAS_TREINAMENTO: TrainingTrack[] = [
 ];
 
 export const TrainingService = {
-  async getTrilhas(): Promise<TrainingTrack[]> {
+  async getTrilhas(petId?: number): Promise<TrainingTrack[]> {
+    if (petId) {
+      try {
+        const response = await http.get<Array<{ id: number; nome: string; descricao: string; petId: number }>>(`/trilhas/pet/${petId}`);
+        if (response.data && response.data.length > 0) {
+          const tracks: TrainingTrack[] = [];
+          for (const t of response.data) {
+            try {
+              const modulosResp = await http.get<Array<{ id: number; nome: string; tempoConclusao: string; descricao: string; trilhaId: number }>>(`/modulos/trilha/${t.id}`);
+              const licoes: TrainingLesson[] = [];
+              for (const m of modulosResp.data) {
+                const aulasResp = await http.get<Array<{ id: number; nome: string; descricao: string; pontosAula: number; dificuldade: string; conteudo: string; concluida: boolean; moduloId: number }>>(`/aulas/modulo/${m.id}`);
+                for (const a of aulasResp.data) {
+                  licoes.push({
+                    id: String(a.id),
+                    titulo: a.nome,
+                    descricao: a.descricao,
+                    pontos: a.pontosAula,
+                    icone: 'paw',
+                    duracaoMin: Number(m.tempoConclusao) || 5,
+                    concluido: a.concluida,
+                    passos: a.conteudo ? a.conteudo.split('\n').filter(Boolean) : ['Siga as orientações práticas.'],
+                  });
+                }
+              }
+              tracks.push({
+                id: String(t.id),
+                categoria: 'Adestramento',
+                titulo: t.nome,
+                descricao: t.descricao,
+                nivel: 1,
+                icone: 'dog',
+                cor: '#0066FF',
+                licoes: licoes.length > 0 ? licoes : TRILHAS_TREINAMENTO[0].licoes,
+              });
+            } catch {
+              // segue para próxima trilha
+            }
+          }
+          if (tracks.length > 0) return tracks;
+        }
+      } catch {
+        // fallback para trilhas padrão
+      }
+    }
     return TRILHAS_TREINAMENTO;
   },
 
-  async getTrilhaById(id: string): Promise<TrainingTrack | undefined> {
-    return TRILHAS_TREINAMENTO.find((t) => t.id === id);
+  async getTrilhaById(id: string, petId?: number): Promise<TrainingTrack | undefined> {
+    const trilhas = await this.getTrilhas(petId);
+    return trilhas.find((t) => t.id === id);
   },
 
   async concluirLicao(trilhaId: string, licaoId: string): Promise<{ pontosGanhos: number }> {
+    const numId = Number(licaoId);
+    if (!isNaN(numId) && numId > 0 && !licaoId.startsWith('licao_')) {
+      try {
+        await http.put(`/aulas/${numId}`, {
+          concluida: true,
+        });
+      } catch {
+        // fallback
+      }
+    }
+
     const trilha = TRILHAS_TREINAMENTO.find((t) => t.id === trilhaId);
     const licao = trilha?.licoes.find((l) => l.id === licaoId);
     if (licao) {
       licao.concluido = true;
       return { pontosGanhos: licao.pontos };
     }
-    return { pontosGanhos: 0 };
+    return { pontosGanhos: 25 };
   },
 };
