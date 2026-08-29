@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const LoginSchema = z.object({
-  email: z.string().email('O e-mail está com formato errado!').min(1, 'Por favor, insira o seu e-mail.'),
+  email: z.email('O e-mail está com formato errado!').min(1, 'Por favor, insira o seu e-mail.'),
   senha: z.string().min(1, 'Por favor, insira a sua senha.'),
 });
 
 export const RegisterSchema = z
   .object({
     nome: z.string().min(1, 'O nome é obrigatório!'),
-    email: z.string().email('O e-mail está com formato errado!').min(1, 'O e-mail é obrigatório!'),
+    email: z.email('O e-mail está com formato errado!').min(1, 'O e-mail é obrigatório!'),
     senha: z.string().min(6, 'A senha deve ter no mínimo 6 dígitos!'),
     confirmarSenha: z.string().min(1, 'Confirme sua senha!'),
     ddd: z.string().min(2, 'DDD inválido').max(2, 'DDD deve ter 2 dígitos').default('11'),
@@ -24,7 +24,7 @@ export const RegisterSchema = z
 export const ProfileEditSchema = z
   .object({
     nome: z.string().min(1, 'O nome é obrigatório!'),
-    email: z.string().email('O e-mail está com formato errado!').min(1, 'O e-mail é obrigatório!'),
+    email: z.email('O e-mail está com formato errado!').min(1, 'O e-mail é obrigatório!'),
     senha: z.string().min(6, 'A senha deve ter no mínimo 6 dígitos!'),
     confirmarSenha: z.string().min(1, 'Confirme sua senha!'),
   })

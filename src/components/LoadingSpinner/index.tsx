@@ -9,7 +9,7 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner = memo(function LoadingSpinner({
   message = 'Carregando dados...',
-  color = '#0066FF',
+  color = '#2563EB',
   size = 'large',
 }: LoadingSpinnerProps) {
   return (
