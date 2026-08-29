@@ -25,3 +25,21 @@ Mentoria Clyvo
 - Ter uma assistente de IA para dar dicas e pegar o histórico do pet e afins 
 
 - Freemium
+
+
+- Só um overthinking qualquer
+	- Uma tarefa vai precisar ser associada a um usuário, Será??
+	- Dono do animal cria essas tarefas! 
+	- Dono do animal Add/Delete usuários - respon_princ True
+	- add usuário via email ao "GRUPO" do pet 
+	
+	- Como faremos para o Java lidar com tipos de usuários diferentes no Grupo do Pet? 
+		- Tipo, já temos respon_princ que podemos definir para que somente ele altere as infos ou add pessoas no Grupo do Pet
+		- Mas e a questão de tarefas, qualquer um pode criar? Ou só o respon_princ?
+		- E também como funcionaria o gerenciamento dos pets e respon_princ, podemos ter 2 respons_princ ao mesmo tempo??
+
+- Resolver os problemas IMPORTANTES do Challenge Java-Advanced
+	- Flyway?? Postgres??
+	- Dois Tipos de Usuários com permissões diferentes?
+	- Proteção de rotas com base no perfil do usuário?
+	- Implementação funcional de pelos menos dois fluxos completos do sistema???
