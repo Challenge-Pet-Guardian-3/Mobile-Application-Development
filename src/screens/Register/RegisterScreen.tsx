@@ -20,41 +20,65 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+const maskPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
+
+const maskCEP = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 export default function RegisterScreen({ navigation }: Props) {
   const [form, setForm] = useState({
     nome: '',
     email: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    telefone: '',
+    cep: ''
   });
 
   const [erros, setErros] = useState({
     nome: '',
     email: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    telefone: '',
+    cep: ''
   });
 
   const [loading, setLoading] = useState(false);
 
   const handleChange = useCallback((campo: keyof typeof form, valor: string) => {
-    setForm(prev => ({ ...prev, [campo]: valor }));
+    let valorFormatado = valor;
+    if (campo === 'telefone') valorFormatado = maskPhone(valor);
+    if (campo === 'cep') valorFormatado = maskCEP(valor);
+
+    setForm(prev => ({ ...prev, [campo]: valorFormatado }));
     setErros(prev => ({ ...prev, [campo]: '' }));
   }, []);
 
   const handleRegister = useCallback(async () => {
-    setErros({ nome: '', email: '', senha: '', confirmarSenha: '' });
+    setErros({ nome: '', email: '', senha: '', confirmarSenha: '', telefone: '', cep: '' });
 
     try {
       RegisterSchema.parse({
         nome: form.nome.trim(),
         email: form.email.trim(),
         senha: form.senha,
-        confirmarSenha: form.confirmarSenha
+        confirmarSenha: form.confirmarSenha,
+        telefone: form.telefone,
+        cep: form.cep
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const novosErros = { nome: '', email: '', senha: '', confirmarSenha: '' };
+        const novosErros = { nome: '', email: '', senha: '', confirmarSenha: '', telefone: '', cep: '' };
         error.issues.forEach((err) => {
           const field = err.path[0] as keyof typeof novosErros;
           if (field) {
@@ -74,7 +98,8 @@ export default function RegisterScreen({ navigation }: Props) {
         nome: form.nome.trim(),
         email: form.email.trim().toLowerCase(),
         senha: form.senha,
-        telefone: null
+        telefone: form.telefone.replace(/\D/g, ''),
+        cep: form.cep.replace(/\D/g, '')
       };
 
       await api.post('/usuarios', payload);
@@ -131,10 +156,34 @@ export default function RegisterScreen({ navigation }: Props) {
             />
             {erros.email !== '' && <Text style={styles.erroTexto}>{erros.email}</Text>}
 
+            <Text style={styles.inputLabel}>Telefone / Celular</Text>
+            <TextInput
+              style={[styles.input, erros.telefone !== '' ? styles.inputErro : null]}
+              placeholder="(11) 98765-4321"
+              placeholderTextColor="#A0AEC0"
+              keyboardType="phone-pad"
+              maxLength={15}
+              value={form.telefone}
+              onChangeText={(texto) => handleChange('telefone', texto)}
+            />
+            {erros.telefone !== '' && <Text style={styles.erroTexto}>{erros.telefone}</Text>}
+
+            <Text style={styles.inputLabel}>CEP</Text>
+            <TextInput
+              style={[styles.input, erros.cep !== '' ? styles.inputErro : null]}
+              placeholder="00000-000"
+              placeholderTextColor="#A0AEC0"
+              keyboardType="numeric"
+              maxLength={9}
+              value={form.cep}
+              onChangeText={(texto) => handleChange('cep', texto)}
+            />
+            {erros.cep !== '' && <Text style={styles.erroTexto}>{erros.cep}</Text>}
+
             <Text style={styles.inputLabel}>Senha</Text>
             <TextInput
               style={[styles.input, erros.senha !== '' ? styles.inputErro : null]}
-              placeholder="Crie uma senha forte (mínimo 6 dígitos)"
+              placeholder="Crie uma senha forte (mínimo 8 dígitos)"
               placeholderTextColor="#A0AEC0"
               secureTextEntry
               value={form.senha}

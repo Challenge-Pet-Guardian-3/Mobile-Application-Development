@@ -37,6 +37,17 @@ export interface AtualizarTarefaPayload {
   status?: string;
 }
 
+export interface CriarTarefaRecorrentePayload {
+  titulo: string;
+  descricao?: string;
+  petId: number;
+  pontosTarefa?: number;
+  diasSemana: string[]; // "MONDAY", "TUESDAY", etc.
+  horario: string;      // "HH:mm" ou "HH:mm:ss"
+  dataInicio?: string;  // "YYYY-MM-DD", opcional
+  dataFim: string;      // "YYYY-MM-DD"
+}
+
 const getPrazoHojeIso = (): string => {
   const agora = new Date();
   const ano = agora.getFullYear();
@@ -108,6 +119,26 @@ export function useTarefas() {
     },
   });
 
+  const createTarefaRecorrenteMutation = useMutation({
+    mutationFn: async (payload: CriarTarefaRecorrentePayload) => {
+      const corpoRequisicao = {
+        titulo: payload.titulo.trim(),
+        descricao: payload.descricao?.trim() || 'Sem descrição',
+        pontosTarefa: payload.pontosTarefa || 15,
+        petId: Number(payload.petId),
+        diasSemana: payload.diasSemana,
+        horario: payload.horario.length === 5 ? `${payload.horario}:00` : payload.horario,
+        dataInicio: payload.dataInicio,
+        dataFim: payload.dataFim,
+      };
+      const { data } = await api.post<TarefaBackend[]>('/tarefas/recorrente', corpoRequisicao);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tarefas', userData?.id] });
+    },
+  });
+
   const updateTarefaMutation = useMutation({
     mutationFn: async (payload: AtualizarTarefaPayload) => {
       const corpoRequisicao = {
@@ -169,11 +200,13 @@ export function useTarefas() {
     error,
     refetch,
     criarTarefa: createTarefaMutation.mutateAsync,
+    criarTarefaRecorrente: createTarefaRecorrenteMutation.mutateAsync,
     atualizarTarefa: updateTarefaMutation.mutateAsync,
     alternarStatus: alternarStatusMutation.mutateAsync,
     concluirTarefa: alternarStatusMutation.mutateAsync,
     excluirTarefa: deleteTarefaMutation.mutateAsync,
     isCriando: createTarefaMutation.isPending,
+    isCriandoRecorrente: createTarefaRecorrenteMutation.isPending,
     isAtualizando: updateTarefaMutation.isPending,
     isAlternando: alternarStatusMutation.isPending,
     isExcluindo: deleteTarefaMutation.isPending,

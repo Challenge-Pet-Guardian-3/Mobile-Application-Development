@@ -33,6 +33,7 @@ export interface FamiliaInfo {
   id: number | null;
   nome: string;
   codigoConvite: string;
+  xpTotal: number;
   ativa: boolean;
   souDono: boolean;
   cuidadores: Cuidador[];
@@ -43,6 +44,7 @@ const familiaVazia: FamiliaInfo = {
   id: null,
   nome: '',
   codigoConvite: '',
+  xpTotal: 0,
   ativa: false,
   souDono: false,
   cuidadores: [],
@@ -53,6 +55,7 @@ const mapFamilia = (data: FamiliaBackend, usuarioId?: number): FamiliaInfo => ({
   id: data.id,
   nome: data.nome,
   codigoConvite: data.codigoConvite,
+  xpTotal: data.xpTotal || 0,
   ativa: true,
   souDono: data.membros.some((m) => m.usuarioId === usuarioId && m.responsavelPrincipal),
   cuidadores: data.membros.map((m) => ({
