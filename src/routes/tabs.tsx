@@ -3,13 +3,12 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import Home from '../screens/Home/HomeScreen';
 import FamilyStack from './FamilyStack';
 import PetProfile from '../screens/PetProfile/PetProfileScreen';
-import DicasPet from '../screens/DicasPet/DicasPetScreen';
+import TrilhasScreen from '../screens/Trilhas/TrilhasScreen';
 import UserProfile from '../screens/UserProfile/UserProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -72,11 +71,12 @@ export default function Tabs() {
       />
 
       <Tab.Screen
-        name="Dicas"
-        component={DicasPet}
+        name="Trilhas"
+        component={TrilhasScreen}
         options={{
+          title: 'Trilhas',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="lightbulb-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="compass-outline" color={color} size={size} />
           )
         }}
       />
