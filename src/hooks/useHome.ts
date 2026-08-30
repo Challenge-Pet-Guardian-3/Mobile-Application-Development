@@ -3,7 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { usePets } from './usePets';
 import { useFamily } from './useFamily';
-import { useTarefas, CriarTarefaPayload, AtualizarTarefaPayload, TarefaBackend } from './useTarefas';
+import { useTrilhas } from './useTrilhas';
+import {
+  useTarefas,
+  CriarTarefaPayload,
+  CriarTarefaRecorrentePayload,
+  AtualizarTarefaPayload,
+  TarefaBackend,
+} from './useTarefas';
 import { api } from '../services/api';
 
 export interface DiaOfensiva {
@@ -19,6 +26,8 @@ export interface GrupoTarefasPorDia {
   label: string;
   tarefas: TarefaBackend[];
 }
+
+const DIAS_SEMANA_ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 const getHojeIso = (): string => {
   const agora = new Date();
@@ -42,11 +51,19 @@ const extrairDataIso = (dataString?: string | null): string => {
   return dataString.split('T')[0];
 };
 
+// Constrói a data em horário local (evita o "voltar 1 dia" causado por fuso na
+// conversão direta de string ISO pura para Date).
+const dataIsoParaDate = (dataIso: string): Date => {
+  const [ano, mes, dia] = dataIso.split('-').map(Number);
+  return new Date(ano, mes - 1, dia);
+};
+
 const formatarLabelDia = (dataIso: string, hojeIso: string, ontemIso: string): string => {
   if (dataIso === hojeIso) return 'Hoje';
   if (dataIso === ontemIso) return 'Ontem';
   const [, mes, dia] = dataIso.split('-');
-  return `${dia}/${mes}`;
+  const diaSemana = DIAS_SEMANA_ABREV[dataIsoParaDate(dataIso).getDay()];
+  return `${diaSemana}, ${dia}/${mes}`;
 };
 
 const calcularDiasSemana = (tarefas: TarefaBackend[]): DiaOfensiva[] => {
@@ -95,21 +112,24 @@ export function useHome() {
   const { userData } = useAuth();
   const { pets, isLoading: loadingPets } = usePets();
   const { familia, isLoading: loadingFamilia } = useFamily();
+  const { xpTrilhas, isLoading: loadingTrilhas } = useTrilhas();
   const {
     tarefas,
     isLoading: loadingTarefas,
     criarTarefa,
+    criarTarefaRecorrente,
     atualizarTarefa,
     alternarStatus,
     excluirTarefa,
     isCriando,
+    isCriandoRecorrente,
     isAtualizando,
   } = useTarefas();
 
-  // XP individual: recalculado ao vivo direto das tarefas concluídas do usuário
+  // XP de tarefas: recalculado ao vivo direto das tarefas concluídas do usuário
   // (soma real via query no back), em vez de ler um contador acumulado que pode
   // dessincronizar (ex: tarefa concluída excluída sem devolver o XP).
-  const { data: xpTotal = 0, isLoading: loadingXp } = useQuery({
+  const { data: pontosTarefas = 0, isLoading: loadingXp } = useQuery({
     queryKey: ['pontos-usuario', userData?.id],
     queryFn: async () => {
       const { data } = await api.get<number>(`/tarefas/pontos/${userData?.id}`);
@@ -118,7 +138,10 @@ export function useHome() {
     enabled: Boolean(userData?.id),
   });
 
-  const loading = loadingPets || loadingTarefas || loadingFamilia || loadingXp;
+  // XP total real do usuário: tarefas + trilhas. Independe de ter família ou não.
+  const xpTotal = pontosTarefas + xpTrilhas;
+
+  const loading = loadingPets || loadingTarefas || loadingFamilia || loadingXp || loadingTrilhas;
   const temFamilia = familia.ativa;
   const householdName = familia.nome || (userData?.nome ? `Família de ${userData.nome}` : 'Família PetGuardian');
   const hojeIso = getHojeIso();
@@ -143,13 +166,16 @@ export function useHome() {
     });
   }, [tarefas, hojeIso, ontemIso]);
 
-  // Todas as tarefas não expiradas, agrupadas por dia (mais recente primeiro).
+  // Tarefas de hoje pra trás, agrupadas por dia (mais recente primeiro).
+  // Tarefas futuras (recorrências ainda não vencidas) NÃO entram aqui —
+  // vão para tarefasProximas, exibidas de forma recolhida na tela.
   const tarefasPorDia = useMemo((): GrupoTarefasPorDia[] => {
     const grupos = new Map<string, TarefaBackend[]>();
 
     tarefas.forEach((t) => {
       if (t.expirada) return;
       const dataIso = extrairDataIso(t.prazo);
+      if (dataIso > hojeIso) return; // futura: não entra na lista principal
       if (!grupos.has(dataIso)) grupos.set(dataIso, []);
       grupos.get(dataIso)!.push(t);
     });
@@ -162,6 +188,33 @@ export function useHome() {
       tarefas: grupos.get(dataIso)!.sort((a, b) => (b.id || 0) - (a.id || 0)),
     }));
   }, [tarefas, hojeIso, ontemIso]);
+
+  // Tarefas com prazo futuro (dia seguinte em diante) — normalmente ocorrências
+  // de uma tarefa recorrente ainda não vencidas. Ordenadas da mais próxima
+  // para a mais distante.
+  const tarefasProximas = useMemo((): GrupoTarefasPorDia[] => {
+    const grupos = new Map<string, TarefaBackend[]>();
+
+    tarefas.forEach((t) => {
+      if (t.expirada || t.concluida) return;
+      const dataIso = extrairDataIso(t.prazo);
+      if (dataIso <= hojeIso) return;
+      if (!grupos.has(dataIso)) grupos.set(dataIso, []);
+      grupos.get(dataIso)!.push(t);
+    });
+
+    const diasOrdenados = Array.from(grupos.keys()).sort((a, b) => a.localeCompare(b));
+
+    return diasOrdenados.map((dataIso) => ({
+      dataIso,
+      label: formatarLabelDia(dataIso, hojeIso, ontemIso),
+      tarefas: grupos.get(dataIso)!.sort((a, b) => (a.id || 0) - (b.id || 0)),
+    }));
+  }, [tarefas, hojeIso, ontemIso]);
+
+  const totalTarefasProximas = useMemo(() => {
+    return tarefasProximas.reduce((acc, grupo) => acc + grupo.tarefas.length, 0);
+  }, [tarefasProximas]);
 
   const tarefasExpiradas = useMemo(() => {
     return tarefas.filter((t) => t.expirada);
@@ -188,6 +241,29 @@ export function useHome() {
       return await criarTarefa(payload);
     },
     [criarTarefa]
+  );
+
+  const handleCriarTarefaRecorrente = useCallback(
+    async (
+      titulo: string,
+      descricao: string,
+      petId: number,
+      diasSemana: string[],
+      horario: string,
+      dataFim: string
+    ) => {
+      const payload: CriarTarefaRecorrentePayload = {
+        titulo,
+        descricao,
+        petId,
+        pontosTarefa: 15,
+        diasSemana,
+        horario,
+        dataFim,
+      };
+      return await criarTarefaRecorrente(payload);
+    },
+    [criarTarefaRecorrente]
   );
 
   const handleAtualizarTarefa = useCallback(
@@ -231,15 +307,18 @@ export function useHome() {
     petsDaFamilia: pets,
     tarefas: tarefasDeHoje,
     tarefasPorDia,
+    tarefasProximas,
+    totalTarefasProximas,
     tarefasExpiradas,
     todasTarefas: tarefas,
     historicoConcluidas,
     diasOfensiva,
     handleCriarTarefa,
+    handleCriarTarefaRecorrente,
     handleAtualizarTarefa,
     alternarTarefaStatus,
     handleExcluirTarefa,
     proximaTarefaPendente,
-    criandoTarefa: isCriando || isAtualizando,
+    criandoTarefa: isCriando || isAtualizando || isCriandoRecorrente,
   };
 }
