@@ -78,10 +78,11 @@ Mobile-Application-Development/
     │   └── Welcome/               → Onboarding com botão verde 'Criar conta grátis' (variant='success')
     ├── services/                  → Camada de comunicação HTTP REST com o Backend
     │   ├── ai.ts                  → Comunicação com microsserviço Python FastAPI (/ai/insights, /ai/chat)
-    │   ├── auth.ts                → Registro, login e gestão de tokens JWT
+    │   ├── auth.ts                → Registro e login integrados ao StorageService
     │   ├── clinics.ts             → Serviços de busca de clínicas veterinárias
     │   ├── http.ts                → Instância Axios central com interceptors de Request/Response
     │   ├── pets.ts                → Endpoints REST do PetController no Java
+    │   ├── storage.ts             → Fachada centralizada: Expo Secure Store (Tokens JWT) + AsyncStorage (Estado/Cache)
     │   ├── tasks.ts               → Endpoints REST do TarefaController no Java
     │   ├── trainings.ts           → Base de trilhas e lições de treino do pet
     │   └── users.ts               → Endpoints REST do UsuarioController no Java
@@ -333,3 +334,7 @@ export interface UsuarioResponse {
    - Não utilizar encadeamentos defensivos redundantes onde os valores são garantidos por valores padrão ou validação Zod.
 5. **Nenhum uso de `Locale.ROOT`**:
    - Utilizar sempre `.toUpperCase()` ou `.toLowerCase()` padrão do JavaScript/TypeScript.
+6. **Persistência de Dados & Segurança (StorageService)**:
+   - Toda e qualquer operação de armazenamento deve passar exclusivamente pelo **`StorageService`** (`src/services/storage.ts`).
+   - Tokens JWT sensíveis são gravados via **`expo-secure-store`** no hardware seguro (KeyStore/Keychain com fallback Web).
+   - Dados de estado e cache (perfil, pet ativo, flags) são persistidos no **`AsyncStorage`**. Nunca importar `AsyncStorage` ou `SecureStore` diretamente em componentes ou telas.

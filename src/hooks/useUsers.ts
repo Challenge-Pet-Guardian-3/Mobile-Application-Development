@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserService } from '../services/users';
-import { UsuarioRequest, UsuarioResponse } from '../types/user';
+import { StorageService } from '../services/storage';
+import { UsuarioRequest } from '../types/user';
 import { useSession } from './useSession';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../constants/Keys';
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
@@ -12,7 +11,7 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: UsuarioRequest }) => {
       const updatedUser = await UserService.updateUsuario(id, data);
-      await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(updatedUser));
+      await StorageService.saveUser(updatedUser);
       setUser(updatedUser);
       return updatedUser;
     },

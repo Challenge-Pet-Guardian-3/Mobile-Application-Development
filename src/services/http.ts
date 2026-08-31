@@ -1,7 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../constants/Keys';
+import { StorageService } from './storage';
 
 // Configuração dinâmica da URL base dependendo do ambiente
 const getBaseUrl = (): string => {
@@ -25,16 +24,16 @@ export const http = axios.create({
   },
 });
 
-// Interceptor de Request: Injeção de Bearer Token JWT
+// Interceptor de Request: Injeção de Bearer Token JWT do Storage Seguro
 http.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const token = await StorageService.getToken();
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.warn('[HTTP] Erro ao recuperar token do storage:', error);
+      console.warn('[HTTP] Erro ao recuperar token seguro do storage:', error);
     }
     return config;
   },
@@ -61,9 +60,8 @@ http.interceptors.response.use(
       if (status === 401) {
         console.warn('[HTTP] Erro 401 - Sessão expirada ou não autorizada.');
         try {
-          await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-          await AsyncStorage.removeItem(STORAGE_KEYS.LOGADO);
-        } catch (e) {
+          await StorageService.clearAuthSession();
+        } catch {
           // ignore
         }
         if (onUnauthorizedCallback) {

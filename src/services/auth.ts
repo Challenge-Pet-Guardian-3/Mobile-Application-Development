@@ -1,6 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { http } from './http';
-import { STORAGE_KEYS } from '../constants/Keys';
+import { StorageService } from './storage';
 import { UsuarioRequest, UsuarioResponse } from '../types/user';
 import { LoginCredentials, LoginResponse, RegisterCredentials } from '../types/auth';
 
@@ -34,19 +33,20 @@ export const AuthService = {
     });
 
     const { user, token } = response.data;
-    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
-    await AsyncStorage.setItem(STORAGE_KEYS.LOGADO, 'sim');
+    await StorageService.saveToken(token);
+    await StorageService.saveUser(user);
     return { user, token };
   },
 
-  // Recupera a sessão atual do storage
+  // Recupera a sessão atual (Token Seguro + Usuário)
   async getStoredSession(): Promise<{ user: UsuarioResponse | null; token: string | null }> {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-      const userStr = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
-      if (token && userStr) {
-        const user = JSON.parse(userStr) as UsuarioResponse;
+      const [token, user] = await Promise.all([
+        StorageService.getToken(),
+        StorageService.getUser(),
+      ]);
+
+      if (token && user) {
         return { user, token };
       }
     } catch (e) {
@@ -55,13 +55,10 @@ export const AuthService = {
     return { user: null, token: null };
   },
 
-  // Finaliza a sessão limpando os tokens
+  // Finaliza a sessão limpando os tokens seguros e dados locais
   async logout(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_USER);
-      await AsyncStorage.removeItem(STORAGE_KEYS.LOGADO);
-      await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_PET_ID);
+      await StorageService.clearAuthSession();
     } catch (e) {
       console.warn('[AuthService] Erro no logout:', e);
     }
