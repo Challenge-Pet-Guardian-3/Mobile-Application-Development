@@ -17,7 +17,7 @@ export function useAiChat(pet?: PetResponse | null) {
     {
       id: 'welcome_1',
       sender: 'assistant',
-      text: `Olá! Sou a Assistente PetGuardian. Como posso ajudar com os cuidados de ${pet ? pet.nome : 'seu pet'} hoje?`,
+      text: `Olá! Sou a Guardian AI. Como posso ajudar com os cuidados de ${pet ? pet.nome : 'seu pet'} hoje?`,
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -46,7 +46,7 @@ export function useAiChat(pet?: PetResponse | null) {
           {
             id: `err_${Date.now()}`,
             sender: 'assistant',
-            text: 'Desculpe, tive uma oscilação na conexão. Pode repetir a sua dúvida?',
+            text: 'Não foi possível se comunicar com o assistente de IA. Verifique se o microserviço Python da IA está em execução e tente novamente.',
             timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           },
         ]);
