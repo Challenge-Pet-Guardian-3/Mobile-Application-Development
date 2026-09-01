@@ -6,23 +6,24 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  KeyboardAvoidingView,
   Image,
   Alert,
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { CustomInput } from '../../components/CustomInput';
-import { BaseModal } from '../../components/BaseModal';
+import { PetFormModal, PetFormData } from '../../components/PetFormModal';
 import { getAvatarById } from '../../constants/Avatares';
 
 import { usePets, usePetHistory, useUpdatePet, useDeletePet } from '../../hooks/usePets';
-import { PetPorte, PetResponse } from '../../types/pet';
+import { PetResponse } from '../../types/pet';
 import { useSession } from '../../hooks/useSession';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { formatarIdadePet, normalizarDataNascParaIso, formatarIsoParaBr } from '../../utils/petUtils';
 
-export default function PetDetailScreen({ navigation, route }: any) {
+type PetDetailScreenProps = NativeStackScreenProps<any, 'PetDetail'>;
+
+export default function PetDetailScreen({ navigation, route }: PetDetailScreenProps) {
   const { user } = useSession();
   const routePetId = route?.params?.petId;
 
@@ -50,19 +51,10 @@ export default function PetDetailScreen({ navigation, route }: any) {
 
   // Estados de Edição
   const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
-  const [editForm, setEditForm] = useState({
-    nome: '',
-    raca: '',
-    dataNasc: '',
-    porte: 'MEDIO' as PetPorte,
-    sexo: 'M',
-    castrado: false,
-    avatarId: '1',
-  });
 
-  const abrirEdicao = useCallback(() => {
-    if (!activePet) return;
-    setEditForm({
+  const initialPetData = useMemo(() => {
+    if (!activePet) return null;
+    return {
       nome: activePet.nome,
       raca: activePet.raca,
       dataNasc: formatarIsoParaBr(activePet.dataNasc),
@@ -70,29 +62,33 @@ export default function PetDetailScreen({ navigation, route }: any) {
       sexo: activePet.sexo || 'M',
       castrado: activePet.castrado || false,
       avatarId: activePet.avatarId || '1',
-    });
+    };
+  }, [activePet]);
+
+  const abrirEdicao = useCallback(() => {
+    if (!activePet) return;
     setModalEdicaoVisivel(true);
   }, [activePet]);
 
-  const handleSalvarEdicao = useCallback(async () => {
+  const handleSalvarEdicao = useCallback(async (formData: PetFormData) => {
     if (!activePet || !user) return;
-    if (!editForm.nome.trim() || !editForm.raca.trim()) {
+    if (!formData.nome.trim() || !formData.raca.trim()) {
       Alert.alert('Aviso', 'Preencha o nome e a raça do pet.');
       return;
     }
 
-    const dataNasc = normalizarDataNascParaIso(editForm.dataNasc || activePet.dataNasc || '');
+    const dataNasc = normalizarDataNascParaIso(formData.dataNasc || activePet.dataNasc || '');
 
     try {
       await updatePetMutation.mutateAsync({
         id: activePet.id,
         data: {
-          nome: editForm.nome.trim(),
+          nome: formData.nome.trim(),
           dataNasc,
-          raca: editForm.raca.trim(),
-          porte: editForm.porte,
-          sexo: editForm.sexo,
-          castrado: editForm.castrado,
+          raca: formData.raca.trim(),
+          porte: formData.porte,
+          sexo: formData.sexo,
+          castrado: formData.castrado,
           usuarioId: user.id,
         },
       });
@@ -101,7 +97,7 @@ export default function PetDetailScreen({ navigation, route }: any) {
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar o pet.');
     }
-  }, [activePet, user, editForm, updatePetMutation]);
+  }, [activePet, user, updatePetMutation]);
 
   const handleExcluirPet = useCallback(() => {
     if (!activePet) return;
@@ -274,101 +270,17 @@ export default function PetDetailScreen({ navigation, route }: any) {
         )}
       </ScrollView>
 
-      {/* Modal de Edição de Ficha do Pet */}
-      <BaseModal
+      {/* Modal de Edição de Ficha do Pet Reutilizável */}
+      <PetFormModal
         visible={modalEdicaoVisivel}
         onClose={() => setModalEdicaoVisivel(false)}
+        mode="edit"
         title={`Editar Ficha de ${activePet?.nome || 'Pet'}`}
         subtitle="Atualize os dados clínicos e cadastrais do animal"
-      >
-        <CustomInput
-          label="Nome do Pet"
-          value={editForm.nome}
-          onChangeText={(t) => setEditForm((p) => ({ ...p, nome: t }))}
-        />
-
-        <CustomInput
-          label="Raça"
-          value={editForm.raca}
-          onChangeText={(t) => setEditForm((p) => ({ ...p, raca: t }))}
-        />
-
-        <CustomInput
-          label="Data de Nascimento"
-          placeholder="DD/MM/AAAA (ex: 15/05/2023)"
-          value={editForm.dataNasc}
-          onChangeText={(t) => setEditForm((p) => ({ ...p, dataNasc: t }))}
-        />
-
-        {/* Porte */}
-        <Text style={styles.fieldLabel}>Porte do Animal</Text>
-        <View style={styles.porteRow}>
-          {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((porte) => (
-            <TouchableOpacity
-              key={porte}
-              style={[styles.porteBtn, editForm.porte === porte && styles.porteBtnSelected]}
-              onPress={() => setEditForm((p) => ({ ...p, porte }))}
-            >
-              <Text
-                style={[
-                  styles.porteBtnText,
-                  editForm.porte === porte && styles.porteBtnTextSelected,
-                ]}
-              >
-                {porte}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Castrado */}
-        <Text style={styles.fieldLabel}>Castrado?</Text>
-        <View style={styles.porteRow}>
-          <TouchableOpacity
-            style={[styles.porteBtn, editForm.castrado && styles.porteBtnSelected]}
-            onPress={() => setEditForm((p) => ({ ...p, castrado: true }))}
-          >
-            <Text
-              style={[
-                styles.porteBtnText,
-                editForm.castrado && styles.porteBtnTextSelected,
-              ]}
-            >
-              Sim
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.porteBtn, !editForm.castrado && styles.porteBtnSelected]}
-            onPress={() => setEditForm((p) => ({ ...p, castrado: false }))}
-          >
-            <Text
-              style={[
-                styles.porteBtnText,
-                !editForm.castrado && styles.porteBtnTextSelected,
-              ]}
-            >
-              Não
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.modalButtonsRow}>
-          <TouchableOpacity
-            style={styles.btnModalCancel}
-            onPress={() => setModalEdicaoVisivel(false)}
-          >
-            <Text style={styles.btnModalCancelText}>Cancelar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.btnModalConfirm}
-            onPress={handleSalvarEdicao}
-          >
-            <Text style={styles.btnModalConfirmText}>Salvar</Text>
-          </TouchableOpacity>
-        </View>
-      </BaseModal>
+        initialData={initialPetData}
+        isLoading={updatePetMutation.isPending}
+        onSubmit={handleSalvarEdicao}
+      />
     </View>
   );
 }
@@ -435,15 +347,4 @@ const styles = StyleSheet.create({
   historyItemDate: { fontSize: 10, color: '#94A3B8', marginTop: 1 },
   historyPoints: { backgroundColor: '#ECFDF5', paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8 },
   historyPointsText: { fontSize: 11, fontWeight: '800', color: '#059669' },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: '#334155', marginTop: 8, marginBottom: 6 },
-  porteRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  porteBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center' },
-  porteBtnSelected: { backgroundColor: '#2563EB' },
-  porteBtnText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
-  porteBtnTextSelected: { color: '#FFFFFF' },
-  modalButtonsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  btnModalCancel: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center' },
-  btnModalCancelText: { color: '#64748B', fontWeight: '700' },
-  btnModalConfirm: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#2563EB', alignItems: 'center' },
-  btnModalConfirmText: { color: '#FFFFFF', fontWeight: '800' },
 });

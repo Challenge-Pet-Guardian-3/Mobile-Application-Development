@@ -11,11 +11,11 @@ export const RegisterSchema = z
     email: z.email('O e-mail está com formato errado!').min(1, 'O e-mail é obrigatório!'),
     senha: z.string().min(6, 'A senha deve ter no mínimo 6 dígitos!'),
     confirmarSenha: z.string().min(1, 'Confirme sua senha!'),
-    ddd: z.string().min(2, 'DDD inválido').max(2, 'DDD deve ter 2 dígitos').default('11'),
-    numeroTelefone: z.string().min(8, 'Telefone deve ter no mínimo 8 dígitos').default('987654321'),
+    ddd: z.string().min(2, 'DDD é obrigatório (2 dígitos)').max(2, 'DDD deve ter 2 dígitos'),
+    numeroTelefone: z.string().min(8, 'Telefone deve ter no mínimo 8 dígitos'),
     role: z.enum(['COMUM', 'PREMIUM']).default('PREMIUM'),
-    cep: z.string().default('01310100'),
-    numero: z.string().default('100'),
+    cep: z.string().min(8, 'CEP deve ter 8 dígitos'),
+    numero: z.string().min(1, 'O número do endereço é obrigatório!'),
   })
   .refine((data) => data.senha === data.confirmarSenha, {
     message: 'As senhas não coincidem!',
@@ -46,3 +46,8 @@ export const PetSchema = z.object({
   castrado: z.boolean().default(false),
   avatarId: z.string().optional(),
 });
+
+export type LoginFormData = z.infer<typeof LoginSchema>;
+export type RegisterFormData = z.infer<typeof RegisterSchema>;
+export type ProfileEditFormData = z.infer<typeof ProfileEditSchema>;
+export type PetSchemaData = z.infer<typeof PetSchema>;

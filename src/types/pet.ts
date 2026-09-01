@@ -39,8 +39,8 @@ export interface PetHistoryResponse {
 
 export interface CoCuidadorResponse {
   usuarioId: number;
-  nomeUsuario: string;
-  emailUsuario: string;
+  nome: string;
+  email: string;
   petId: number;
   nomePet: string;
   responsavelPrincipal: boolean;

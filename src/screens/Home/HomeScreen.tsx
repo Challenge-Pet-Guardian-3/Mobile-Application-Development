@@ -22,10 +22,15 @@ import { getAvatarById } from '../../constants/Avatares';
 import { useSession } from '../../hooks/useSession';
 import { usePets } from '../../hooks/usePets';
 import { useTasks, useCompleteTask, useDeleteTask } from '../../hooks/useTasks';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PetResponse } from '../../types/pet';
 import { TarefaResponse } from '../../types/task';
 
-export default function Home({ navigation }: any) {
+interface HomeScreenProps {
+  navigation: NativeStackNavigationProp<any>;
+}
+
+export default function Home({ navigation }: HomeScreenProps) {
   const { user } = useSession();
 
   // Estados locais da Home

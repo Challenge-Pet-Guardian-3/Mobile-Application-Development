@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,24 @@ import {
   Platform,
   Alert,
   Switch,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-import { CustomInput } from '../../components/CustomInput';
-import { CustomButton } from '../../components/CustomButton';
 import { useSession } from '../../hooks/useSession';
 import { useUserPoints } from '../../hooks/useTasks';
 import { useRedeCuidado } from '../../hooks/useRedeCuidado';
 import { RoleBadge } from '../../components/RoleBadge';
-import { RoleSelector } from '../../components/RoleSelector';
 import { StatCard } from '../../components/StatCard';
 import { BaseModal } from '../../components/BaseModal';
+import { EditProfileModal, EditProfileFormData } from '../../components/EditProfileModal';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
-import { UsuarioRole } from '../../types/user';
 
-export default function UserProfileScreen({ navigation }: any) {
+interface UserProfileScreenProps {
+  navigation: NativeStackNavigationProp<any>;
+}
+
+export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
   const { user, logout } = useSession();
   const { data: pontosTotais } = useUserPoints(user?.id);
   const { data: redeCuidado } = useRedeCuidado(user?.id);
@@ -41,46 +42,23 @@ export default function UserProfileScreen({ navigation }: any) {
   const [notificacoesAtivas, setNotificacoesAtivas] = useState(true);
   const [lembretesSaude, setLembretesSaude] = useState(true);
 
-  // Form de Edição do Usuário
-  const [formEdit, setFormEdit] = useState<{
-    nome: string;
-    email: string;
-    senha: string;
-    ddd: string;
-    numeroTelefone: string;
-    role: UsuarioRole;
-    cep: string;
-    numero: string;
-  }>({
-    nome: '',
-    email: '',
+  const editProfileInitialData: EditProfileFormData = {
+    nome: user?.nome || '',
+    email: user?.email || '',
     senha: '',
-    ddd: '11',
-    numeroTelefone: '',
-    role: 'PREMIUM',
-    cep: '01310100',
-    numero: '100',
-  });
+    ddd: user?.ddd || '',
+    numeroTelefone: user?.numeroTelefone || '',
+    role: user?.role || 'PREMIUM',
+    cep: user?.enderecos && user.enderecos.length > 0 ? user.enderecos[0].cep : '',
+    numero: user?.enderecos && user.enderecos.length > 0 ? user.enderecos[0].numero : '',
+  };
 
-  // Preencher formulário ao abrir edição
   const handleAbrirEdicao = useCallback(() => {
-    if (!user) return;
-    const endereco = user.enderecos && user.enderecos.length > 0 ? user.enderecos[0] : null;
-    setFormEdit({
-      nome: user.nome || '',
-      email: user.email || '',
-      senha: '',
-      ddd: user.ddd || '11',
-      numeroTelefone: user.numeroTelefone || '',
-      role: user.role || 'PREMIUM',
-      cep: endereco?.cep || '01310100',
-      numero: endereco?.numero || '100',
-    });
     setModalEditarPerfil(true);
-  }, [user]);
+  }, []);
 
   // Salvar alterações na API Java (PUT /usuarios/{id})
-  const handleSalvarPerfil = useCallback(async () => {
+  const handleSalvarPerfil = useCallback(async (formEdit: EditProfileFormData) => {
     if (!user) return;
     if (!formEdit.nome.trim() || !formEdit.email.trim()) {
       Alert.alert('Campos obrigatórios', 'Por favor, informe seu nome e e-mail.');
@@ -93,13 +71,13 @@ export default function UserProfileScreen({ navigation }: any) {
         data: {
           nome: formEdit.nome.trim(),
           email: formEdit.email.trim().toLowerCase(),
-          senha: formEdit.senha.trim() || '123456',
-          ddd: formEdit.ddd.replace(/\D/g, '') || '11',
-          numeroTelefone: formEdit.numeroTelefone.replace(/\D/g, '') || '987654321',
+          senha: formEdit.senha?.trim() || '',
+          ddd: formEdit.ddd.replace(/\D/g, ''),
+          numeroTelefone: formEdit.numeroTelefone.replace(/\D/g, ''),
           role: formEdit.role || 'PREMIUM',
           endereco: {
-            cep: formEdit.cep.replace(/\D/g, '') || '01310100',
-            numero: formEdit.numero.trim() || '100',
+            cep: formEdit.cep.replace(/\D/g, ''),
+            numero: formEdit.numero.trim(),
           },
         },
       });
@@ -109,7 +87,7 @@ export default function UserProfileScreen({ navigation }: any) {
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar seus dados na API.');
     }
-  }, [user, formEdit, updateUserMutation]);
+  }, [user, updateUserMutation]);
 
   // Logout com confirmação
   const handleLogout = useCallback(() => {
@@ -362,105 +340,14 @@ export default function UserProfileScreen({ navigation }: any) {
         <View style={{ height: 110 }} />
       </ScrollView>
 
-      {/* Modal de Edição de Perfil */}
-      <BaseModal
+      {/* Modal de Edição de Perfil Reutilizável */}
+      <EditProfileModal
         visible={modalEditarPerfil}
         onClose={() => setModalEditarPerfil(false)}
-        title="Editar Meu Perfil"
-        subtitle="Atualize suas informações cadastrais na API Java"
-      >
-        <RoleSelector
-          value={formEdit.role}
-          onChange={(r) => setFormEdit((p) => ({ ...p, role: r }))}
-          variant="compact"
-          label="Perfil do Tutor:"
-        />
-
-        <CustomInput
-          label="Nome Completo"
-          placeholder="Seu nome"
-          value={formEdit.nome}
-          onChangeText={(t) => setFormEdit((p) => ({ ...p, nome: t }))}
-          leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
-        />
-
-        <CustomInput
-          label="E-mail"
-          placeholder="seu@email.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={formEdit.email}
-          onChangeText={(t) => setFormEdit((p) => ({ ...p, email: t }))}
-          leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
-        />
-
-        <View style={styles.row}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <CustomInput
-              label="DDD"
-              placeholder="11"
-              keyboardType="numeric"
-              maxLength={2}
-              value={formEdit.ddd}
-              onChangeText={(t) => setFormEdit((p) => ({ ...p, ddd: t }))}
-            />
-          </View>
-          <View style={{ flex: 3 }}>
-            <CustomInput
-              label="Telefone"
-              placeholder="987654321"
-              keyboardType="numeric"
-              maxLength={9}
-              value={formEdit.numeroTelefone}
-              onChangeText={(t) => setFormEdit((p) => ({ ...p, numeroTelefone: t }))}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={{ flex: 2, marginRight: 8 }}>
-            <CustomInput
-              label="CEP"
-              placeholder="01310-100"
-              value={formEdit.cep}
-              onChangeText={(t) => setFormEdit((p) => ({ ...p, cep: t }))}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <CustomInput
-              label="Número"
-              placeholder="100"
-              value={formEdit.numero}
-              onChangeText={(t) => setFormEdit((p) => ({ ...p, numero: t }))}
-            />
-          </View>
-        </View>
-
-        <CustomInput
-          label="Nova Senha (opcional)"
-          placeholder="Deixe em branco para manter a atual"
-          secureTextEntry
-          value={formEdit.senha}
-          onChangeText={(t) => setFormEdit((p) => ({ ...p, senha: t }))}
-          leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
-        />
-
-        <View style={styles.modalButtonsRow}>
-          <TouchableOpacity
-            style={styles.btnModalCancel}
-            onPress={() => setModalEditarPerfil(false)}
-          >
-            <Text style={styles.btnModalCancelText}>Cancelar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.btnModalConfirm}
-            onPress={handleSalvarPerfil}
-          >
-            <Text style={styles.btnModalConfirmText}>Salvar Alterações</Text>
-          </TouchableOpacity>
-        </View>
-      </BaseModal>
+        initialData={editProfileInitialData}
+        isLoading={updateUserMutation.isPending}
+        onSubmit={handleSalvarPerfil}
+      />
 
       {/* Modal de FAQ */}
       <BaseModal
@@ -622,12 +509,6 @@ const styles = StyleSheet.create({
   },
   menuText: { fontSize: 14, color: '#0F172A', fontWeight: '700' },
   menuSubText: { fontSize: 11, color: '#64748B', marginTop: 1 },
-  row: { flexDirection: 'row' },
-  modalButtonsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  btnModalCancel: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center' },
-  btnModalCancelText: { color: '#64748B', fontWeight: '700' },
-  btnModalConfirm: { flex: 1, padding: 14, borderRadius: 14, backgroundColor: '#2563EB', alignItems: 'center' },
-  btnModalConfirmText: { color: '#FFFFFF', fontWeight: '800' },
   faqItem: { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EDF2F7' },
   faqQ: { fontSize: 13, fontWeight: '800', color: '#2563EB', marginBottom: 4 },
   faqA: { fontSize: 12, color: '#475569', lineHeight: 18 },

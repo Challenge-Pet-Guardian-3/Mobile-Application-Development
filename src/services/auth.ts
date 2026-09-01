@@ -10,12 +10,12 @@ export const AuthService = {
       nome: data.nome.trim(),
       email: data.email.trim().toLowerCase(),
       senha: data.senha,
-      ddd: data.ddd.replace(/\D/g, '') || '11',
-      numeroTelefone: data.numeroTelefone.replace(/\D/g, '') || '987654321',
+      ddd: data.ddd.replace(/\D/g, ''),
+      numeroTelefone: data.numeroTelefone.replace(/\D/g, ''),
       role: data.role || 'PREMIUM',
       endereco: {
-        cep: data.cep.replace(/\D/g, '') || '01310100',
-        numero: data.numero.trim() || '100',
+        cep: data.cep.replace(/\D/g, ''),
+        numero: data.numero.trim(),
       },
     };
 

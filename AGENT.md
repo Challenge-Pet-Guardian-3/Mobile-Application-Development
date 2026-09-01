@@ -97,6 +97,7 @@ Mobile-Application-Development/
     │   ├── training.ts            → Trilhas, lições e passos de adestramento
     │   └── user.ts                → UsuarioRequest, UsuarioResponse, RedeCuidadoResponse, UsuarioRole
     └── utils/
+        ├── alert.ts               → Utilitário unificado de alerta multiplataforma (Web & Native)
         ├── petUtils.ts            → Utilitários de normalização de data (ISO <-> BR) e cálculo estético de idade
         └── schemas.ts             → Schemas de validação Zod para Login, Cadastro e Pets
 ```
@@ -270,6 +271,30 @@ export interface PetResponse {
   ultimaVacina?: string;
   ultimaConsulta?: string;
 }
+
+export interface CoCuidadorResponse {
+  usuarioId: number;
+  nome: string;
+  email: string;
+  nomeUsuario?: string;
+  emailUsuario?: string;
+  petId: number;
+  nomePet: string;
+  responsavelPrincipal: boolean;
+}
+
+export interface TarefaResponse {
+  id: number;
+  titulo: string;
+  pontosTarefa: number;
+  descricao: string;
+  criacao: string;
+  prazo: string;
+  conclusao?: string | null;
+  status: 'PENDENTE' | 'CONCLUIDO' | 'EXPIRADO';
+  usuarioId?: number | null;
+  petId: number;
+}
 ```
 
 ### Tipos de Usuário & Role (`src/types/user.ts`)
@@ -297,6 +322,16 @@ export interface UsuarioResponse {
   ddd: string;
   numeroTelefone: string;
   enderecos: EnderecoResponse[];
+}
+
+export interface RedeCuidadoResponse {
+  usuarioId: number;
+  nomeUsuario: string;
+  pets: PetResumo[];
+  coCuidadores: CuidadorResumo[];
+  totalTarefasPendentes: number;
+  totalTarefasConcluidas: number;
+  pontosAcumulados: number;
 }
 ```
 

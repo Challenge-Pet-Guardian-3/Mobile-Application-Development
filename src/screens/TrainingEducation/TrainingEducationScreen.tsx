@@ -27,7 +27,7 @@ export default function TrainingEducationScreen() {
 
   const [trilhas, setTrilhas] = useState<TrainingTrack[]>([]);
   const [trilhaAtivaIndex, setTrilhaAtivaIndex] = useState(0);
-  const [totalXpGanho, setTotalXpGanho] = useState(120);
+  const [totalXpGanho, setTotalXpGanho] = useState(0);
 
   const [licaoSelecionada, setLicaoSelecionada] = useState<{
     trilhaId: string;

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserService } from '../services/users';
 import { StorageService } from '../services/storage';
+import { queryKeys } from '../lib/queryKeys';
 import { UsuarioRequest } from '../types/user';
 import { useSession } from './useSession';
 
@@ -16,8 +17,9 @@ export function useUpdateUser() {
       return updatedUser;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['usuario', data.id] });
-      queryClient.invalidateQueries({ queryKey: ['rede-cuidado', data.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.redeCuidado(data.id) });
     },
   });
 }
