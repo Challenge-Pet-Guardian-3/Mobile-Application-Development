@@ -284,6 +284,7 @@ export default function PetProfileScreen() {
           <View style={styles.imageWrapper}>
             <Image source={avatarAtual} style={styles.petImage} resizeMode="cover" />
           </View>
+
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.avatarList}>
             {AVATARES_DISPONIVEIS.map((avatar) => (
               <TouchableOpacity 
@@ -433,9 +434,9 @@ const styles = StyleSheet.create({
   miniAvatarTextoSelecionado: { color: '#0066FF', fontWeight: 'bold' },
   botaoNovoPet: { backgroundColor: '#F0F8FF', borderStyle: 'dashed' },
   avatarSection: { alignItems: 'center', marginTop: 20, marginBottom: 20 },
-  imageWrapper: { position: 'relative', marginBottom: 15 },
+  imageWrapper: { position: 'relative', marginBottom: 8 },
   petImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: '#FFF' },
-  avatarList: { paddingHorizontal: 20, gap: 12, alignItems: 'center' },
+  avatarList: { paddingHorizontal: 20, gap: 12, alignItems: 'center', marginTop: 8 },
   avatarOption: { width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: 'transparent', padding: 2 },
   avatarOptionSelected: { borderColor: '#0066FF' },
   avatarOptionImage: { width: '100%', height: '100%', borderRadius: 30 },
