@@ -75,15 +75,14 @@ const mapFamilia = (data: FamiliaBackend, usuarioId?: number): FamiliaInfo => ({
 });
 
 const fetchFamiliaData = async (usuarioId?: number): Promise<FamiliaInfo> => {
-  try {
-    const { data } = await api.get<FamiliaBackend>('/familia');
-    return mapFamilia(data, usuarioId);
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      return familiaVazia;
-    }
-    throw error;
+  // O backend agora devolve 200 com corpo vazio quando o usuário ainda não tem
+  // família (em vez de 404), então não precisamos mais tratar erro de rede aqui —
+  // só checar se veio conteúdo.
+  const { data } = await api.get<FamiliaBackend | ''>('/familia');
+  if (!data) {
+    return familiaVazia;
   }
+  return mapFamilia(data, usuarioId);
 };
 
 export function useFamily() {

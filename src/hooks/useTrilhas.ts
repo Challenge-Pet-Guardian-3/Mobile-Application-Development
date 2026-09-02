@@ -25,9 +25,9 @@ export function useTrilhas(habilitado: boolean = true) {
   const { data: concluidas = [], isLoading } = useQuery({
     queryKey: ['trilhas-concluidas', usuarioId],
     queryFn: async () => {
-      const { data } = await api.get<EtapaConcluidaBackend[]>('/trilhas/concluidas', {
-        params: { usuarioId },
-      });
+      // GET /trilhas/concluidas agora deriva o usuário do JWT (Authentication) —
+      // não precisa mais mandar usuarioId como query param.
+      const { data } = await api.get<EtapaConcluidaBackend[]>('/trilhas/concluidas');
       return data;
     },
     enabled: Boolean(usuarioId) && habilitado,
@@ -46,8 +46,9 @@ export function useTrilhas(habilitado: boolean = true) {
 
   const concluirEtapaMutation = useMutation({
     mutationFn: async ({ etapaId, tipo, xp }: ConcluirEtapaPayload) => {
+      // TrilhaConclusaoRequest só tem etapaId/tipo/xp — não ignora campos
+      // desconhecidos, então NUNCA mandar usuarioId aqui (o backend pega do JWT).
       const { data } = await api.post<EtapaConcluidaBackend>('/trilhas/concluir', {
-        usuarioId,
         etapaId,
         tipo,
         xp,

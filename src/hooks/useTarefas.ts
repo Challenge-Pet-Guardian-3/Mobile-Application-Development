@@ -158,18 +158,15 @@ export function useTarefas() {
     },
   });
 
+  // /concluir e /reabrir agora derivam o usuário logado direto do JWT
+  // (Authentication) no backend — não recebem mais concluinteId/solicitanteId.
   const alternarStatusMutation = useMutation({
     mutationFn: async ({ id, concluida }: { id: number; concluida: boolean }) => {
       if (!concluida) {
-        const payloadConclusao = { concluinteId: Number(userData?.id || 1) };
-        const { data } = await api.patch<TarefaBackend>(`/tarefas/${id}/concluir`, payloadConclusao);
+        const { data } = await api.patch<TarefaBackend>(`/tarefas/${id}/concluir`);
         return data;
       } else {
-        const { data } = await api.patch<TarefaBackend>(
-          `/tarefas/${id}/reabrir`, 
-          null, 
-          { params: { solicitanteId: userData?.id } }
-        );
+        const { data } = await api.patch<TarefaBackend>(`/tarefas/${id}/reabrir`);
         return data;
       }
     },
@@ -180,11 +177,11 @@ export function useTarefas() {
     },
   });
 
+  // DELETE /tarefas/{id} também passou a derivar o usuário do JWT —
+  // não recebe mais solicitanteId por query.
   const deleteTarefaMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/tarefas/${id}`, {
-        params: { solicitanteId: userData?.id }
-      });
+      await api.delete(`/tarefas/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas', userData?.id] });
