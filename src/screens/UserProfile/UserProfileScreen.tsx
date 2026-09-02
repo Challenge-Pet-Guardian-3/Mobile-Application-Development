@@ -19,6 +19,7 @@ import { useUsuario } from '../../hooks/useUsuario';
 import { useHome } from '../../hooks/useHome';
 import { useFamily } from '../../hooks/useFamily';
 import { api } from '../../services/api';
+import { STORAGE_KEYS } from '../../constants/Keys';
 
 const showAlert = (title: string, message: string) => {
   if (Platform.OS === 'web') {
@@ -359,6 +360,7 @@ export default function UserProfileScreen({ navigation }: any) {
     setJanelaAberta('editar');
   }, [userData, usuario]);
 
+  // ----- FAQ: busca -----
   const faqsFiltradas = useMemo(() => {
     const termoBusca = normalizarTexto(faqBusca);
 
@@ -443,13 +445,12 @@ export default function UserProfileScreen({ navigation }: any) {
 
       const resposta = await updateUsuario(payloadUsuario);
 
+      // Se o backend renovou o token (mudança de e-mail/senha), atualiza no
+      // MESMO lugar que o interceptor do axios lê — senão o app continua
+      // mandando o token antigo e a sessão quebra na próxima requisição.
       if (resposta?.token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${resposta.token}`;
-        if (Platform.OS === 'web') {
-          localStorage.setItem('@PetGuardian:token', resposta.token);
-        } else {
-          await AsyncStorage.setItem('@PetGuardian:token', resposta.token);
-        }
+        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, resposta.token);
       }
 
       if (preencheuEndereco) {
@@ -541,6 +542,22 @@ export default function UserProfileScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Clinics')}>
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
+              <Ionicons name="medkit-outline" size={22} color="#EF4444" />
+            </View>
+            <Text style={styles.menuText}>Clínicas Veterinárias</Text>
+            <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AiAssistant')}>
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#0066FF" />
+            </View>
+            <Text style={styles.menuText}>Assistente de IA</Text>
+            <Ionicons name="chevron-forward" size={20} color="#CBD5E0" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem} onPress={() => setJanelaAberta('faq')}>
             <View style={styles.menuIconWrapper}>
               <Ionicons name="help-buoy-outline" size={22} color="#0066FF" />
@@ -577,7 +594,7 @@ export default function UserProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
               <Text style={styles.secaoTitulo}>Dados Pessoais</Text>
 
               <Text style={styles.inputLabel}>Nome Completo</Text>
@@ -629,7 +646,6 @@ export default function UserProfileScreen({ navigation }: any) {
               />
               {editErros.confirmarSenha && <Text style={styles.erroTexto}>{editErros.confirmarSenha}</Text>}
 
-              {/* ENDEREÇO RESIDENCIAL */}
               <Text style={[styles.secaoTitulo, { marginTop: 15 }]}>Endereço Residencial</Text>
 
               <Text style={styles.inputLabel}>CEP</Text>
@@ -644,10 +660,10 @@ export default function UserProfileScreen({ navigation }: any) {
                   maxLength={9}
                 />
                 {buscandoCep && (
-                  <ActivityIndicator 
-                    size="small" 
-                    color="#0066FF" 
-                    style={{ position: 'absolute', right: 14, top: 16 }} 
+                  <ActivityIndicator
+                    size="small"
+                    color="#0066FF"
+                    style={{ position: 'absolute', right: 14, top: 16 }}
                   />
                 )}
               </View>
@@ -818,6 +834,7 @@ export default function UserProfileScreen({ navigation }: any) {
                 value={faqBusca}
                 onChangeText={setFaqBusca}
                 autoCorrect={false}
+                {...(Platform.OS === 'web' ? { style: [styles.faqSearchInput, { outlineStyle: 'none' as any }] } : {})}
               />
               {faqBusca.length > 0 && (
                 <TouchableOpacity onPress={() => setFaqBusca('')} style={styles.faqSearchClearBtn}>
@@ -831,6 +848,7 @@ export default function UserProfileScreen({ navigation }: any) {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.faqCategoriasScroll}
+                keyboardShouldPersistTaps="handled"
               >
                 {FAQ_CATEGORIAS.map((cat) => {
                   const ativa = faqCategoria === cat;
@@ -850,15 +868,13 @@ export default function UserProfileScreen({ navigation }: any) {
               </ScrollView>
             </View>
 
-            {faqBusca.trim().length > 0 && (
+            {faqBusca.trim().length > 0 && faqsFiltradas.length > 0 && (
               <View style={styles.faqResultCountRow}>
                 <Ionicons name="filter-outline" size={13} color="#64748B" style={{ marginRight: 4 }} />
                 <Text style={styles.faqResultCountText}>
-                  {faqsFiltradas.length === 0
-                    ? 'Nenhuma pergunta encontrada'
-                    : faqsFiltradas.length === 1
-                      ? '1 pergunta encontrada'
-                      : `${faqsFiltradas.length} perguntas encontradas`}
+                  {faqsFiltradas.length === 1
+                    ? '1 pergunta encontrada'
+                    : `${faqsFiltradas.length} perguntas encontradas`}
                 </Text>
               </View>
             )}
@@ -866,6 +882,7 @@ export default function UserProfileScreen({ navigation }: any) {
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              keyboardShouldPersistTaps="handled"
             >
               {faqsFiltradas.length === 0 ? (
                 <View style={styles.faqEmptyContainer}>
@@ -874,7 +891,7 @@ export default function UserProfileScreen({ navigation }: any) {
                   <Text style={styles.faqEmptyTexto}>
                     Não encontramos resultados para "{faqBusca}". Tente pesquisar com outros termos ou fale com nossa equipe.
                   </Text>
-                  {faqBusca.length > 0 && (
+                  {(faqBusca.length > 0 || faqCategoria !== 'Todas') && (
                     <TouchableOpacity
                       style={styles.faqLimparBuscaBtn}
                       onPress={() => {
@@ -964,7 +981,7 @@ export default function UserProfileScreen({ navigation }: any) {
                 <Ionicons name="close" size={24} color="#718096" />
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.contatoDesc}>Envie sua mensagem para a equipe de suporte do PetGuardian.</Text>
               <TextInput
                 style={[styles.modalInput, { height: 120, textAlignVertical: 'top', paddingTop: 16 }]}
@@ -1003,7 +1020,7 @@ const styles = StyleSheet.create({
   menuIconWrapper: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#EBF4FF', justifyContent: 'center', alignItems: 'center' },
   menuText: { flex: 1, marginLeft: 15, fontSize: 16, color: '#2D3748', fontWeight: '600' },
   modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10, 22, 40, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 1000 },
-  modalContent: { width: '100%', backgroundColor: '#FFF', borderRadius: 24, padding: 24, elevation: 10, maxHeight: '85%' },
+  modalContent: { width: '100%', maxWidth: 480, backgroundColor: '#FFF', borderRadius: 24, padding: 24, elevation: 10, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A202C' },
   closeBtn: { padding: 4, backgroundColor: '#F7FAFC', borderRadius: 20 },
@@ -1015,8 +1032,6 @@ const styles = StyleSheet.create({
   erroTexto: { color: '#E53E3E', fontSize: 12, marginTop: -10, marginBottom: 12, marginLeft: 4, fontWeight: '500' },
   modalBtnSalvar: { backgroundColor: '#0066FF', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center' },
   modalBtnSalvarText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-
-  // Estilos da Seção de Educação
   educacaoIntro: { fontSize: 13, color: '#64748B', lineHeight: 20, marginBottom: 4 },
   artigoCard: { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', gap: 6 },
   artigoHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -1024,240 +1039,42 @@ const styles = StyleSheet.create({
   artigoCategoria: { fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
   artigoTitulo: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
   artigoConteudo: { fontSize: 12, color: '#475569', lineHeight: 18 },
-
-  // Estilos do Aviso Legal / Disclaimer
-  disclaimerCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#F1F5F9',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginTop: 6,
-    gap: 10
-  },
-  disclaimerTitulo: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#334155',
-    marginBottom: 3
-  },
-  disclaimerTexto: {
-    fontSize: 11,
-    color: '#64748B',
-    lineHeight: 16
-  },
-
-  // Estilos da Seção de FAQ Avançada
-  faqHeaderIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  faqHeaderSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2
-  },
-  faqSearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    height: 42,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0'
-  },
-  faqSearchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#1E293B',
-    paddingVertical: 0
-  },
-  faqSearchClearBtn: {
-    padding: 4
-  },
-  faqCategoriasScroll: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 2
-  },
-  faqResultCountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    marginBottom: 8
-  },
-  faqResultCountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B'
-  },
-  faqCategoriaChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0'
-  },
-  faqCategoriaChipAtiva: {
-    backgroundColor: '#0066FF',
-    borderColor: '#0066FF'
-  },
-  faqCategoriaChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B'
-  },
-  faqCategoriaChipTextAtiva: {
-    color: '#FFFFFF',
-    fontWeight: '700'
-  },
-  faqCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0'
-  },
-  faqCardAtivo: {
-    borderColor: '#93C5FD',
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3
-  },
-  faqCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
-  },
-  faqIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  faqBadgeRow: {
-    flexDirection: 'row',
-    marginBottom: 2
-  },
-  faqBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase'
-  },
-  faqQuestion: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
-    lineHeight: 18
-  },
-  faqRespostaContainer: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9'
-  },
-  faqAnswer: {
-    fontSize: 12.5,
-    color: '#475569',
-    lineHeight: 18
-  },
-  faqDestaqueBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    padding: 8,
-    borderRadius: 8,
-    marginTop: 8,
-    gap: 6
-  },
-  faqDestaqueTexto: {
-    fontSize: 11.5,
-    color: '#1D4ED8',
-    flex: 1,
-    fontWeight: '600'
-  },
-  faqEmptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-    gap: 6
-  },
-  faqEmptyTitulo: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#334155'
-  },
-  faqEmptyTexto: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    lineHeight: 17
-  },
-  faqLimparBuscaBtn: {
-    marginTop: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 10
-  },
-  faqLimparBuscaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0066FF'
-  },
-  faqSuporteCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10
-  },
-  faqSuporteIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  faqSuporteTitulo: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B'
-  },
-  faqSuporteSubtitulo: {
-    fontSize: 11.5,
-    color: '#64748B'
-  },
-  faqSuporteBtn: {
-    backgroundColor: '#0066FF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 12
-  },
-  faqSuporteBtnText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700'
-  },
+  disclaimerCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#F1F5F9', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginTop: 6, gap: 10 },
+  disclaimerTitulo: { fontSize: 12, fontWeight: '800', color: '#334155', marginBottom: 3 },
+  disclaimerTexto: { fontSize: 11, color: '#64748B', lineHeight: 16 },
+  faqHeaderIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center' },
+  faqHeaderSubtitle: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  faqSearchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 14, paddingHorizontal: 12, height: 42, marginVertical: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  faqSearchInput: { flex: 1, fontSize: 13, color: '#1E293B', paddingVertical: 0 },
+  faqSearchClearBtn: { padding: 4 },
+  faqCategoriasScroll: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  faqResultCountRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, marginBottom: 8 },
+  faqResultCountText: { fontSize: 12, fontWeight: '600', color: '#64748B' },
+  faqCategoriaChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+  faqCategoriaChipAtiva: { backgroundColor: '#0066FF', borderColor: '#0066FF' },
+  faqCategoriaChipText: { fontSize: 12, fontWeight: '600', color: '#64748B' },
+  faqCategoriaChipTextAtiva: { color: '#FFFFFF', fontWeight: '700' },
+  faqCard: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' },
+  faqCardAtivo: { borderColor: '#93C5FD', backgroundColor: '#FFFFFF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+  faqCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  faqIconBox: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  faqBadgeRow: { flexDirection: 'row', marginBottom: 2 },
+  faqBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  faqQuestion: { fontSize: 13, fontWeight: '700', color: '#1E293B', lineHeight: 18 },
+  faqRespostaContainer: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  faqAnswer: { fontSize: 12.5, color: '#475569', lineHeight: 18 },
+  faqDestaqueBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', padding: 8, borderRadius: 8, marginTop: 8, gap: 6 },
+  faqDestaqueTexto: { fontSize: 11.5, color: '#1D4ED8', flex: 1, fontWeight: '600' },
+  faqEmptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24, gap: 6 },
+  faqEmptyTitulo: { fontSize: 14, fontWeight: '700', color: '#334155' },
+  faqEmptyTexto: { fontSize: 12, color: '#64748B', textAlign: 'center', paddingHorizontal: 16, lineHeight: 17 },
+  faqLimparBuscaBtn: { marginTop: 6, paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#EFF6FF', borderRadius: 10 },
+  faqLimparBuscaText: { fontSize: 12, fontWeight: '600', color: '#0066FF' },
+  faqSuporteCard: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14, marginTop: 6, borderWidth: 1, borderColor: '#E2E8F0', gap: 10 },
+  faqSuporteIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center' },
+  faqSuporteTitulo: { fontSize: 13, fontWeight: '700', color: '#1E293B' },
+  faqSuporteSubtitulo: { fontSize: 11.5, color: '#64748B' },
+  faqSuporteBtn: { backgroundColor: '#0066FF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12 },
+  faqSuporteBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
   contatoDesc: { color: '#718096', marginBottom: 16, fontSize: 14, lineHeight: 20 },
 });
