@@ -18,27 +18,20 @@ export default function Tabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#000',
-          bottom: 20,
-          marginHorizontal: 20,
-          borderRadius: 17,
-          borderTopWidth: 0,
-          elevation: 5,
-          height: 60,
-          position: 'absolute',
-        },
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: '#0066ff',
-        tabBarInactiveTintColor: '#999'
+        tabBarInactiveTintColor: '#999',
+        tabBarShowLabel: true,
       }}
     >
       <Tab.Screen
         name="Home"
         component={Home}
         options={{
+          tabBarLabel: 'Início',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome name="home" color={color} size={size} />
-          )
+          ),
         }}
       />
 
@@ -49,7 +42,7 @@ export default function Tabs() {
           title: 'Family Pet',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome name="users" color={color} size={size} />
-          )
+          ),
         }}
       />
 
@@ -60,13 +53,13 @@ export default function Tabs() {
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
             <View style={styles.centerButton}>
-              <MaterialCommunityIcons 
-                name="paw" 
-                size={35} 
-                color={focused ? '#0066ff' : '#000'} 
+              <MaterialCommunityIcons
+                name="paw"
+                size={35}
+                color={focused ? '#0066ff' : '#000'}
               />
             </View>
-          )
+          ),
         }}
       />
 
@@ -76,8 +69,12 @@ export default function Tabs() {
         options={{
           title: 'Trilhas',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="compass-outline" color={color} size={size} />
-          )
+            <MaterialCommunityIcons
+              name="compass-outline"
+              color={color}
+              size={size}
+            />
+          ),
         }}
       />
 
@@ -85,9 +82,10 @@ export default function Tabs() {
         name="Perfil"
         component={UserProfile}
         options={{
+          tabBarLabel: 'Perfil',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome name="user" color={color} size={size} />
-          )
+          ),
         }}
       />
     </Tab.Navigator>
@@ -95,6 +93,17 @@ export default function Tabs() {
 }
 
 const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#000',
+    bottom: 20,
+    marginHorizontal: 20,
+    borderRadius: 17,
+    borderTopWidth: 0,
+    elevation: 5,
+    height: 60,
+    position: 'absolute',
+    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+  },
   centerButton: {
     width: 65,
     height: 65,
@@ -102,12 +111,19 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Platform.OS === 'android' ? 30 : 20, 
+    marginBottom: Platform.OS === 'android' ? 30 : 20,
     borderWidth: 5,
-    borderColor: '#000', 
+    borderColor: '#000',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
-      android: { elevation: 6 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 6,
+      },
     }),
-  }
+  },
 });
