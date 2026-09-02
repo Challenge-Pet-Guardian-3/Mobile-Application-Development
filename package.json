@@ -21,6 +21,7 @@
     "@tanstack/react-query": "^5.102.1",
     "axios": "^1.19.0",
     "expo": "~55.0.07",
+    "expo-image-picker": "~55.0.24",
     "expo-status-bar": "~55.0.6",
     "postinstall": "^0.11.2",
     "react": "19.2.0",
