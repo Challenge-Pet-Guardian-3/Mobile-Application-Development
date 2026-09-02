@@ -11,6 +11,8 @@ import RegisterScreen from '../screens/Register/RegisterScreen';
 
 // Telas Protegidas (Logado)
 import Tabs from './tabs';
+import ClinicsSearchScreen from '../screens/Clinics/ClinicsSearchScreen';
+import AiAssistantScreen from '../screens/AiAssistant/AiAssistantScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +32,11 @@ export default function MainStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {token ? (
         // 🔒 Rotas Protegidas: Inacessíveis para quem não tem token
-        <Stack.Screen name="Tabs" component={Tabs} />
+        <Stack.Group>
+          <Stack.Screen name="Tabs" component={Tabs} />
+          <Stack.Screen name="Clinics" component={ClinicsSearchScreen} />
+          <Stack.Screen name="AiAssistant" component={AiAssistantScreen} />
+        </Stack.Group>
       ) : (
         // 🔓 Rotas Públicas: Fluxo de entrada e autenticação
         <Stack.Group>
