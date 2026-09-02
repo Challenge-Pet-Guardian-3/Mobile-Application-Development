@@ -56,10 +56,13 @@ const getPrazoHojeIso = (): string => {
   return `${ano}-${mes}-${dia}T23:59:59`;
 };
 
-const fetchTarefas = async (usuarioId?: number): Promise<TarefaBackend[]> => {
+// IMPORTANTE: não filtramos mais por usuarioId aqui.
+// O backend já deriva o escopo (família) via Authentication (JWT),
+// então mandar usuarioId só restringia a lista às tarefas daquele
+// usuário específico e escondia as tarefas dos outros membros da família.
+const fetchTarefas = async (): Promise<TarefaBackend[]> => {
   const { data } = await api.get('/tarefas', {
     params: {
-      usuarioId,
       size: 200,
     },
   });
@@ -95,8 +98,10 @@ export function useTarefas() {
     error,
     refetch,
   } = useQuery({
+    // Mantemos userData?.id só como parte da queryKey (cache por sessão),
+    // mas a queryFn não manda mais esse id como filtro pro backend.
     queryKey: ['tarefas', userData?.id],
-    queryFn: () => fetchTarefas(userData?.id),
+    queryFn: fetchTarefas,
     enabled: Boolean(userData?.id),
   });
 
@@ -158,7 +163,7 @@ export function useTarefas() {
     },
   });
 
-  // /concluir e /reabrir agora derivam o usuário logado direto do JWT
+  // /concluir e /reabrir derivam o usuário logado direto do JWT
   // (Authentication) no backend — não recebem mais concluinteId/solicitanteId.
   const alternarStatusMutation = useMutation({
     mutationFn: async ({ id, concluida }: { id: number; concluida: boolean }) => {
