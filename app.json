@@ -4,7 +4,9 @@
     "slug": "pet-guardian",
     "version": "1.0.0",
     "android": {
-      "package": "com.anonymous.petguardian"
+      "package": "com.anonymous.petguardian",
+      "softwareKeyboardLayoutMode": "pan",
+      "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-secure-store"

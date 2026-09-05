@@ -10,14 +10,20 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { PremiumLockCard } from '../../components/PremiumLockCard';
 import { shadows } from '../../utils/shadow';
 import { useAiAssistantScreen } from '../../hooks/useAiAssistantScreen';
+import { AppTabParamList } from '../../routes/types';
 
 export default function AiAssistantScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList>>();
+  const insets = useSafeAreaInsets();
   const {
     user,
     pets,
@@ -40,6 +46,14 @@ export default function AiAssistantScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.headerPad}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Home')}
+            style={styles.btnVoltarTop}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={16} color="#1E293B" />
+            <Text style={styles.btnVoltarText}>Voltar para o Início</Text>
+          </TouchableOpacity>
           <Header subtitle="Orientação Preventiva & Saúde" />
         </View>
         <PremiumLockCard
@@ -63,6 +77,14 @@ export default function AiAssistantScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
     >
       <View style={styles.headerPad}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Home')}
+          style={styles.btnVoltarTop}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={16} color="#1E293B" />
+          <Text style={styles.btnVoltarText}>Voltar para o Início</Text>
+        </TouchableOpacity>
         <Header subtitle="Orientação Preventiva & Saúde" />
       </View>
 
@@ -170,10 +192,8 @@ export default function AiAssistantScreen() {
           styles.fixedBottomContainer,
           {
             paddingBottom: isKeyboardVisible
-              ? 14
-              : Platform.OS === 'ios'
-              ? 104
-              : 96,
+              ? (Platform.OS === 'ios' ? 20 : 36)
+              : Math.max(insets.bottom + 14, Platform.OS === 'ios' ? 32 : 24),
           },
         ]}
       >
@@ -232,6 +252,24 @@ const styles = StyleSheet.create({
   headerPad: {
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 50 : 25,
+  },
+  btnVoltarTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 8,
+  },
+  btnVoltarText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -378,10 +416,10 @@ const styles = StyleSheet.create({
   fixedBottomContainer: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    gap: 10,
+    gap: 12,
   },
   fixedSuggestionsWrapper: {
     marginBottom: 2,
@@ -394,9 +432,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#DBEAFE',
     gap: 6,
@@ -412,22 +450,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    gap: 8,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    minHeight: 54,
+    gap: 10,
   },
   chatInput: {
     flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    fontSize: 13,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#1E293B',
+    minHeight: 42,
   },
   btnSend: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',

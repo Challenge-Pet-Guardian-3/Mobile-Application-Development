@@ -46,6 +46,11 @@ http.interceptors.response.use(
   async (error: AxiosError<ApiErrorResponse>) => {
     const status = error.response?.status ?? 0;
     const data = error.response?.data;
+    const fullUrl = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+
+    if (!error.response) {
+      console.warn(`[HTTP] Sem resposta do servidor para ${fullUrl} (${error.code || error.message})`);
+    }
 
     // 401: Sessão expirada ou não autorizada
     if (status === 401) {

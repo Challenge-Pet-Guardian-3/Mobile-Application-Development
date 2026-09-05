@@ -1,20 +1,23 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-declare const process: { env: Record<string, string | undefined> };
+const getHost = (): string => {
+  if (Platform.OS === 'web') return 'localhost';
 
-const defaultApiUrl = Platform.select({
-  android: 'http://10.0.2.2:8080',
-  ios: 'http://localhost:8080',
-  default: 'http://localhost:8080',
-});
+  const hostUri = Constants.expoConfig?.hostUri;
+  const ip = hostUri?.split(':')[0];
 
-const defaultAiUrl = Platform.select({
-  android: 'http://10.0.2.2:8000',
-  ios: 'http://localhost:8000',
-  default: 'http://localhost:8000',
-});
+  // Ignora adaptadores virtuais internos do Windows/Hyper-V/WSL (172.x.x.x) e loopback
+  if (ip && !ip.startsWith('172.') && ip !== 'localhost' && ip !== '127.0.0.1') {
+    return ip;
+  }
+
+  return '192.168.1.5';
+};
+
+const host = getHost();
 
 export const env = {
-  apiUrl: process.env.EXPO_PUBLIC_API_URL || defaultApiUrl,
-  aiUrl: process.env.EXPO_PUBLIC_AI_URL || defaultAiUrl,
+  apiUrl: `http://${host}:8080`,
+  aiUrl: `http://${host}:8000`,
 };

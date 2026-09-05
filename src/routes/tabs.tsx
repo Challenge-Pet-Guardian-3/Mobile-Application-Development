@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MaterialCommunityIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { shadows } from '../utils/shadow';
 
 import Home from '../screens/Home/HomeScreen';
@@ -42,25 +42,10 @@ export default function Tabs() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarStyle: {
-          backgroundColor: '#0F172A',
-          bottom: Platform.OS === 'ios' ? 24 : 14,
-          marginHorizontal: 16,
-          borderRadius: 24,
-          borderTopWidth: 0,
-          elevation: 10,
-          ...shadows.xxl,
-          height: 64,
-          position: 'absolute',
-          paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-          paddingTop: 8,
-        },
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: '#38BDF8',
         tabBarInactiveTintColor: '#64748B',
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
-        },
+        tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
       <Tab.Screen
@@ -90,6 +75,7 @@ export default function Tabs() {
         name="IA"
         component={AiAssistantScreen}
         options={{
+          tabBarStyle: { display: 'none' },
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
             <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
@@ -109,7 +95,7 @@ export default function Tabs() {
         options={{
           tabBarLabel: 'Trilhas',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="graduation-cap" color={color} size={size - 2} />
+            <MaterialCommunityIcons name="school" color={color} size={size + 2} />
           ),
         }}
       />
@@ -120,7 +106,7 @@ export default function Tabs() {
         options={{
           tabBarLabel: 'Perfil',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" color={color} size={size} />
+            <MaterialCommunityIcons name="account" color={color} size={size + 2} />
           ),
         }}
       />
@@ -129,6 +115,23 @@ export default function Tabs() {
 }
 
 const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#0F172A',
+    bottom: Platform.OS === 'ios' ? 24 : 14,
+    marginHorizontal: 16,
+    borderRadius: 24,
+    borderTopWidth: 0,
+    elevation: 10,
+    ...shadows.xxl,
+    height: 64,
+    position: 'absolute',
+    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+    paddingTop: 8,
+  },
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   centerButton: {
     width: 58,
     height: 58,
