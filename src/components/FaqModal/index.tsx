@@ -19,7 +19,7 @@ const FAQ_ITEMS = [
       'Acesse a aba Family Pet e clique no botão "+ Convidar Familiar" informando o e-mail cadastrado.',
   },
   {
-    pergunta: 'Onde vejo o histórico clínico?',
+    pergunta: 'Onde vejo o histórico de cuidados e saúde?',
     resposta:
       'Na aba Family Pet, toque no card do animal para abrir a Ficha Completa com todo o histórico consolidado.',
   },

@@ -10,7 +10,6 @@ import FamilyPetScreen from '../screens/FamilyPet/FamilyPetScreen';
 import PetDetailScreen from '../screens/PetDetail/PetDetailScreen';
 import TrainingEducationScreen from '../screens/TrainingEducation/TrainingEducationScreen';
 import UserProfileScreen from '../screens/UserProfile/UserProfileScreen';
-import ClinicsSearchScreen from '../screens/ClinicsSearch/ClinicsSearchScreen';
 import AiAssistantScreen from '../screens/AiAssistant/AiAssistantScreen';
 
 import { AppTabParamList, FamilyStackParamList, ProfileStackParamList } from './types';
@@ -32,7 +31,6 @@ function ProfileStack() {
   return (
     <ProfileStackNav.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStackNav.Screen name="ProfileMain" component={UserProfileScreen} />
-      <ProfileStackNav.Screen name="Clinicas" component={ClinicsSearchScreen} />
       <ProfileStackNav.Screen name="PetDetail" component={PetDetailScreen} />
     </ProfileStackNav.Navigator>
   );

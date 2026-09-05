@@ -121,7 +121,7 @@
 * **Target Date:** `2026-08-28`
 * **Priority:** `1 - Critical`
 * **Effort (Story Points):** `5`
-* **Description:** Reestruturação da árvore de navegação com React Navigation aplicando a arquitetura Pet-Centric (Home com score e rotina, PetDetail com histórico consolidado, FamilyPet com cadastro e co-cuidadores, Training/Education, ClinicsSearch 24h e AiAssistant).
+* **Description:** Reestruturação da árvore de navegação com React Navigation aplicando a arquitetura Pet-Centric (Home com score e rotina, PetDetail com histórico consolidado, FamilyPet com cadastro e co-cuidadores, Training/Education e AiAssistant).
 
 #### 🔹 [PBI-01] Reestruturação da Navegação e Validação das Telas Pet-Centric
 * **Work Item Type:** `Product Backlog Item`
@@ -134,19 +134,18 @@
 ##### Descrição (História de Usuário)
 > **Como** usuário do aplicativo PetGuardian,  
 > **Eu quero** navegar de forma fluida entre as telas da plataforma estruturadas com foco no animal,  
-> **Para que** a Home apresente o resumo do pet ativo e sua rotina, o cadastro seja feito na FamilyPet, o histórico fique na tela dedicada do Pet e eu possa acessar Treinamentos, Clínicas 24h e a Assistente de IA.
+> **Para que** a Home apresente o resumo do pet ativo e sua rotina, o cadastro seja feito na FamilyPet, o histórico fique na tela dedicada do Pet e eu possa acessar Treinamentos e a Assistente de IA.
 
 ##### Critérios de Aceite (Acceptance Criteria / Definition of Done)
 - [ ] O aplicativo deve conter a seguinte estrutura de telas funcionais:
   1. `WelcomeScreen`: Boas-vindas e introdução ao aplicativo.
   2. `LoginScreen` & `RegisterScreen`: Fluxo de autenticação e cadastro de tutor na API Spring Boot.
-  3. `HomeScreen`: Painel Pet-Centric com seletor do pet ativo, barra de score de bem-estar (`PetScoreBar`), tarefas da rotina de hoje e atalhos rápidos (IA e Clínicas 24h).
+  3. `HomeScreen`: Painel Pet-Centric com seletor do pet ativo, barra de score de bem-estar (`PetScoreBar`), tarefas da rotina de hoje e atalhos rápidos (IA).
   4. `PetDetailScreen`: Página dedicada ao Pet com dados cadastrais, porte, castração, histórico completo de tarefas concluídas e edição (`PUT /pets/{id}`).
   5. `FamilyPetScreen`: Gestão de pets da família, criação de novos pets (`POST /pets`), criação de tarefas da rotina e convite de co-cuidadores por e-mail (`POST /pets/{id}/cuidadores`).
   6. `TrainingEducationScreen`: Módulos de treinamento, educação e adestramento com gamificação direcionada ao Pet.
-  7. `ClinicsSearchScreen`: Busca de clínicas veterinárias com filtro de emergência/pronto-socorro 24h.
-  8. `AiAssistantScreen`: Assistente de IA integrada que analisa histórico do pet e gera orientações preventivas.
-  9. `UserProfileScreen`: Perfil do tutor, dados de endereço/telefone, total de pontos acumulados e botão de Logout.
+  7. `AiAssistantScreen`: Assistente de IA integrada que analisa histórico do pet e gera orientações preventivas.
+  8. `UserProfileScreen`: Perfil do tutor, dados de endereço/telefone, total de pontos acumulados e botão de Logout.
 - [ ] Navegação gerenciada exclusivamente pelo **React Navigation** (`@react-navigation/native-stack` e `@react-navigation/bottom-tabs`).
 - [ ] Todas as rotas tipadas estritamente em `src/routes/types.ts` (`AppTabParamList`, `FamilyStackParamList`, `ProfileStackParamList`).
 
@@ -154,7 +153,7 @@
 * **Task 1.1:** [TASK-01] Mapear e tipar todas as rotas e parâmetros em `src/routes/types.ts`. *(Activity: Design, Est: 1.5h)*
   * *Descrição:* Criar e tipar interfaces de rotas para garantir navegação segura e sem erros de TypeScript.
 * **Task 1.2:** [TASK-02] Reestruturar `MainStack.tsx` e `tabs.tsx` com a hierarquia de telas Pet-Centric. *(Activity: Development, Est: 2.5h)*
-  * *Descrição:* Organizar tabs inferiores (Home, Família, Treino, Clínicas, IA, Perfil) e stack autenticada.
+  * *Descrição:* Organizar tabs inferiores (Home, Família, Treino, IA, Perfil) e stack autenticada.
 * **Task 1.3:** [TASK-03] Centralizar o cadastro e convite de familiares na `FamilyPetScreen.tsx`. *(Activity: Development, Est: 1.5h)*
   * *Descrição:* Desacoplar formulários de cadastro da tela Home para manter arquitetura modular.
 * **Task 1.4:** [TASK-04] Integrar o histórico consolidado do animal na página dedicada `PetDetailScreen.tsx`. *(Activity: Development, Est: 1.5h)*
@@ -263,7 +262,7 @@
 - [ ] Interceptor HTTP Axios injetando o Bearer Token no formato `Authorization: Bearer <token>` em todas as requisições autenticadas.
 - [ ] Proteção de rotas no `MainStack.tsx`:
   - Usuário não autenticado: Acesso restrito a `WelcomeScreen`, `LoginScreen` e `RegisterScreen`.
-  - Usuário autenticado: Acesso completo às `Tabs` (`HomeScreen`, `FamilyPetScreen`, `TrainingEducationScreen`, `ClinicsSearchScreen`, `AiAssistantScreen`, `UserProfileScreen`, `PetDetailScreen`).
+  - Usuário autenticado: Acesso completo às `Tabs` (`HomeScreen`, `FamilyPetScreen`, `TrainingEducationScreen`, `AiAssistantScreen`, `UserProfileScreen`, `PetDetailScreen`).
 - [ ] Ação de Logout no perfil que limpa o `AsyncStorage`, reseta o contexto e redireciona imediatamente para a tela inicial.
 
 ##### Tarefas Técnicas (Child Tasks)

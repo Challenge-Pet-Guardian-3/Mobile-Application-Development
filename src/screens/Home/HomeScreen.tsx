@@ -59,10 +59,6 @@ export default function Home({ navigation }: HomeScreenProps) {
     navigation.navigate('IA');
   }, [navigation]);
 
-  const handleNavigateToClinics = useCallback(() => {
-    navigation.navigate('Perfil', { screen: 'Clinicas' });
-  }, [navigation]);
-
   if (isLoadingPets && pets.length === 0) {
     return <LoadingSpinner message="Carregando dados do PetGuardian..." />;
   }
@@ -220,30 +216,17 @@ export default function Home({ navigation }: HomeScreenProps) {
           )}
         </View>
 
-        {/* Atalhos Rápidos no Final da Página (IA Assistente e Clínicas 24h) */}
-        <View style={styles.shortcutsRow}>
-          <TouchableOpacity style={styles.shortcutCard} onPress={handleNavigateToAi} activeOpacity={0.85}>
-            <View style={[styles.shortcutIconBox, { backgroundColor: '#EFF6FF' }]}>
-              <MaterialCommunityIcons name="robot-outline" size={20} color="#2563EB" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.shortcutTitle} numberOfLines={1}>IA Assistente</Text>
-              <Text style={styles.shortcutSub} numberOfLines={1}>Dicas e saúde</Text>
-            </View>
-            <Ionicons name="arrow-forward" size={14} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.shortcutCard} onPress={handleNavigateToClinics} activeOpacity={0.85}>
-            <View style={[styles.shortcutIconBox, { backgroundColor: '#FEF2F2' }]}>
-              <MaterialCommunityIcons name="hospital-box-outline" size={20} color="#EF4444" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.shortcutTitle} numberOfLines={1}>Clínicas 24h</Text>
-              <Text style={styles.shortcutSub} numberOfLines={1}>Emergências</Text>
-            </View>
-            <Ionicons name="arrow-forward" size={14} color="#94A3B8" />
-          </TouchableOpacity>
-        </View>
+        {/* Atalho Rápido para a IA Assistente Preventiva */}
+        <TouchableOpacity style={styles.shortcutCard} onPress={handleNavigateToAi} activeOpacity={0.85}>
+          <View style={[styles.shortcutIconBox, { backgroundColor: '#EFF6FF' }]}>
+            <MaterialCommunityIcons name="robot-outline" size={22} color="#2563EB" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.shortcutTitle}>IA Assistente Preventiva</Text>
+            <Text style={styles.shortcutSub}>Orientações contextuais de saúde, nutrição e rotina do pet</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={16} color="#2563EB" />
+        </TouchableOpacity>
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -320,21 +303,16 @@ const styles = StyleSheet.create({
   petPillBreedSelected: {
     color: 'rgba(255, 255, 255, 0.7)',
   },
-  shortcutsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
   shortcutCard: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    gap: 8,
+    gap: 12,
     ...shadows.xs,
     elevation: 1,
   },

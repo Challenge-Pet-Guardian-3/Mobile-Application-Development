@@ -47,9 +47,9 @@ Mobile-Application-Development/
     │   ├── PasswordInput/         → Input de senha com alternância de visibilidade (olho)
     │   ├── PetAvatarCarousel/     → Carrossel horizontal de seleção de pets com mini avatares circulares
     │   ├── PetCard/               → Card de pet para grids com raça, badge de tutor principal e porte
-    │   ├── PetClinicalHistory/    → Histórico clínico consolidado com timeline, pontos e status de conclusão
     │   ├── PetFormModal/          → Modal reutilizável para criação e edição da ficha do animal
     │   ├── PetHeaderCard/         → Card principal de destaque do pet com tags dinâmicas e ações
+    │   ├── PetHistoryList/        → Histórico consolidado de cuidados com timeline, pontos e status
     │   ├── PetScoreBar/           → Barra de bem-estar orgânica com pílulas de status e nível
     │   ├── PremiumLockCard/       → Card informativo de bloqueio e upgrade para recursos exclusivos Premium
     │   ├── RoleBadge/             → Badge visual de perfil (⭐ Tutor Premium ou 🐾 Tutor Comum)
@@ -66,7 +66,6 @@ Mobile-Application-Development/
     ├── hooks/                     → Custom Hooks & Domain Hooks (Separação de Responsabilidades)
     │   ├── useAiAssistant.ts      → Insights preventivos e chat conversacional com o pet
     │   ├── useAuthMutations.ts    → Mutações de Login e Registro com TanStack Query
-    │   ├── useClinics.ts          → Busca de clínicas com filtros de emergência/24h
     │   ├── useFamilyCare.ts       → [DOMAIN HOOK] Gestão da rede familiar, pets, tarefas e cuidadores
     │   ├── useHomeData.ts         → [DOMAIN HOOK] Orquestração do pet ativo, pontuação e tarefas da Home
     │   ├── usePetDetail.ts        → [DOMAIN HOOK] Gestão da ficha clínica, histórico e edição do pet
@@ -86,7 +85,6 @@ Mobile-Application-Development/
     │   └── types.ts               → Tipagem estrita de parâmetros de todas as rotas e stacks
     ├── screens/
     │   ├── AiAssistant/           → Chat com IA preventiva e bloqueio com PremiumLockCard
-    │   ├── ClinicsSearch/         → Catálogo e busca de clínicas veterinárias e pronto-socorro
     │   ├── FamilyPet/             → Gestão de pets da família, criação de tarefas e co-cuidadores
     │   ├── Home/                  → Dashboard do pet ativo, score, ofensiva e tarefas do dia
     │   ├── Login/                 → Tela de login com campos limpos e validação Zod
@@ -98,7 +96,6 @@ Mobile-Application-Development/
     ├── services/                  → Camada de comunicação HTTP REST com o Backend
     │   ├── ai.ts                  → Microsserviço Python FastAPI (/ai/insights, /ai/chat)
     │   ├── auth.ts                → Registro e login integrados ao StorageService
-    │   ├── clinics.ts             → Serviços de busca de clínicas veterinárias
     │   ├── http.ts                → Instância Axios central com interceptors de Request/Response
     │   ├── pets.ts                → Endpoints REST do PetController no Java
     │   ├── storage.ts             → Fachada centralizada: SecureStore (JWT) + AsyncStorage (Cache)
@@ -109,7 +106,6 @@ Mobile-Application-Development/
     │   ├── ai.ts                  → Mensagens e insights de IA
     │   ├── api.ts                 → Paginação Spring (Page<T>) e erros de API
     │   ├── auth.ts                → Credenciais de Login e Registro
-    │   ├── clinic.ts              → Clínicas veterinárias e filtros
     │   ├── models.ts              → Re-exportação agregada de todos os tipos
     │   ├── pet.ts                 → PetRequest, PetResponse, PetHistoryResponse, CoCuidadorResponse
     │   ├── task.ts                → TarefaRequest, TarefaResponse, TarefaConclusaoRequest
@@ -141,7 +137,6 @@ export type FamilyStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
-  Clinicas: undefined;
   PetDetail: { petId?: number } | undefined;
 };
 
@@ -158,7 +153,6 @@ export type RootStackParamList = {
   App: undefined;
   Tabs: undefined;
   PetDetail: { petId?: number } | undefined;
-  Clinicas: undefined;
   IA: { petId?: number } | undefined;
   Family: { screen?: string; params?: { petId?: number } } | undefined;
   Perfil: { screen?: string; params?: Record<string, unknown> } | undefined;
@@ -195,7 +189,7 @@ export type RootStackParamList = {
 - **Componentes Compositores**:
   - `PetAvatarCarousel`: Carrossel horizontal de seleção de pets com mini avatares circulares.
   - `PetHeaderCard`: Card de destaque com tags dinâmicas de porte, idade, sexo e castração, além dos botões "Editar Ficha" e "Excluir".
-  - `PetClinicalHistory`: Timeline de cuidados concluídos com pontuação e formatação segura de datas.
+  - `PetHistoryList`: Timeline de cuidados concluídos com pontuação e formatação segura de datas.
   - `PetFormModal`: Modal pré-preenchido para atualização cadastral na API Java.
 
 ### 4.4. `TrainingEducationScreen` (`src/screens/TrainingEducation/TrainingEducationScreen.tsx`)
@@ -244,11 +238,6 @@ export const queryKeys = {
     byUser: (userId: number) => ['tasks', 'byUser', userId] as const,
     detail: (id: number) => ['tasks', 'detail', id] as const,
     userPoints: (userId: number) => ['tasks', 'userPoints', userId] as const,
-  },
-  clinics: {
-    all: ['clinics'] as const,
-    search: (termo?: string, apenas24h?: boolean) => ['clinics', 'search', { termo, apenas24h }] as const,
-    detail: (id: number) => ['clinics', 'detail', id] as const,
   },
   training: {
     all: ['training'] as const,
@@ -362,7 +351,7 @@ export interface UsuarioResponse {
    - Extraia a lógica para um **Domain Hook** (ex: `useFamilyCare`, `useHomeData`, `usePetDetail`, `useTrainings`, `useUserProfile`) e mantenha a tela responsável puramente pela orquestração visual e renderização de componentes.
 5. **Componentização Modular**:
    - Trechos visuais com responsabilidade definida devem ser componentizados em `src/components/<NomeComponente>/index.tsx`.
-   - Exemplos: `PetAvatarCarousel`, `PetHeaderCard`, `PetClinicalHistory`, `FamilySummaryCard`, `FamilyTaskItem`.
+   - Exemplos: `PetAvatarCarousel`, `PetHeaderCard`, `PetHistoryList`, `FamilySummaryCard`, `FamilyTaskItem`.
 6. **Data de Nascimento nos Pets (`dataNasc`)**:
    - O cadastro e edição operam exclusivamente com `dataNasc` (`DD/MM/AAAA` no input, normalizado para `YYYY-MM-DD` via `normalizarDataNascParaIso`). A idade é calculada dinamicamente via `calcularIdadePet()` e formatada para exibição estética via `formatarIdadePet()`.
 7. **Persistência Centralizada no `StorageService`**:

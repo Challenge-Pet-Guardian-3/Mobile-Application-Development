@@ -8,7 +8,6 @@ export interface AiMessage {
   timestamp: string;
   categoria?: AiCategory;
   urgencia?: AiUrgency;
-  alertaClinica24h?: boolean;
   acoesRecomendadas?: string[];
   scoreXpSugerido?: number;
   tags?: string[];
@@ -41,7 +40,6 @@ export interface AiChatResponsePayload {
   resposta: string;
   categoria?: AiCategory;
   urgencia?: AiUrgency;
-  alerta_clinica_24h?: boolean;
   acoes_recomendadas?: string[];
   score_xp_sugerido?: number;
   origem_resposta?: string;

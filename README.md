@@ -26,12 +26,12 @@ src/
 ├── components/          → Componentes reutilizáveis (PetScoreBar, RoutineCard, Header, EmptyState, etc.)
 ├── constants/           → Constantes de storage (Keys.ts) e avatares visuais (Avatares.ts)
 ├── contexts/            → Gerenciamento global de sessão (AuthContext.tsx com React Context API)
-├── hooks/               → Custom hooks com TanStack Query (useSession, usePets, useTasks, useClinics, useAi)
+├── hooks/               → Custom hooks com TanStack Query (useSession, usePets, useTasks, useAi, useTrainings)
 ├── lib/                 → Configuração do TanStack Query (queryClient.ts e queryKeys.ts)
 ├── routes/              → Navegação nativa (MainStack.tsx, tabs.tsx, types.ts)
-├── screens/             → Telas da aplicação (Home, PetDetail, FamilyPet, Training, Clinics, AI, Profile, Auth)
-├── services/            → Camada HTTP REST (http.ts com Axios Interceptors, auth, pets, tasks, users, clinics, ai)
-├── types/               → Tipagens TypeScript estritas espelhando a API Java (api, auth, user, pet, task, clinic, training, ai)
+├── screens/             → Telas da aplicação (Home, PetDetail, FamilyPet, Training, AI, Profile, Auth)
+├── services/            → Camada HTTP REST (http.ts com Axios Interceptors, auth, pets, tasks, users, ai, trainings)
+├── types/               → Tipagens TypeScript estritas espelhando a API Java (api, auth, user, pet, task, training, ai)
 └── utils/               → Schemas de validação Zod (schemas.ts)
 ```
 
@@ -49,13 +49,12 @@ RootNavigator (MainStack)
 │   └── RegisterScreen        → Cadastro com validação Zod e endereço completo (/usuarios)
 │
 └── AppTabs (Rotas Protegidas — Quando Autenticado com Token JWT)
-    ├── 🏠 HomeScreen           → Resumo do Pet ativo, barra PetScoreBar, rotina de tarefas e atalhos rápidos
+    ├── 🏠 HomeScreen           → Resumo do Pet ativo, barra PetScoreBar, rotina de tarefas e atalho IA Preventiva
     ├── 👥 FamilyStack          → Gestão de múltiplos pets, cadastro de animais e co-cuidadores
-    │   └── 🐾 PetDetailScreen  → Ficha completa do Pet com histórico clínico consolidado (GET /pets/{id}/historico) e edição
-    ├── 🤖 AiAssistantScreen    → (Botão Central) Chat com Inteligência Artificial para dicas e cuidados
-    ├── 🎓 TrainingScreen       → Módulos de treino e adestramento estilo Duolingo que somam pontos ao Pet
-    └── 👤 UserProfileScreen    → Perfil do tutor, pontos reais da API Java, Clínicas 24h e Logout
-        └── 🏥 ClinicsSearchScreen → Busca de clínicas com filtro de emergência/pronto-socorro 24h (Método iFood)
+    │   └── 🐾 PetDetailScreen  → Ficha completa do Pet com histórico consolidado (GET /pets/{id}/historico) e edição
+    ├── 🤖 AiAssistantScreen    → (Botão Central) Chat com Inteligência Artificial para dicas e cuidados preventivos
+    ├── 🎓 TrainingScreen       → Módulos de treino e adestramento interativo que somam pontos ao Pet
+    └── 👤 UserProfileScreen    → Perfil do tutor, pontos reais da API Java, suporte FAQ e Logout
 ```
 
 ---

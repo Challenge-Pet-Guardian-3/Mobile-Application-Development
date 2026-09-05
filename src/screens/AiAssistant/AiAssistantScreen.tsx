@@ -44,7 +44,7 @@ export default function AiAssistantScreen() {
         </View>
         <PremiumLockCard
           title="Assistente IA Exclusivo Premium ⭐"
-          description="A IA Preventiva de Saúde com insights personalizados e orientações clínicas para seus pets está disponível exclusivamente para assinantes Premium."
+          description="A IA Preventiva de Saúde com insights personalizados e orientações especializadas de saúde e bem-estar para seus pets está disponível exclusivamente para assinantes Premium."
           benefits={[
             'Insights automáticos de saúde preventiva',
             'Dúvidas sobre dosagens, nutrição e vacinas',

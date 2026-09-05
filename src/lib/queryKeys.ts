@@ -29,14 +29,6 @@ export const queryKeys = {
     userPoints: (userId?: number) => ['tasks', 'userPoints', userId ?? 0] as const,
   },
 
-  // Clínicas
-  clinics: {
-    all: ['clinics'] as const,
-    search: (termo?: string, apenas24h?: boolean, apenasProntoSocorro?: boolean) =>
-      ['clinics', 'search', { termo, apenas24h, apenasProntoSocorro }] as const,
-    detail: (id: number) => ['clinics', 'detail', id] as const,
-  },
-
   // Treinamentos
   training: {
     all: ['training'] as const,

@@ -11,7 +11,6 @@ export type FamilyStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
-  Clinicas: undefined;
   PetDetail: { petId?: number } | undefined;
 };
 
@@ -28,8 +27,8 @@ export type RootStackParamList = {
   App: undefined;
   Tabs: undefined;
   PetDetail: { petId?: number } | undefined;
-  Clinicas: undefined;
   IA: { petId?: number } | undefined;
   Family: { screen?: string; params?: { petId?: number } } | undefined;
   Perfil: { screen?: string; params?: Record<string, unknown> } | undefined;
 };
+

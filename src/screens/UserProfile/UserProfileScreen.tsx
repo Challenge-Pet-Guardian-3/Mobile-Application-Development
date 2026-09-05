@@ -154,22 +154,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           <Text style={styles.menuSectionTitle}>Recursos PetGuardian</Text>
 
           <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('Clinicas')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
-              <MaterialCommunityIcons name="hospital-box-outline" size={20} color="#EF4444" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.menuText}>Pronto-Socorro & Clínicas 24h</Text>
-              <Text style={styles.menuSubText}>Atendimento emergencial e veterinárias</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, { borderBottomWidth: 0 }]}
             onPress={() => navigation.navigate('IA')}
             activeOpacity={0.7}
           >
@@ -178,7 +163,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.menuText}>Assistente de IA Preventiva</Text>
-              <Text style={styles.menuSubText}>Orientações sobre saúde e rotina</Text>
+              <Text style={styles.menuSubText}>Orientações sobre saúde e rotina do pet</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>

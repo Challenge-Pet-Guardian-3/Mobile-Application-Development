@@ -86,7 +86,6 @@ export const AiService = {
           timestamp: horaAtual,
           categoria: response.data.categoria,
           urgencia: response.data.urgencia,
-          alertaClinica24h: response.data.alerta_clinica_24h,
           acoesRecomendadas: response.data.acoes_recomendadas,
           scoreXpSugerido: response.data.score_xp_sugerido,
         };

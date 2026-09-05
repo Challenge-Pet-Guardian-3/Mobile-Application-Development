@@ -5,12 +5,12 @@ import { shadows } from '../../utils/shadow';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { TarefaResponse } from '../../types/task';
 
-export interface PetClinicalHistoryProps {
+export interface PetHistoryListProps {
   historico: TarefaResponse[];
   isLoading?: boolean;
 }
 
-export function PetClinicalHistory({ historico, isLoading = false }: PetClinicalHistoryProps) {
+export function PetHistoryList({ historico, isLoading = false }: PetHistoryListProps) {
   const formatarDataConclusao = (dataStr?: string | null) => {
     if (!dataStr) return 'Concluído';
     try {
@@ -25,7 +25,7 @@ export function PetClinicalHistory({ historico, isLoading = false }: PetClinical
     <View style={styles.historyCard}>
       <View style={styles.historyHeader}>
         <MaterialCommunityIcons name="clipboard-pulse-outline" size={20} color="#2563EB" />
-        <Text style={styles.historyTitle}>Histórico de Cuidados & Saúde</Text>
+        <Text style={styles.historyTitle}>Histórico de Cuidados & Rotina</Text>
       </View>
 
       {isLoading ? (
@@ -33,7 +33,7 @@ export function PetClinicalHistory({ historico, isLoading = false }: PetClinical
       ) : historico.length === 0 ? (
         <View style={styles.emptyHistory}>
           <MaterialCommunityIcons name="history" size={28} color="#CBD5E1" />
-          <Text style={styles.emptyHistoryText}>Nenhum registro clínico concluído ainda.</Text>
+          <Text style={styles.emptyHistoryText}>Nenhum registro concluído ainda.</Text>
           <Text style={styles.emptyHistorySub}>As rotinas concluídas na Home são sincronizadas aqui!</Text>
         </View>
       ) : (

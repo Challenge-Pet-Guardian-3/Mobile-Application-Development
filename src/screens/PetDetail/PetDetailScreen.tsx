@@ -13,7 +13,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { PetFormModal, PetFormData } from '../../components/PetFormModal';
 import { PetAvatarCarousel } from '../../components/PetAvatarCarousel';
 import { PetHeaderCard } from '../../components/PetHeaderCard';
-import { PetClinicalHistory } from '../../components/PetClinicalHistory';
+import { PetHistoryList } from '../../components/PetHistoryList';
 import { usePetDetail } from '../../hooks/usePetDetail';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
@@ -76,7 +76,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
             <Ionicons name="arrow-back" size={18} color="#1E293B" />
             <Text style={styles.btnVoltarText}>Voltar</Text>
           </TouchableOpacity>
-          <Header subtitle="Prontuário & Histórico Clínico" />
+          <Header subtitle="Prontuário & Histórico de Cuidados" />
         </View>
         <View style={styles.emptyContainerCenter}>
           <MaterialCommunityIcons name="paw-off" size={48} color="#94A3B8" />
@@ -97,7 +97,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
             <Ionicons name="arrow-back" size={18} color="#1E293B" />
             <Text style={styles.btnVoltarText}>Voltar</Text>
           </TouchableOpacity>
-          <Header subtitle="Ficha Completa & Prontuário" />
+          <Header subtitle="Ficha Completa & Histórico de Cuidados" />
         </View>
 
         {/* Carrossel de seleção do Pet */}
@@ -116,8 +116,8 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
               onDelete={handleExcluirPet}
             />
 
-            {/* Histórico Clínico Consolidado */}
-            <PetClinicalHistory
+            {/* Histórico Consolidado de Cuidados */}
+            <PetHistoryList
               historico={historyData?.tarefasConcluidas || []}
               isLoading={isLoadingHistory}
             />
@@ -131,7 +131,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
         onClose={() => setModalEdicaoVisivel(false)}
         mode="edit"
         title={`Editar Ficha de ${activePet?.nome || 'Pet'}`}
-        subtitle="Atualize os dados clínicos e cadastrais do animal"
+        subtitle="Atualize os dados e informações cadastrais do animal"
         initialData={initialPetData}
         isLoading={isUpdatingPet}
         onSubmit={handleSalvarEdicao}
