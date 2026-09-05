@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
+import { TaskSchema, formatZodError } from '../../utils/schemas';
 
 export interface TaskFormData {
   petId: number;
@@ -31,31 +32,44 @@ export function TaskFormModal({
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [pontos, setPontos] = useState('15');
+  const [pontos, setPontos] = useState('');
 
   useEffect(() => {
     if (visible) {
       setSelectedPetId(initialPetId || (pets.length > 0 ? pets[0].id : null));
       setTitulo('');
       setDescricao('');
-      setPontos('15');
+      setPontos('');
     }
   }, [visible, initialPetId, pets]);
 
+  const pontosNum = Number(pontos);
+  const isInvalido =
+    !selectedPetId ||
+    !titulo.trim() ||
+    !descricao.trim() ||
+    !pontos.trim() ||
+    isNaN(pontosNum) ||
+    pontosNum <= 0;
+
   const handleSubmit = () => {
-    if (!selectedPetId) {
-      Alert.alert('Selecione um Pet', 'Por favor, selecione para qual pet a tarefa será criada.');
-      return;
-    }
-    if (!titulo.trim()) {
-      Alert.alert('Título obrigatório', 'Por favor, informe o título da tarefa.');
-      return;
-    }
-    onSubmit({
+    const validacao = TaskSchema.safeParse({
       petId: selectedPetId,
-      titulo: titulo.trim(),
-      descricao: descricao.trim(),
-      pontos: pontos.trim() || '15',
+      titulo,
+      descricao,
+      pontos,
+    });
+
+    if (!validacao.success) {
+      Alert.alert('Dados Incompletos', formatZodError(validacao.error));
+      return;
+    }
+
+    onSubmit({
+      petId: validacao.data.petId,
+      titulo: validacao.data.titulo,
+      descricao: validacao.data.descricao,
+      pontos: String(validacao.data.pontos),
     });
   };
 
@@ -102,7 +116,7 @@ export function TaskFormModal({
 
       <CustomInput
         label="Pontos XP de Recompensa"
-        placeholder="15"
+        placeholder="Ex: 15"
         keyboardType="numeric"
         value={pontos}
         onChangeText={setPontos}
@@ -119,6 +133,7 @@ export function TaskFormModal({
           title="Criar Tarefa"
           variant="success"
           isLoading={isLoading}
+          disabled={isInvalido || isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />

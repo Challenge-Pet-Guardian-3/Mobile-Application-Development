@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { shadows } from '../../utils/shadow';
 
 interface EmptyStateProps {
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -51,10 +52,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
   },
   iconCircle: {
     width: 80,

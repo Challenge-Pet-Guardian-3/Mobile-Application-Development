@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { shadows } from '../../utils/shadow';
 import { DiaOfensiva } from '../../types/models';
 
 interface StreakCardProps {
@@ -8,17 +9,39 @@ interface StreakCardProps {
   totalStreak?: number;
 }
 
-const DIAS_PADRAO = [
-  { id: '1', dayLabel: 'Seg', dayNumber: '24', done: true },
-  { id: '2', dayLabel: 'Ter', dayNumber: '25', done: true },
-  { id: '3', dayLabel: 'Qua', dayNumber: '26', done: true },
-  { id: '4', dayLabel: 'Qui', dayNumber: '27', done: false, isToday: true },
-  { id: '5', dayLabel: 'Sex', dayNumber: '28', done: false },
-  { id: '6', dayLabel: 'Sáb', dayNumber: '29', done: false },
-  { id: '7', dayLabel: 'Dom', dayNumber: '30', done: false },
-];
+function getDiasDaSemanaAtual(totalStreak: number): DiaOfensiva[] {
+  const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const hoje = new Date();
+  const diaSemanaIndex = (hoje.getDay() + 6) % 7;
 
-export function StreakCard({ totalStreak = 3 }: StreakCardProps) {
+  const segunda = new Date(hoje);
+  segunda.setDate(hoje.getDate() - diaSemanaIndex);
+
+  return labels.map((label, idx) => {
+    const dataDia = new Date(segunda);
+    dataDia.setDate(segunda.getDate() + idx);
+    const dayNumber = String(dataDia.getDate());
+    const isToday = idx === diaSemanaIndex;
+    const done = (idx < diaSemanaIndex && diaSemanaIndex - idx < totalStreak) || (isToday && totalStreak > 0);
+
+    return {
+      id: `dia_${idx}_${dayNumber}`,
+      dayLabel: label,
+      dayNumber,
+      done,
+      isToday,
+    };
+  });
+}
+
+export function StreakCard({ streakDays, totalStreak = 0 }: StreakCardProps) {
+  const diasExibidos = useMemo(() => {
+    if (streakDays && streakDays.length > 0) {
+      return streakDays;
+    }
+    return getDiasDaSemanaAtual(totalStreak);
+  }, [streakDays, totalStreak]);
+
   return (
     <View style={styles.streakCard}>
       <View style={styles.streakHeader}>
@@ -36,7 +59,7 @@ export function StreakCard({ totalStreak = 3 }: StreakCardProps) {
       </View>
 
       <View style={styles.streakRow}>
-        {DIAS_PADRAO.map((item) => (
+        {diasExibidos.map((item) => (
           <View key={item.id} style={styles.streakColumn}>
             <View
               style={[
@@ -70,10 +93,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
     elevation: 2,
   },
   streakHeader: {

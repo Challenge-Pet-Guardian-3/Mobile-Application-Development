@@ -1,3 +1,7 @@
+import { PetResponse } from './pet';
+import { TarefaResponse } from './task';
+import { UsuarioResponse } from './user';
+
 export * from './api';
 export * from './auth';
 export * from './user';
@@ -8,9 +12,9 @@ export * from './training';
 export * from './ai';
 
 // Aliases de conveniência
-export type Pet = import('./pet').PetResponse;
-export type Tarefa = import('./task').TarefaResponse;
-export type Usuario = import('./user').UsuarioResponse;
+export type Pet = PetResponse;
+export type Tarefa = TarefaResponse;
+export type Usuario = UsuarioResponse;
 
 export interface DiaOfensiva {
   id: string;

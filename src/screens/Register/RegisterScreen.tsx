@@ -1,111 +1,90 @@
 import React, { useState, useCallback } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useSession } from '../../hooks/useSession';
+import { useRegisterMutation, getAuthErrorMessage } from '../../hooks/useAuthMutations';
 import { CustomInput } from '../../components/CustomInput';
 import { CustomButton } from '../../components/CustomButton';
+import { shadows } from '../../utils/shadow';
 import { PasswordInput } from '../../components/PasswordInput';
 import { AuthHeader } from '../../components/AuthHeader';
 import { AuthFooter } from '../../components/AuthFooter';
 import { RoleSelector } from '../../components/RoleSelector';
-import { RegisterSchema, RegisterFormData } from '../../utils/schemas';
-import { showAlert } from '../../utils/alert';
-import { z } from 'zod';
-
-import axios from 'axios';
+import { UsuarioRole } from '../../types/user';
+import { RegisterSchema, formatZodError } from '../../utils/schemas';
 
 type Props = {
-  navigation: NativeStackNavigationProp<any>;
-};
-
-const INITIAL_FORM: RegisterFormData = {
-  nome: '',
-  email: '',
-  senha: '',
-  confirmarSenha: '',
-  ddd: '',
-  numeroTelefone: '',
-  role: 'PREMIUM',
-  cep: '',
-  numero: '',
+  navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 };
 
 export default function RegisterScreen({ navigation }: Props) {
-  const { register, isLoading } = useSession();
+  const { mutate: register, isPending, error: mutationError, reset: resetMutation } = useRegisterMutation();
 
-  const [form, setForm] = useState<RegisterFormData>(INITIAL_FORM);
-  const [erros, setErros] = useState<Record<string, string>>({});
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [ddd, setDdd] = useState('');
+  const [numeroTelefone, setNumeroTelefone] = useState('');
+  const [role, setRole] = useState<UsuarioRole>('PREMIUM');
+  const [cep, setCep] = useState('');
+  const [numero, setNumero] = useState('');
+  const [validacaoErro, setValidacaoErro] = useState<string | null>(null);
 
-  const handleChange = useCallback(
-    <K extends keyof RegisterFormData>(campo: K, valor: RegisterFormData[K]) => {
-      setForm((prev) => ({ ...prev, [campo]: valor }));
-      setErros((prev) => ({ ...prev, [campo]: '' }));
-    },
-    []
-  );
+  const limparErros = useCallback(() => {
+    if (validacaoErro) setValidacaoErro(null);
+    if (mutationError) resetMutation();
+  }, [validacaoErro, mutationError, resetMutation]);
 
-  const handleRegister = useCallback(async () => {
-    setErros({});
+  const handleRegister = useCallback(() => {
+    limparErros();
 
-    const payload = {
-      nome: form.nome.trim(),
-      email: form.email.trim().toLowerCase(),
-      senha: form.senha,
-      confirmarSenha: form.confirmarSenha,
-      ddd: form.ddd.replace(/\D/g, ''),
-      numeroTelefone: form.numeroTelefone.replace(/\D/g, ''),
-      role: form.role,
-      cep: form.cep.replace(/\D/g, ''),
-      numero: form.numero.trim(),
-    };
+    const dddLimpo = ddd.replace(/\D/g, '');
+    const telLimpo = numeroTelefone.replace(/\D/g, '');
+    const cepLimpo = cep.replace(/\D/g, '');
 
-    try {
-      RegisterSchema.parse(payload);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const novosErros: Record<string, string> = {};
-        error.issues.forEach((err) => {
-          const field = err.path[0] as string;
-          if (field) {
-            novosErros[field] = err.message;
-          }
-        });
-        setErros(novosErros);
-      }
+    const validacao = RegisterSchema.safeParse({
+      nome,
+      email,
+      ddd: dddLimpo,
+      numeroTelefone: telLimpo,
+      role,
+      cep: cepLimpo,
+      numero,
+      senha,
+      confirmarSenha,
+    });
+
+    if (!validacao.success) {
+      setValidacaoErro(formatZodError(validacao.error));
       return;
     }
 
-    try {
-      await register({
-        nome: payload.nome,
-        email: payload.email,
-        senha: payload.senha,
-        ddd: payload.ddd,
-        numeroTelefone: payload.numeroTelefone,
-        role: payload.role,
-        cep: payload.cep,
-        numero: payload.numero,
-      });
-      showAlert('Sucesso!', 'Sua conta foi criada com sucesso!');
-    } catch (e: unknown) {
-      let msg = 'Não foi possível cadastrar na API Java. Verifique a conexão.';
-      if (axios.isAxiosError(e)) {
-        msg = e.response?.data?.message || msg;
-      }
-      showAlert('Erro no Cadastro', msg);
-    }
-  }, [form, register]);
+    register({
+      nome: validacao.data.nome,
+      email: validacao.data.email,
+      senha: validacao.data.senha,
+      ddd: validacao.data.ddd,
+      numeroTelefone: validacao.data.numeroTelefone,
+      role: validacao.data.role,
+      cep: validacao.data.cep,
+      numero: validacao.data.numero,
+    });
+  }, [nome, email, senha, confirmarSenha, ddd, numeroTelefone, role, cep, numero, register, limparErros]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
+
+  const erroExibido = validacaoErro || (mutationError ? getAuthErrorMessage(mutationError) : null);
 
   return (
     <KeyboardAvoidingView
@@ -122,10 +101,10 @@ export default function RegisterScreen({ navigation }: Props) {
           />
 
           <View style={styles.formContainer}>
-            {/* Seletor de Perfil Reutilizável (DRY / Clean Code) */}
+            {/* Seletor de Perfil Reutilizável (COMUM ou PREMIUM) */}
             <RoleSelector
-              value={form.role}
-              onChange={(newRole) => handleChange('role', newRole)}
+              value={role}
+              onChange={(newRole) => setRole(newRole)}
               variant="cards"
               label="Escolha seu Perfil de Tutor:"
             />
@@ -133,9 +112,11 @@ export default function RegisterScreen({ navigation }: Props) {
             <CustomInput
               label="Nome Completo"
               placeholder="Ex: Carlos Eduardo"
-              value={form.nome}
-              onChangeText={(t) => handleChange('nome', t)}
-              error={erros.nome}
+              value={nome}
+              onChangeText={(t) => {
+                setNome(t);
+                limparErros();
+              }}
               leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
             />
 
@@ -144,9 +125,11 @@ export default function RegisterScreen({ navigation }: Props) {
               placeholder="seu@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              value={form.email}
-              onChangeText={(t) => handleChange('email', t)}
-              error={erros.email}
+              value={email}
+              onChangeText={(t) => {
+                setEmail(t);
+                limparErros();
+              }}
               leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
             />
 
@@ -157,9 +140,11 @@ export default function RegisterScreen({ navigation }: Props) {
                   placeholder="11"
                   keyboardType="numeric"
                   maxLength={2}
-                  value={form.ddd}
-                  onChangeText={(t) => handleChange('ddd', t)}
-                  error={erros.ddd}
+                  value={ddd}
+                  onChangeText={(t) => {
+                    setDdd(t.replace(/\D/g, '').slice(0, 2));
+                    limparErros();
+                  }}
                 />
               </View>
               <View style={{ flex: 3 }}>
@@ -167,10 +152,18 @@ export default function RegisterScreen({ navigation }: Props) {
                   label="Telefone"
                   placeholder="987654321"
                   keyboardType="numeric"
-                  maxLength={9}
-                  value={form.numeroTelefone}
-                  onChangeText={(t) => handleChange('numeroTelefone', t)}
-                  error={erros.numeroTelefone}
+                  maxLength={11}
+                  value={numeroTelefone}
+                  onChangeText={(t) => {
+                    const digits = t.replace(/\D/g, '');
+                    if (digits.length === 11 && !ddd) {
+                      setDdd(digits.slice(0, 2));
+                      setNumeroTelefone(digits.slice(2, 11));
+                    } else {
+                      setNumeroTelefone(digits.slice(0, 9));
+                    }
+                    limparErros();
+                  }}
                 />
               </View>
             </View>
@@ -179,19 +172,27 @@ export default function RegisterScreen({ navigation }: Props) {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <CustomInput
                   label="CEP"
-                  placeholder="01310-100"
-                  value={form.cep}
-                  onChangeText={(t) => handleChange('cep', t)}
-                  error={erros.cep}
+                  placeholder="07749-000"
+                  keyboardType="numeric"
+                  maxLength={9}
+                  value={cep}
+                  onChangeText={(t) => {
+                    const digits = t.replace(/\D/g, '').slice(0, 8);
+                    const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+                    setCep(formatted);
+                    limparErros();
+                  }}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <CustomInput
                   label="Número"
                   placeholder="100"
-                  value={form.numero}
-                  onChangeText={(t) => handleChange('numero', t)}
-                  error={erros.numero}
+                  value={numero}
+                  onChangeText={(t) => {
+                    setNumero(t);
+                    limparErros();
+                  }}
                 />
               </View>
             </View>
@@ -199,23 +200,30 @@ export default function RegisterScreen({ navigation }: Props) {
             <PasswordInput
               label="Senha"
               placeholder="Mínimo 6 caracteres"
-              value={form.senha}
-              onChangeText={(t) => handleChange('senha', t)}
-              error={erros.senha}
+              value={senha}
+              onChangeText={(t) => {
+                setSenha(t);
+                limparErros();
+              }}
             />
 
             <PasswordInput
               label="Confirmar Senha"
               placeholder="Repita a senha"
-              value={form.confirmarSenha}
-              onChangeText={(t) => handleChange('confirmarSenha', t)}
-              error={erros.confirmarSenha}
+              value={confirmarSenha}
+              onChangeText={(t) => {
+                setConfirmarSenha(t);
+                limparErros();
+              }}
             />
 
+            {erroExibido && <Text style={styles.erroText}>{erroExibido}</Text>}
+
             <CustomButton
-              title="Concluir Cadastro"
+              title={isPending ? 'Cadastrando…' : 'Concluir Cadastro'}
               variant="success"
-              isLoading={isLoading}
+              isLoading={isPending}
+              disabled={isPending}
               onPress={handleRegister}
               style={{ marginTop: 6 }}
             />
@@ -242,11 +250,15 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
     elevation: 2,
   },
   row: { flexDirection: 'row' },
+  erroText: {
+    color: '#DC2626',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
 });

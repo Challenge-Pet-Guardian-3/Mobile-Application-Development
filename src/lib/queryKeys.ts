@@ -6,45 +6,48 @@ export const queryKeys = {
   },
   users: {
     all: ['users'] as const,
-    detail: (id: number) => ['users', 'detail', id] as const,
+    detail: (id?: number) => ['users', 'detail', id ?? 0] as const,
     byEmail: (email: string) => ['users', 'email', email] as const,
-    redeCuidado: (id: number) => ['users', 'redeCuidado', id] as const,
+    redeCuidado: (id?: number) => ['users', 'redeCuidado', id ?? 0] as const,
   },
 
   // Pets
   pets: {
     all: ['pets'] as const,
     list: (page = 0, size = 20) => ['pets', 'list', { page, size }] as const,
-    detail: (id: number) => ['pets', 'detail', id] as const,
-    history: (id: number) => ['pets', 'history', id] as const,
-    pontos: (id: number) => ['pets', 'pontos', id] as const,
+    detail: (id?: number) => ['pets', 'detail', id ?? 0] as const,
+    history: (id?: number) => ['pets', 'history', id ?? 0] as const,
+    pontos: (id?: number) => ['pets', 'pontos', id ?? 0] as const,
   },
 
   // Tarefas
   tasks: {
     all: ['tasks'] as const,
     list: (page = 0, size = 50) => ['tasks', 'list', { page, size }] as const,
-    byUser: (userId: number) => ['tasks', 'byUser', userId] as const,
-    detail: (id: number) => ['tasks', 'detail', id] as const,
-    userPoints: (userId: number) => ['tasks', 'userPoints', userId] as const,
+    byUser: (userId?: number) => ['tasks', 'byUser', userId ?? 0] as const,
+    detail: (id?: number) => ['tasks', 'detail', id ?? 0] as const,
+    userPoints: (userId?: number) => ['tasks', 'userPoints', userId ?? 0] as const,
   },
 
   // Clínicas
   clinics: {
     all: ['clinics'] as const,
-    search: (termo?: string, apenas24h?: boolean) => ['clinics', 'search', { termo, apenas24h }] as const,
+    search: (termo?: string, apenas24h?: boolean, apenasProntoSocorro?: boolean) =>
+      ['clinics', 'search', { termo, apenas24h, apenasProntoSocorro }] as const,
     detail: (id: number) => ['clinics', 'detail', id] as const,
   },
 
   // Treinamentos
   training: {
+    all: ['training'] as const,
     tracks: ['training', 'tracks'] as const,
+    byPet: (petId?: number) => ['training', 'pet', petId] as const,
     trackDetail: (id: string) => ['training', 'tracks', id] as const,
   },
 
   // Assistente de IA
   ai: {
-    insights: (petId: number) => ['ai', 'insights', petId] as const,
-    messages: (petId: number) => ['ai', 'messages', petId] as const,
+    insights: (petId?: number) => ['ai', 'insights', petId ?? 0] as const,
+    messages: (petId?: number) => ['ai', 'messages', petId ?? 0] as const,
   },
 };

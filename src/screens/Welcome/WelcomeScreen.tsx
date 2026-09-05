@@ -3,10 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../routes/types';
 import { CustomButton } from '../../components/CustomButton';
+import { createShadow } from '../../utils/shadow';
 
 type Props = {
-  navigation: NativeStackNavigationProp<any>;
+  navigation: NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 };
 
 export default function WelcomeScreen({ navigation }: Props) {
@@ -105,10 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0066FF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#0066FF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
+    ...createShadow({ color: '#0066FF', offsetY: 8, blur: 16, opacity: 0.5 }),
     elevation: 8,
   },
   badge: {

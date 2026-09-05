@@ -7,6 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { shadows } from '../../utils/shadow';
 
 interface CustomInputProps extends TextInputProps {
   label?: string;
@@ -65,10 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 14,
     minHeight: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
+    ...shadows.xs,
     elevation: 1,
   },
   inputError: {

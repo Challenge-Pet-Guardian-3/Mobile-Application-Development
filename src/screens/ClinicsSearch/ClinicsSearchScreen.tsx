@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,38 +6,49 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  Linking,
-  Alert,
+  RefreshControl,
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { CustomInput } from '../../components/CustomInput';
+import { shadows } from '../../utils/shadow';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
-import { useClinics } from '../../hooks/useClinics';
+import { ErrorState } from '../../components/ErrorState';
+import { useClinicsSearch } from '../../hooks/useClinicsSearch';
 import { ClinicaResponse } from '../../types/clinic';
 
 export default function ClinicsSearchScreen() {
-  const [termoBusca, setTermoBusca] = useState('');
-  const [somente24h, setSomente24h] = useState(false);
-  const [somenteProntoSocorro, setSomenteProntoSocorro] = useState(false);
-
-  const { data: clinicas, isLoading } = useClinics({
+  const {
     termoBusca,
+    setTermoBusca,
     somente24h,
     somenteProntoSocorro,
-  });
-
-  const handleLigar = (telefone: string) => {
-    const num = telefone.replace(/\D/g, '');
-    Linking.openURL(`tel:${num}`).catch(() => {
-      Alert.alert('Contato', `Telefone da clínica: ${telefone}`);
-    });
-  };
+    alternar24h,
+    alternarProntoSocorro,
+    limparBusca,
+    clinicas,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+    handleLigar,
+  } = useClinicsSearch();
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={refetch}
+            tintColor="#2563EB"
+          />
+        }
+      >
         <Header subtitle="Pronto-Socorro & Atendimento 24h" />
 
         {/* Campo de Busca */}
@@ -48,7 +59,7 @@ export default function ClinicsSearchScreen() {
           leftIcon={<Ionicons name="search" size={18} color="#94A3B8" />}
           rightIcon={
             termoBusca !== '' ? (
-              <TouchableOpacity onPress={() => setTermoBusca('')}>
+              <TouchableOpacity onPress={limparBusca}>
                 <Ionicons name="close-circle" size={18} color="#94A3B8" />
               </TouchableOpacity>
             ) : undefined
@@ -59,7 +70,7 @@ export default function ClinicsSearchScreen() {
         <View style={styles.filtersRow}>
           <TouchableOpacity
             style={[styles.filterChip, somente24h && styles.filterChipActive]}
-            onPress={() => setSomente24h(!somente24h)}
+            onPress={alternar24h}
             activeOpacity={0.8}
           >
             <MaterialCommunityIcons
@@ -74,7 +85,7 @@ export default function ClinicsSearchScreen() {
 
           <TouchableOpacity
             style={[styles.filterChip, somenteProntoSocorro && styles.filterChipActive]}
-            onPress={() => setSomenteProntoSocorro(!somenteProntoSocorro)}
+            onPress={alternarProntoSocorro}
             activeOpacity={0.8}
           >
             <MaterialCommunityIcons
@@ -91,6 +102,11 @@ export default function ClinicsSearchScreen() {
         {/* Lista de Clínicas */}
         {isLoading ? (
           <LoadingSpinner message="Localizando clínicas veterinárias..." />
+        ) : isError ? (
+          <ErrorState
+            message={error instanceof Error ? error.message : 'Não foi possível carregar as clínicas.'}
+            onRetry={refetch}
+          />
         ) : (clinicas || []).length === 0 ? (
           <EmptyState
             iconName="hospital-box-outline"
@@ -187,10 +203,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
     elevation: 2,
   },
   clinicCardSponsored: { borderColor: '#FED7AA', backgroundColor: '#FFFDF9' },
@@ -223,10 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    ...shadows.colored('#10B981', 0.2),
     elevation: 2,
   },
   specialtiesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 10 },

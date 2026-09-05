@@ -5,7 +5,10 @@ import { FiltroClinica } from '../types/clinic';
 
 export function useClinics(filtro?: FiltroClinica) {
   return useQuery({
-    queryKey: queryKeys.clinics.search(filtro?.termoBusca, filtro?.somente24h),
-    queryFn: () => ClinicService.getClinicas(filtro),
+    queryKey: queryKeys.clinics.all,
+    queryFn: () => ClinicService.getClinicas(),
+    select: (clinicas) => ClinicService.filtrarClinicas(clinicas, filtro),
+    staleTime: 1000 * 60 * 10,
   });
 }
+

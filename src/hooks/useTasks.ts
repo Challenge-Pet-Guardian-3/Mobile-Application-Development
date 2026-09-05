@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskService } from '../services/tasks';
 import { queryKeys } from '../lib/queryKeys';
-import { TarefaConclusaoRequest, TarefaRequest } from '../types/task';
+import { Page } from '../types/api';
+import { TarefaConclusaoRequest, TarefaRequest, TarefaResponse } from '../types/task';
 
 export function useTasks(page = 0, size = 50) {
   return useQuery({
@@ -12,16 +13,16 @@ export function useTasks(page = 0, size = 50) {
 
 export function useUserTasks(userId?: number, page = 0, size = 50) {
   return useQuery({
-    queryKey: userId ? queryKeys.tasks.byUser(userId) : ['tasks', 'byUser', 'null'],
-    queryFn: () => (userId ? TaskService.getTarefasPorUsuario(userId, page, size) : Promise.reject('User ID nulo')),
+    queryKey: queryKeys.tasks.byUser(userId),
+    queryFn: () => (userId ? TaskService.getTarefasPorUsuario(userId, page, size) : Promise.reject(new Error('User ID nulo'))),
     enabled: !!userId,
   });
 }
 
 export function useUserPoints(userId?: number) {
   return useQuery({
-    queryKey: userId ? queryKeys.tasks.userPoints(userId) : ['tasks', 'userPoints', 'null'],
-    queryFn: () => (userId ? TaskService.getPontosUsuario(userId) : Promise.reject('User ID nulo')),
+    queryKey: queryKeys.tasks.userPoints(userId),
+    queryFn: () => (userId ? TaskService.getPontosUsuario(userId) : Promise.reject(new Error('User ID nulo'))),
     enabled: !!userId,
   });
 }
@@ -58,7 +59,36 @@ export function useCompleteTask() {
   return useMutation({
     mutationFn: ({ id, request }: { id: number; request: TarefaConclusaoRequest }) =>
       TaskService.concluirTarefa(id, request),
-    onSuccess: () => {
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
+
+      const previousTasksQueries = queryClient.getQueriesData<Page<TarefaResponse>>({
+        queryKey: queryKeys.tasks.all,
+      });
+
+      queryClient.setQueriesData<Page<TarefaResponse>>(
+        { queryKey: queryKeys.tasks.all },
+        (old) => {
+          if (!old || !old.content) return old;
+          return {
+            ...old,
+            content: old.content.map((task) =>
+              task.id === id ? { ...task, status: 'CONCLUIDO' as const } : task
+            ),
+          };
+        }
+      );
+
+      return { previousTasksQueries };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasksQueries) {
+        context.previousTasksQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });

@@ -6,14 +6,15 @@ Este documento serve como referência definitiva e fonte única da verdade para 
 
 ## 🏛️ 1. Visão Geral da Arquitetura
 
-O aplicativo foi construído com foco em **alta performance**, **experiência do usuário moderna (estilo Duolingo/iFood)**, **arquitetura limpa (Clean Code, DRY, SOLID)** e **sincronização reativa de dados** com a API Java Spring Boot (`Java-Advanced`) e o microsserviço de IA em Python (`FastAPI`).
+O aplicativo foi construído com foco em **alta performance**, **experiência do usuário moderna (estilo Duolingo/iFood)**, **arquitetura limpa (Clean Code, DRY, SOLID - SRP)** e **sincronização reativa de dados** com a API Java Spring Boot (`Java-Advanced`) e o microsserviço de IA em Python (`FastAPI`).
 
 ### Stack Tecnológica
 - **Framework Base**: React Native 0.83.6 com **Expo SDK 57** (`expo@~57.0.18`, `@expo/metro-runtime@~57.0.14`, `expo-status-bar@~57.0.1`).
-- **Linguagem**: TypeScript 5.3+ (estrito, sem `any` desnecessário, tipagem explícita de funções).
-- **Gerenciamento de Estado Assíncrono & Cache**: **TanStack Query v5** (`@tanstack/react-query@^5.90.20`).
+- **Linguagem**: TypeScript 5.3+ (**Tipagem Estrita - Zero `any`**, tipagem explícita de props, rotas e retornos).
+- **Gerenciamento de Estado Assíncrono & Cache**: **TanStack Query v5** (`@tanstack/react-query@^5.90.20`) com mutações declarativas (`mutate` com `onSuccess`/`onError`) e invalidação granular de cache.
+- **Padrão Arquitetural de Dados**: **Domain Hooks** (camada intermediária que encapsula regras de negócio, sanitização de payloads, mutations e diálogos de confirmação, mantendo as telas puramente declarativas).
 - **Cliente HTTP Centralizado**: **Axios** com interceptores para injeção automática de Bearer Token JWT e captura global de status `401 Unauthorized`.
-- **Gerenciamento de Sessão Global**: React Context API (`AuthContext`) integrado com `@react-native-async-storage/async-storage`.
+- **Gerenciamento de Sessão Global**: React Context API (`AuthContext`) integrado com `@react-native-async-storage/async-storage` e `expo-secure-store`.
 - **Navegação Nativa**: `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/bottom-tabs`.
 - **Validação de Formulários**: **Zod** (`zod@^4.3.6`).
 - **Ícones**: `@expo/vector-icons` (`MaterialCommunityIcons`, `Ionicons`, `FontAwesome`, `FontAwesome5`).
@@ -29,64 +30,82 @@ Mobile-Application-Development/
 ├── App.tsx                        → Root com QueryClientProvider e AuthProvider
 ├── package.json                   → Dependências alinhadas ao Expo SDK 57
 └── src/
-    ├── components/                → Componentes visuais atômicos e reutilizáveis (DRY / SOLID)
+    ├── components/                → Componentes visuais atômicos e modulares (DRY / SOLID / SRP)
+    │   ├── AuthFooter/            → Rodapé com links de alternância entre Login e Registro
+    │   ├── AuthHeader/            → Cabeçalho temático com botão voltar para fluxos de autenticação
     │   ├── BaseModal/             → Modal acessível com backdrop, título, subtítulo, botão fechar e ScrollView
+    │   ├── CaregiverCard/         → Card de cuidador familiar com status de responsável principal
     │   ├── CustomButton/          → Botão tátil com variantes: primary, success (verde #10B981), secondary, outline, danger
     │   ├── CustomInput/           → Input com suporte a ícones esquerdo/direito, erro flutuante e foco
-    │   ├── EmptyState/            → Estado vazio padronizado com ícone, título, descrição e botão de ação opcional
+    │   ├── EditProfileModal/      → Modal tipado para edição cadastral do tutor
+    │   ├── EmptyState/            → Estado vazio padronizado com ícone, título, descrição e botão de ação
+    │   ├── FamilySummaryCard/     → Card resumo da família com contadores de pets, tarefas e XP da rede
+    │   ├── FamilyTaskItem/        → Item da lista de rotinas familiares com vinculação e exclusão nativa
     │   ├── Header/                → Cabeçalho limpo com título, subtítulo e avatar com iniciais
+    │   ├── InviteCaregiverModal/  → Modal de convite de co-cuidadores por e-mail
     │   ├── LoadingSpinner/        → Indicador de carregamento com mensagem contextual
+    │   ├── PasswordInput/         → Input de senha com alternância de visibilidade (olho)
+    │   ├── PetAvatarCarousel/     → Carrossel horizontal de seleção de pets com mini avatares circulares
+    │   ├── PetCard/               → Card de pet para grids com raça, badge de tutor principal e porte
+    │   ├── PetClinicalHistory/    → Histórico clínico consolidado com timeline, pontos e status de conclusão
+    │   ├── PetFormModal/          → Modal reutilizável para criação e edição da ficha do animal
+    │   ├── PetHeaderCard/         → Card principal de destaque do pet com tags dinâmicas e ações
     │   ├── PetScoreBar/           → Barra de bem-estar orgânica com pílulas de status e nível
     │   ├── PremiumLockCard/       → Card informativo de bloqueio e upgrade para recursos exclusivos Premium
     │   ├── RoleBadge/             → Badge visual de perfil (⭐ Tutor Premium ou 🐾 Tutor Comum)
-    │   ├── RoleSelector/          → Seletor declarativo de plano (variantes: 'cards' para cadastro e 'compact' para modais)
+    │   ├── RoleSelector/          → Seletor declarativo de plano ('cards' no cadastro e 'compact' em modais)
     │   ├── RoutineCard/           → Card de tarefa com checkbox tátil, strike-through e badge de XP
     │   ├── StatCard/              → Card atômico para métricas gamificadas (XP, Pets Família, Concluídas)
+    │   ├── TaskFormModal/         → Modal para criação de novas tarefas e rotinas
     │   └── streakCard/            → Card de ofensiva familiar com pílulas dos 7 dias da semana
     ├── constants/
     │   ├── Avatares.ts            → Mapeamento de avatares ilustrados para pets
     │   └── Keys.ts                → Chaves padronizadas do AsyncStorage
     ├── contexts/
     │   └── AuthContext.tsx        → Contexto global de autenticação, login, registro e persistência
-    ├── hooks/                     → Custom Hooks com TanStack Query (Query & Mutation hooks)
+    ├── hooks/                     → Custom Hooks & Domain Hooks (Separação de Responsabilidades)
     │   ├── useAiAssistant.ts      → Insights preventivos e chat conversacional com o pet
+    │   ├── useAuthMutations.ts    → Mutações de Login e Registro com TanStack Query
     │   ├── useClinics.ts          → Busca de clínicas com filtros de emergência/24h
-    │   ├── usePets.ts             → CRUD de pets, histórico consolidado e convites de familiares
-    │   ├── useRedeCuidado.ts      → Dados agregados da família (pets, co-cuidadores, tarefas)
+    │   ├── useFamilyCare.ts       → [DOMAIN HOOK] Gestão da rede familiar, pets, tarefas e cuidadores
+    │   ├── useHomeData.ts         → [DOMAIN HOOK] Orquestração do pet ativo, pontuação e tarefas da Home
+    │   ├── usePetDetail.ts        → [DOMAIN HOOK] Gestão da ficha clínica, histórico e edição do pet
+    │   ├── usePets.ts             → Queries e mutações básicas de pets (TanStack Query)
+    │   ├── useRedeCuidado.ts      → Query da rede de cuidado agregada (GET /usuarios/{id}/rede-cuidado)
     │   ├── useSession.ts          → Hook utilitário para consumir o AuthContext
-    │   ├── useTasks.ts            → CRUD de tarefas, toggle de conclusão reativo e pontos do tutor
-    │   └── useUsers.ts            → Edição de perfil do usuário (PUT) e exclusão de conta (DELETE)
+    │   ├── useTasks.ts            → Queries e mutações de tarefas e pontos do tutor
+    │   ├── useTrainings.ts        → [DOMAIN HOOK] Trilhas de adestramento gamificadas com TanStack Query
+    │   ├── useUserProfile.ts      → [DOMAIN HOOK] Perfil do tutor, sanitização e preferências
+    │   └── useUsers.ts            → Mutações de atualização (PUT) e exclusão (DELETE) de usuário
     ├── lib/
     │   ├── queryClient.ts         → Instância singleton configurada do TanStack QueryClient
-    │   └── queryKeys.ts           → Fábrica de Query Keys hierárquica e tipada
+    │   └── queryKeys.ts           → Fábrica hierárquica e tipada de Query Keys
     ├── routes/
     │   ├── MainStack.tsx          → Alternador de fluxo (AuthStack vs AppTabs) baseado no token
     │   ├── tabs.tsx               → Barra de abas inferior com botão central elevado da IA
     │   └── types.ts               → Tipagem estrita de parâmetros de todas as rotas e stacks
     ├── screens/
-    │   ├── AiAssistant/           → Chat com IA preventiva e bloqueio com PremiumLockCard para usuários comuns
+    │   ├── AiAssistant/           → Chat com IA preventiva e bloqueio com PremiumLockCard
     │   ├── ClinicsSearch/         → Catálogo e busca de clínicas veterinárias e pronto-socorro
-    │   ├── DicasPet/              → Redirecionamento para a tela de Trilhas
-    │   ├── FamilyPet/             → Gestão de pets da família, criação de tarefas e co-cuidadores com BaseModal
-    │   ├── Home/                  → Dashboard do pet ativo, score, ofensiva, tarefas do dia e atalhos rápidos
-    │   ├── Login/                 → Tela de login com validação Zod
-    │   ├── PetDetail/             → Ficha clínica detalhada, histórico, edição de dados com BaseModal e exclusão
-    │   ├── PetProfile/            → Redirecionamento para PetDetailScreen
-    │   ├── Register/              → Cadastro completo com RoleSelector (default: PREMIUM) e botão verde success
-    │   ├── TrainingEducation/     → Trilhas de adestramento gamificadas com bloqueio PremiumLockCard
-    │   ├── UserProfile/           → Perfil do tutor com RoleBadge, StatCard, RoleSelector e BaseModal
-    │   └── Welcome/               → Onboarding com botão verde 'Criar conta grátis' (variant='success')
+    │   ├── FamilyPet/             → Gestão de pets da família, criação de tarefas e co-cuidadores
+    │   ├── Home/                  → Dashboard do pet ativo, score, ofensiva e tarefas do dia
+    │   ├── Login/                 → Tela de login com campos limpos e validação Zod
+    │   ├── PetDetail/             → Ficha clínica detalhada, histórico e edição com componentes modulares
+    │   ├── Register/              → Cadastro com RoleSelector (default: PREMIUM) e botão verde success
+    │   ├── TrainingEducation/     → Trilhas de adestramento gamificadas alimentadas por TanStack Query
+    │   ├── UserProfile/           → Perfil do tutor, estatísticas, preferências e exclusão de conta
+    │   └── Welcome/               → Onboarding inicial com botão 'Criar conta grátis'
     ├── services/                  → Camada de comunicação HTTP REST com o Backend
-    │   ├── ai.ts                  → Comunicação com microsserviço Python FastAPI (/ai/insights, /ai/chat)
+    │   ├── ai.ts                  → Microsserviço Python FastAPI (/ai/insights, /ai/chat)
     │   ├── auth.ts                → Registro e login integrados ao StorageService
     │   ├── clinics.ts             → Serviços de busca de clínicas veterinárias
     │   ├── http.ts                → Instância Axios central com interceptors de Request/Response
     │   ├── pets.ts                → Endpoints REST do PetController no Java
-    │   ├── storage.ts             → Fachada centralizada: Expo Secure Store (Tokens JWT) + AsyncStorage (Estado/Cache)
+    │   ├── storage.ts             → Fachada centralizada: SecureStore (JWT) + AsyncStorage (Cache)
     │   ├── tasks.ts               → Endpoints REST do TarefaController no Java
-    │   ├── trainings.ts           → Base de trilhas e lições de treino do pet
+    │   ├── trainings.ts           → Endpoints REST de trilhas, módulos e aulas no Java
     │   └── users.ts               → Endpoints REST do UsuarioController no Java
-    ├── types/                     → Contratos TypeScript espelhando a API Java
+    ├── types/                     → Contratos TypeScript espelhando a API Java (100% tipados)
     │   ├── ai.ts                  → Mensagens e insights de IA
     │   ├── api.ts                 → Paginação Spring (Page<T>) e erros de API
     │   ├── auth.ts                → Credenciais de Login e Registro
@@ -94,101 +113,106 @@ Mobile-Application-Development/
     │   ├── models.ts              → Re-exportação agregada de todos os tipos
     │   ├── pet.ts                 → PetRequest, PetResponse, PetHistoryResponse, CoCuidadorResponse
     │   ├── task.ts                → TarefaRequest, TarefaResponse, TarefaConclusaoRequest
-    │   ├── training.ts            → Trilhas, lições e passos de adestramento
+    │   ├── training.ts            → Trilhas, módulos, lições e passos de adestramento
     │   └── user.ts                → UsuarioRequest, UsuarioResponse, RedeCuidadoResponse, UsuarioRole
     └── utils/
-        ├── alert.ts               → Utilitário unificado de alerta multiplataforma (Web & Native)
-        ├── petUtils.ts            → Utilitários de normalização de data (ISO <-> BR) e cálculo estético de idade
+        ├── alert.ts               → Utilitário unificado de alerta multiplataforma
+        ├── petUtils.ts            → Normalização de datas (ISO <-> BR) e cálculo estético de idade
         └── schemas.ts             → Schemas de validação Zod para Login, Cadastro e Pets
 ```
 
 ---
 
-## 🧭 3. Sistema de Navegação & Rotas
+## 🧭 3. Sistema de Navegação & Rotas Tipadas
 
-A navegação é dividida em dois universos condicionados pelo estado `isAuthenticated` do `AuthContext`:
+A navegação é estritamente tipada em `src/routes/types.ts` sem nenhum uso de `any`:
 
-```text
-RootNavigator (src/routes/MainStack.tsx)
-│
-├── [SE NÃO AUTENTICADO] AuthStack (Native Stack)
-│   ├── Welcome   → WelcomeScreen (src/screens/Welcome/WelcomeScreen.tsx)
-│   ├── Login     → LoginScreen (src/screens/Login/LoginScreen.tsx)
-│   └── Register  → RegisterScreen (src/screens/Register/RegisterScreen.tsx)
-│
-└── [SE AUTENTICADO] AppTabs (Bottom Tab Navigator - src/routes/tabs.tsx)
-    ├── Tab 1: Home     → HomeScreen (src/screens/Home/HomeScreen.tsx)
-    ├── Tab 2: Family   → FamilyStack (Native Stack)
-    │   ├── FamilyMain  → FamilyPetScreen (src/screens/FamilyPet/FamilyPetScreen.tsx)
-    │   └── PetDetail   → PetDetailScreen (src/screens/PetDetail/PetDetailScreen.tsx)
-    ├── Tab 3: IA       → (BOTÃO CENTRAL ELEVADO) AiAssistantScreen (src/screens/AiAssistant/AiAssistantScreen.tsx)
-    ├── Tab 4: Treino   → TrainingEducationScreen (src/screens/TrainingEducation/TrainingEducationScreen.tsx)
-    └── Tab 5: Perfil   → ProfileStack (Native Stack)
-        ├── ProfileMain → UserProfileScreen (src/screens/UserProfile/UserProfileScreen.tsx)
-        ├── Clinicas    → ClinicsSearchScreen (src/screens/ClinicsSearch/ClinicsSearchScreen.tsx)
-        └── PetDetail   → PetDetailScreen (src/screens/PetDetail/PetDetailScreen.tsx)
+```typescript
+export type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
+export type FamilyStackParamList = {
+  FamilyMain: undefined;
+  PetDetail: { petId?: number } | undefined;
+};
+
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  Clinicas: undefined;
+  PetDetail: { petId?: number } | undefined;
+};
+
+export type AppTabParamList = {
+  Home: undefined;
+  Family: { screen?: keyof FamilyStackParamList; params?: FamilyStackParamList[keyof FamilyStackParamList] } | undefined;
+  IA: { petId?: number } | undefined;
+  Treino: undefined;
+  Perfil: { screen?: keyof ProfileStackParamList; params?: ProfileStackParamList[keyof ProfileStackParamList] } | undefined;
+};
+
+export type RootStackParamList = {
+  Auth: undefined;
+  App: undefined;
+  Tabs: undefined;
+  PetDetail: { petId?: number } | undefined;
+  Clinicas: undefined;
+  IA: { petId?: number } | undefined;
+  Family: { screen?: string; params?: { petId?: number } } | undefined;
+  Perfil: { screen?: string; params?: Record<string, unknown> } | undefined;
+};
 ```
 
 ---
 
-## 📱 4. Mapeamento Detalhado de Telas
+## 📱 4. Mapeamento Detalhado de Telas & Domain Hooks
 
 ### 4.1. `HomeScreen` (`src/screens/Home/HomeScreen.tsx`)
-- **Propósito**: Dashboard diário do tutor focado no pet ativo.
-- **Componentes Renderizados**:
-  - `Header`: Saudação personalizada ao tutor e subtítulo.
-  - **Seletor de Pets Horizontal**: Pílulas compactas com foto, nome e raça, permitindo alternar o pet ativo em 1 toque.
-  - `PetScoreBar`: Barra de progresso orgânica (0 a 100) com nível calculado (`Math.floor(score / 25) + 1`) e pílula de status (*Excelente*, *Bem Cuidado*, *Atenção*). Ao tocar, abre a ficha `PetDetail`.
-  - `StreakCard`: Ofensiva de dias consecutivos com checks esmeralda e chama âmbar 🔥.
-  - **Rotina de Hoje (`tasksSection`)**: Lista de tarefas pendentes e concluídas do pet ativo usando `RoutineCard`. Permite conclusão rápida em 1 toque (`useCompleteTask`).
-  - **EmptyState com Botão Verde**: Exibe botão verde `#10B981` ("Cadastrar Pet na Family") quando nenhum animal está cadastrado.
-  - **Atalhos no Rodapé**: Cards compactos para acessar a **IA Assistente** e **Clínicas 24h**.
+- **Domain Hook**: [`useHomeData.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/hooks/useHomeData.ts).
+- **Responsabilidade**: Dashboard focado no pet ativo.
+- **Componentes Compositores**:
+  - `Header`: Saudação ao tutor logado.
+  - **Seletor de Pets Horizontal**: Pílulas compactas para alternar o pet ativo.
+  - `PetScoreBar`: Barra de progresso orgânica com cálculo de nível de bem-estar.
+  - `StreakCard`: Ofensiva de dias consecutivos com tarefas concluídas.
+  - `RoutineCard`: Cards interativos para alternar o status das tarefas (`alternarStatusTarefa`) ou removê-las (`excluirTarefaComConfirmacao`).
 
 ### 4.2. `FamilyPetScreen` (`src/screens/FamilyPet/FamilyPetScreen.tsx`)
-- **Propósito**: Gestão colaborativa da família, cadastro de animais e delegação de rotinas.
-- **Componentes Renderizados**:
-  - `SummaryCard`: Resumo da família com contagem de pets, tarefas, cuidadores e XP total acumulado.
-  - **Grid de Animais**: Cards de cada pet com avatar ilustrado, raça e badge de porte. Toque abre a ficha `PetDetail`.
-  - **Botão Verde "+ Novo Pet"**: Abre `<BaseModal>` com campos (Nome, Raça, **Data de Nascimento** `DD/MM/AAAA`, Porte, Sexo, Castrado) com botão verde `#10B981` de confirmação (`POST /pets`).
-  - **Botão "+ Nova Tarefa"**: Abre `<BaseModal>` com botão verde `#10B981` de confirmação (`POST /tarefas`).
-  - **Botão "+ Convidar"**: Abre `<BaseModal>` para vincular familiares co-cuidadores por e-mail via `useInviteCaregiver` (`POST /pets/{id}/convidar-email`).
+- **Domain Hook**: [`useFamilyCare.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/hooks/useFamilyCare.ts).
+- **Responsabilidade**: Gestão colaborativa familiar, animais cadastrados, delegação de tarefas e cuidadores.
+- **Componentes Compositores**:
+  - `FamilySummaryCard`: Resumo visual escuro com totais de pets, tarefas e XP acumulado da rede.
+  - `PetCard`: Grid de animais com tag *"Tutor Princ."* via `RedeCuidadoMapper`.
+  - `FamilyTaskItem`: Itens da lista de tarefas com confirmação integrada de remoção.
+  - `CaregiverCard`: Co-cuidadores vinculados e seus animais associados.
+  - `PetFormModal`, `TaskFormModal` e `InviteCaregiverModal`: Modais limpos para inserção de dados reais.
 
 ### 4.3. `PetDetailScreen` (`src/screens/PetDetail/PetDetailScreen.tsx`)
-- **Propósito**: Prontuário clínico detalhado do animal e edição cadastral.
-- **Componentes Renderizados**:
-  - **Carrossel Superior de Pets**: Permite alternar a ficha de qualquer pet cadastrado.
-  - **Card Principal do Pet**: Avatar ampliado, nome, raça e tags informativas com cálculo dinâmico da idade via `formatarIdadePet(activePet.dataNasc)` (ex: *"2 anos • Macho • Médio"*).
-  - **Edição Cadastral**: Botão "Editar Ficha" abre `<BaseModal>` com o input de **Data de Nascimento** pré-formatado em `DD/MM/AAAA` através de `formatarIsoParaBr()`.
-  - **Histórico Clínico & Cuidados (`GET /pets/{id}/historico`)**: Timeline consolidada de tarefas concluídas com pontos XP.
+- **Domain Hook**: [`usePetDetail.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/hooks/usePetDetail.ts).
+- **Responsabilidade**: Ficha clínica detalhada e prontuário médico.
+- **Componentes Compositores**:
+  - `PetAvatarCarousel`: Carrossel horizontal de seleção de pets com mini avatares circulares.
+  - `PetHeaderCard`: Card de destaque com tags dinâmicas de porte, idade, sexo e castração, além dos botões "Editar Ficha" e "Excluir".
+  - `PetClinicalHistory`: Timeline de cuidados concluídos com pontuação e formatação segura de datas.
+  - `PetFormModal`: Modal pré-preenchido para atualização cadastral na API Java.
 
-### 4.4. `AiAssistantScreen` (`src/screens/AiAssistant/AiAssistantScreen.tsx`)
-- **Propósito**: Assistente virtual contextual para orientação preventiva de saúde animal.
-- **Controle de Acesso RBAC**:
-  - Usuários com `role === 'COMUM'` visualizam o componente `<PremiumLockCard />` detalhando os benefícios exclusivos da assinatura Premium e instrução de upgrade.
-  - Usuários `PREMIUM` têm acesso irrestrito ao chat em tempo real (`useAiChat`) e insights preventivos (`useAiInsights`).
+### 4.4. `TrainingEducationScreen` (`src/screens/TrainingEducation/TrainingEducationScreen.tsx`)
+- **Domain Hook**: [`useTrainings.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/hooks/useTrainings.ts).
+- **Responsabilidade**: Trilhas educativas gamificadas de adestramento alimentadas por TanStack Query.
+- **Regras**:
+  - Bloqueio amigável com `PremiumLockCard` para contas comuns (`role === 'COMUM'`).
+  - Para `PREMIUM`: nós interativos 3D em zigue-zague, modal prático e mutação `concluirLicao` chamando `PATCH /aulas/{id}/concluir` com invalidação automática de cache de pontos do pet.
 
-### 4.5. `TrainingEducationScreen` (`src/screens/TrainingEducation/TrainingEducationScreen.tsx`)
-- **Propósito**: Trilha educacional gamificada de adestramento inspirada no Duolingo.
-- **Controle de Acesso RBAC**:
-  - Usuários com `role === 'COMUM'` visualizam o `<PremiumLockCard />`, protegendo as rotas e evitando erros `403 Forbidden` da API Spring Security.
-  - Usuários `PREMIUM` acessam as lições interativas, nós em zigue-zague 3D e ganho de XP acelerado.
-
-### 4.6. `ClinicsSearchScreen` (`src/screens/ClinicsSearch/ClinicsSearchScreen.tsx`)
-- **Propósito**: Guia veterinário e pronto-socorro emergencial.
-- **Componentes**: Busca com debounce, filtros rápidos (Aberto 24h, Pronto-Socorro), `<EmptyState />` para listas vazias e botão de chamada direta `tel:`.
-
-### 4.7. `UserProfileScreen` (`src/screens/UserProfile/UserProfileScreen.tsx`)
-- **Propósito**: Perfil do tutor, configurações de conta, preferências e suporte.
-- **Componentes Renderizados**:
-  - **Card do Tutor**: Exibe `<RoleBadge />`, nome, e-mail, telefone e endereço.
-  - **Modal de Edição Cadastral**: Utiliza `<BaseModal>` e `<RoleSelector variant="compact" />` para troca de plano e dados.
-  - **Métricas Gamificadas**: 3 `<StatCard />` com Pontos XP, Pets da Família e Tarefas Concluídas.
-  - **Modais de Suporte**: FAQ e Termos de Uso padronizados com `<BaseModal />`.
-
-### 4.8. `WelcomeScreen`, `LoginScreen` & `RegisterScreen`
-- **`WelcomeScreen`**: Botão de entrada **"Criar conta grátis →"** com `variant="success"` (verde `#10B981`).
-- **`LoginScreen`**: Validação com `LoginSchema` (Zod), inputs com toggle de visibilidade e integração com `useSession`.
-- **`RegisterScreen`**: Seleção de plano visual com `<RoleSelector variant="cards" />` (default: `PREMIUM`), validação Zod e botão **"Concluir Cadastro"** verde (`variant="success"`).
+### 4.5. `UserProfileScreen` (`src/screens/UserProfile/UserProfileScreen.tsx`)
+- **Domain Hook**: [`useUserProfile.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/hooks/useUserProfile.ts).
+- **Responsabilidade**: Perfil do tutor, estatísticas gamificadas, switches de preferências e exclusão de conta.
+- **Componentes Compositores**:
+  - `RoleBadge`: Indicador visual do plano (⭐ Premium).
+  - `StatCard`: XP acumulado, contagem de pets e tarefas concluídas.
+  - `EditProfileModal`: Modal com campos de DDD, telefone, CEP e senha.
+  - Ações com diálogos nativos: `logoutComConfirmacao` e `excluirContaComConfirmacao`.
 
 ---
 
@@ -212,6 +236,7 @@ export const queryKeys = {
     list: (page = 0, size = 20) => ['pets', 'list', { page, size }] as const,
     detail: (id: number) => ['pets', 'detail', id] as const,
     history: (id: number) => ['pets', 'history', id] as const,
+    pontos: (id: number) => ['pets', 'pontos', id] as const,
   },
   tasks: {
     all: ['tasks'] as const,
@@ -226,7 +251,9 @@ export const queryKeys = {
     detail: (id: number) => ['clinics', 'detail', id] as const,
   },
   training: {
+    all: ['training'] as const,
     tracks: ['training', 'tracks'] as const,
+    byPet: (petId?: number) => ['training', 'pet', petId] as const,
     trackDetail: (id: string) => ['training', 'tracks', id] as const,
   },
   ai: {
@@ -236,9 +263,24 @@ export const queryKeys = {
 };
 ```
 
+### 5.2. Padrão Declarativo de Mutações (Sem `mutateAsync`)
+- **Regra**: Não utilizar `mutateAsync` envolto em blocos imperativos de `try / catch / finally` nas telas.
+- **Padrão Oficial**: Utilizar `mutate` com os callbacks nativos `onSuccess` e `onError`:
+  ```typescript
+  updatePetMutation.mutate(payload, {
+    onSuccess: () => {
+      Alert.alert('Sucesso!', 'Dados atualizados com sucesso.');
+      callbacks?.onSuccess?.();
+    },
+    onError: () => {
+      Alert.alert('Erro', 'Não foi possível salvar na API Java.');
+    },
+  });
+  ```
+
 ---
 
-## 📐 6. Contratos e Tipagens TypeScript (`src/types/`)
+## 📐 6. Contratos TypeScript Principais (`src/types/`)
 
 ### Tipos de Pet (`src/types/pet.ts`)
 ```typescript
@@ -252,6 +294,8 @@ export interface PetRequest {
   sexo: string; // 'M' | 'F'
   castrado: boolean;
   usuarioId: number;
+  idade?: number;
+  avatarId?: string;
 }
 
 export interface PetResponse {
@@ -271,34 +315,11 @@ export interface PetResponse {
   ultimaVacina?: string;
   ultimaConsulta?: string;
 }
-
-export interface CoCuidadorResponse {
-  usuarioId: number;
-  nome: string;
-  email: string;
-  nomeUsuario?: string;
-  emailUsuario?: string;
-  petId: number;
-  nomePet: string;
-  responsavelPrincipal: boolean;
-}
-
-export interface TarefaResponse {
-  id: number;
-  titulo: string;
-  pontosTarefa: number;
-  descricao: string;
-  criacao: string;
-  prazo: string;
-  conclusao?: string | null;
-  status: 'PENDENTE' | 'CONCLUIDO' | 'EXPIRADO';
-  usuarioId?: number | null;
-  petId: number;
-}
 ```
 
-### Tipos de Usuário & Role (`src/types/user.ts`)
+### Tipos de Usuário & Blindagem da Role (`src/types/user.ts`)
 ```typescript
+// O aplicativo mobile NUNCA deve saber da existência da role ADMIN
 export type UsuarioRole = 'COMUM' | 'PREMIUM';
 
 export interface UsuarioRequest {
@@ -323,53 +344,28 @@ export interface UsuarioResponse {
   numeroTelefone: string;
   enderecos: EnderecoResponse[];
 }
-
-export interface RedeCuidadoResponse {
-  usuarioId: number;
-  nomeUsuario: string;
-  pets: PetResumo[];
-  coCuidadores: CuidadorResumo[];
-  totalTarefasPendentes: number;
-  totalTarefasConcluidas: number;
-  pontosAcumulados: number;
-}
 ```
 
 ---
 
-## 🎨 7. Design System & Padrões Visuais
+## 🔒 7. Boas Práticas & Regras Obrigatórias para Agentes
 
-| Elemento | Token / Valor | Descrição |
-| :--- | :--- | :--- |
-| **Background Principal** | `#F8FAFC` (Slate 50) | Fundo suave, limpo e orgânico |
-| **Superfície de Cards** | `#FFFFFF` | Branco puro com borda fina `rgba(226, 232, 240, 0.8)` |
-| **Cor Primária / Base** | `#0F172A` (Slate 900) & `#2563EB` (Royal Blue) | Tipografia forte e elementos de navegação |
-| **Cor de Cadastro & Criação**| `#10B981` (Emerald Green) | Botões de ação positiva: "Concluir Cadastro", "Criar conta", "Cadastrar Pet", "Criar Tarefa" |
-| **Plano Premium (Gold)** | `#D97706` (Amber 600) & `#FEF3C7` (Amber 100) | Badges de Coroa ⭐, destaques e cards de upgrade |
-| **Plano Comum (Blue)** | `#2563EB` (Blue 600) & `#EFF6FF` (Blue 50) | Badges de Pata 🐾 |
-| **Cor de Alerta / Exclusão**| `#EF4444` (Red 500) | Pronto-socorro, exclusão de registros e logout |
-| **Arredondamento Padrão** | `borderRadius: 18` a `24px` | Curvaturas orgânicas e modernas |
-
----
-
-## 🔒 8. Boas Práticas & Regras Obrigatórias para Agentes
-
-1. **Cadastro e Edição de Pets (Data de Nascimento)**:
-   - Os formulários utilizam **exclusivamente `dataNasc`** (`DD/MM/AAAA` no input do usuário, convertido para `YYYY-MM-DD` pela função `normalizarDataNascParaIso`).
-   - A **idade** do animal nunca é inputada manualmente; ela é calculada dinamicamente via `calcularIdadePet()` e formatada via `formatarIdadePet()` para exibição estética nos cards e badges.
-2. **Role Padrão do Usuário**:
-   - A role padrão é **`PREMIUM`** em todos os formulários (`RegisterScreen`, schemas Zod, entidade backend).
-3. **Componentização & Princípios SOLID / DRY**:
-   - **`BaseModal`**: Usar para todos os novos modais da aplicação. Tipagem de altura deve usar `DimensionValue` de `react-native`.
-   - **`CustomButton`**: Usar `variant="success"` para ações de cadastro e criação de novos registros.
-   - **`RoleBadge` & `RoleSelector`**: Centralizar toda a exibição e seleção de papéis (`COMUM` / `PREMIUM`) nesses componentes.
-   - **`PremiumLockCard`**: Usar como guarda visual em telas/recursos restritos para contas comuns.
-   - **`StatCard`**: Usar para blocos numéricos e métricas de gamificação.
-4. **Sem Null-Checks Defensivos Desnecessários**:
-   - Não utilizar encadeamentos defensivos redundantes onde os valores são garantidos por valores padrão ou validação Zod.
-5. **Nenhum uso de `Locale.ROOT`**:
-   - Utilizar sempre `.toUpperCase()` ou `.toLowerCase()` padrão do JavaScript/TypeScript.
-6. **Persistência de Dados & Segurança (StorageService)**:
-   - Toda e qualquer operação de armazenamento deve passar exclusivamente pelo **`StorageService`** (`src/services/storage.ts`).
-   - Tokens JWT sensíveis são gravados via **`expo-secure-store`** no hardware seguro (KeyStore/Keychain com fallback Web).
-   - Dados de estado e cache (perfil, pet ativo, flags) são persistidos no **`AsyncStorage`**. Nunca importar `AsyncStorage` ou `SecureStore` diretamente em componentes ou telas.
+1. **Tipagem Estrita (Zero `any`)**:
+   - É estritamente proibido o uso de `any` ou `as any` no TypeScript. Utilize genéricos (`<K extends keyof T>`), tipos derivados de schemas Zod (`z.infer<typeof Schema>`) ou contratos formais de rotas e APIs.
+2. **Role Padrão do Tutor**:
+   - A role padrão é **`PREMIUM`** em todos os formulários e estados iniciais.
+   - **Blindagem da Role ADMIN**: O Mobile **NUNCA** deve conter referências à role `ADMIN`. Apenas o Backend Java conhece o perfil administrador.
+3. **Formulários Limpos (Sem Mocks em Produção)**:
+   - Os formulários e campos de entrada de produção iniciam limpos (`useState('')`), sem mocks hardcoded como `'15'`, `'Cuidado diário da família'`, `'11'` ou `'email@petguardian.com'`. A validação é real e o botão de submissão permanece desabilitado enquanto o formulário for inválido.
+4. **Arquitetura com Hooks de Domínio (SRP / DRY / SOLID)**:
+   - Não acumular múltiplas queries, mutations, sanitizações e lógica de persistência nas telas (Views).
+   - Extraia a lógica para um **Domain Hook** (ex: `useFamilyCare`, `useHomeData`, `usePetDetail`, `useTrainings`, `useUserProfile`) e mantenha a tela responsável puramente pela orquestração visual e renderização de componentes.
+5. **Componentização Modular**:
+   - Trechos visuais com responsabilidade definida devem ser componentizados em `src/components/<NomeComponente>/index.tsx`.
+   - Exemplos: `PetAvatarCarousel`, `PetHeaderCard`, `PetClinicalHistory`, `FamilySummaryCard`, `FamilyTaskItem`.
+6. **Data de Nascimento nos Pets (`dataNasc`)**:
+   - O cadastro e edição operam exclusivamente com `dataNasc` (`DD/MM/AAAA` no input, normalizado para `YYYY-MM-DD` via `normalizarDataNascParaIso`). A idade é calculada dinamicamente via `calcularIdadePet()` e formatada para exibição estética via `formatarIdadePet()`.
+7. **Persistência Centralizada no `StorageService`**:
+   - Toda operação de armazenamento passa exclusivamente pelo `StorageService` (`src/services/storage.ts`). Tokens JWT são gravados via `expo-secure-store` e dados de cache/sessão via `AsyncStorage`.
+8. **Imports no Topo**:
+   - Nunca utilizar FQCN ou pacotes inline no corpo dos arquivos. Todos os imports devem constar no topo do arquivo.

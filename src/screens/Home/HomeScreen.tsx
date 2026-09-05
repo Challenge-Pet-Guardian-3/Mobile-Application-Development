@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Platform,
   TouchableOpacity,
-  Alert,
+  RefreshControl,
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
@@ -17,57 +17,34 @@ import { RoutineCard } from '../../components/RoutineCard';
 import { StreakCard } from '../../components/streakCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { ErrorState } from '../../components/ErrorState';
+import { shadows } from '../../utils/shadow';
 import { getAvatarById } from '../../constants/Avatares';
-
-import { useSession } from '../../hooks/useSession';
-import { usePets } from '../../hooks/usePets';
-import { useTasks, useCompleteTask, useDeleteTask } from '../../hooks/useTasks';
+import { useHomeData } from '../../hooks/useHomeData';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { PetResponse } from '../../types/pet';
-import { TarefaResponse } from '../../types/task';
+import { RootStackParamList } from '../../routes/types';
 
 interface HomeScreenProps {
-  navigation: NativeStackNavigationProp<any>;
+  navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
 export default function Home({ navigation }: HomeScreenProps) {
-  const { user } = useSession();
-
-  // Estados locais da Home
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
-
-  // Queries e Mutações com TanStack Query
-  const { data: petsData, isLoading: isLoadingPets } = usePets();
-  const { data: tasksData } = useTasks();
-
-  const completeTaskMutation = useCompleteTask();
-  const deleteTaskMutation = useDeleteTask();
-
-  const pets: PetResponse[] = petsData?.content || [];
-  const allTasks: TarefaResponse[] = tasksData?.content || [];
-
-  // Pet ativo atual
-  const activePet: PetResponse | undefined = useMemo(() => {
-    if (pets.length === 0) return undefined;
-    if (selectedPetId !== null) {
-      const found = pets.find((p) => p.id === selectedPetId);
-      if (found) return found;
-    }
-    return pets[0];
-  }, [pets, selectedPetId]);
-
-  // Filtrar tarefas vinculadas ao pet ativo
-  const tarefasDoPet = useMemo(() => {
-    if (!activePet) return [];
-    return allTasks.filter((t) => t.petId === activePet.id);
-  }, [allTasks, activePet]);
-
-  // Cálculo de score e progresso do pet
-  const tarefasConcluidas = tarefasDoPet.filter((t) => t.status === 'CONCLUIDO');
-  const petScore = useMemo(() => {
-    const pontosBase = tarefasConcluidas.reduce((acc, t) => acc + (t.pontosTarefa || 10), 0);
-    return Math.min(pontosBase, 100);
-  }, [tarefasConcluidas]);
+  const {
+    pets,
+    isLoadingPets,
+    isFetching,
+    isError,
+    error,
+    refetch,
+    selectedPetId,
+    setSelectedPetId,
+    activePet,
+    tarefasDoPet,
+    tarefasConcluidas,
+    petScore,
+    alternarStatusTarefa,
+    excluirTarefaComConfirmacao,
+  } = useHomeData();
 
   // Handlers de navegação
   const handleNavigateToFamily = useCallback(() => {
@@ -86,52 +63,50 @@ export default function Home({ navigation }: HomeScreenProps) {
     navigation.navigate('Perfil', { screen: 'Clinicas' });
   }, [navigation]);
 
-  // Ação de alternar status da tarefa
-  const handleToggleTask = useCallback(
-    async (taskId: number) => {
-      if (!user) return;
-      try {
-        await completeTaskMutation.mutateAsync({
-          id: taskId,
-          request: { concluinteId: user.id },
-        });
-      } catch {
-        Alert.alert('Aviso', 'Não foi possível atualizar o status da tarefa.');
-      }
-    },
-    [user, completeTaskMutation]
-  );
-
-  // Ação de deletar tarefa
-  const handleDeleteTask = useCallback(
-    (taskId: number) => {
-      Alert.alert('Remover Tarefa', 'Deseja realmente remover esta rotina do pet?', [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteTaskMutation.mutateAsync(taskId);
-            } catch {
-              Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
-            }
-          },
-        },
-      ]);
-    },
-    [deleteTaskMutation]
-  );
-
   if (isLoadingPets && pets.length === 0) {
     return <LoadingSpinner message="Carregando dados do PetGuardian..." />;
+  }
+
+  if (isError && pets.length === 0) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isFetching && !isLoadingPets}
+              onRefresh={refetch}
+              tintColor="#10B981"
+            />
+          }
+        >
+          <Header subtitle="Visão Geral do Cuidado" />
+          <ErrorState
+            message={error?.message || 'Não foi possível carregar os dados do painel.'}
+            onRetry={refetch}
+          />
+        </ScrollView>
+        <StatusBar style="dark" />
+      </View>
+    );
   }
 
   // Se não houver pets cadastrados
   if (pets.length === 0) {
     return (
       <View style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isFetching && !isLoadingPets}
+              onRefresh={refetch}
+              tintColor="#10B981"
+            />
+          }
+        >
           <Header subtitle="Visão Geral do Cuidado" />
           <EmptyState
             iconName="dog"
@@ -150,7 +125,17 @@ export default function Home({ navigation }: HomeScreenProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoadingPets}
+            onRefresh={refetch}
+            tintColor="#10B981"
+          />
+        }
+      >
         <Header subtitle="Painel de Saúde e Rotina" />
 
         {/* Seletor Horizontal de Pets Ativos */}
@@ -200,7 +185,7 @@ export default function Home({ navigation }: HomeScreenProps) {
         )}
 
         {/* Ofensiva Familiar */}
-        <StreakCard totalStreak={Math.max(1, tarefasConcluidas.length)} />
+        <StreakCard totalStreak={tarefasConcluidas.length} />
 
         {/* Seção de Tarefas da Rotina */}
         <View style={styles.tasksSection}>
@@ -228,8 +213,8 @@ export default function Home({ navigation }: HomeScreenProps) {
               <RoutineCard
                 key={tarefa.id}
                 tarefa={tarefa}
-                onToggle={handleToggleTask}
-                onDelete={handleDeleteTask}
+                onToggle={alternarStatusTarefa}
+                onDelete={excluirTarefaComConfirmacao}
               />
             ))
           )}
@@ -297,10 +282,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 10,
     minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
+    ...shadows.xs,
     elevation: 1,
   },
   petPillSelected: {
@@ -353,10 +335,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
+    ...shadows.xs,
     elevation: 1,
   },
   shortcutIconBox: {

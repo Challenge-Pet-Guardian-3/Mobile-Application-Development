@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { shadows } from '../../utils/shadow';
 import { RoleBadge } from '../RoleBadge';
 
 interface PremiumLockCardProps {
@@ -59,10 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    ...shadows.md,
     elevation: 3,
     width: '100%',
     maxWidth: 380,

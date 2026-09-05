@@ -8,6 +8,7 @@ import {
   TextStyle,
   TouchableOpacityProps,
 } from 'react-native';
+import { shadows } from '../../utils/shadow';
 
 interface CustomButtonProps extends TouchableOpacityProps {
   title: string;
@@ -90,18 +91,12 @@ const styles = StyleSheet.create({
   },
   btnPrimary: {
     backgroundColor: '#0F172A',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    ...shadows.xl,
     elevation: 3,
   },
   btnSuccess: {
     backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    ...shadows.colored('#10B981', 0.25),
     elevation: 3,
   },
   btnSecondary: {
@@ -117,7 +112,6 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.45,
-    shadowOpacity: 0,
     elevation: 0,
   },
   textBase: {

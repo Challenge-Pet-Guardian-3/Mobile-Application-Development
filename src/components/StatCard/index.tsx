@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { shadows } from '../../utils/shadow';
 
 interface StatCardProps {
   iconName: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -38,10 +39,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
+    ...shadows.xs,
     elevation: 1,
   },
   iconBox: {

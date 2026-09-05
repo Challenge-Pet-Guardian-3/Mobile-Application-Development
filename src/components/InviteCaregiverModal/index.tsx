@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
+import { InviteCaregiverSchema, formatZodError } from '../../utils/schemas';
 
 export interface InviteCaregiverData {
   email: string;
@@ -37,17 +38,19 @@ export function InviteCaregiverModal({
   }, [visible, initialPetId, pets]);
 
   const handleSubmit = () => {
-    if (!email.trim() || !email.includes('@')) {
-      Alert.alert('E-mail inválido', 'Por favor, informe um e-mail válido do familiar.');
-      return;
-    }
-    if (!selectedPetId) {
-      Alert.alert('Selecione um Pet', 'Por favor, selecione qual pet será compartilhado.');
-      return;
-    }
-    onSubmit({
-      email: email.trim(),
+    const validacao = InviteCaregiverSchema.safeParse({
+      email,
       petId: selectedPetId,
+    });
+
+    if (!validacao.success) {
+      Alert.alert('Atenção', formatZodError(validacao.error));
+      return;
+    }
+
+    onSubmit({
+      email: validacao.data.email,
+      petId: validacao.data.petId,
     });
   };
 
@@ -98,6 +101,7 @@ export function InviteCaregiverModal({
           title="Enviar Convite"
           variant="primary"
           isLoading={isLoading}
+          disabled={!email.trim() || !email.includes('@') || !selectedPetId || isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />

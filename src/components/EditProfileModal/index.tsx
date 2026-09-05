@@ -6,6 +6,7 @@ import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
 import { RoleSelector } from '../RoleSelector';
 import { UsuarioRole } from '../../types/user';
+import { ProfileEditSchema, formatZodError } from '../../utils/schemas';
 
 export interface EditProfileFormData {
   nome: string;
@@ -41,12 +42,34 @@ export function EditProfileModal({
     }
   }, [visible, initialData]);
 
+  const updateField = <K extends keyof EditProfileFormData>(key: K, value: EditProfileFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSubmit = () => {
-    if (!form.nome.trim() || !form.email.trim()) {
-      Alert.alert('Campos obrigatórios', 'Por favor, preencha nome e e-mail.');
+    const validacao = ProfileEditSchema.safeParse({
+      ...form,
+      ddd: form.ddd?.replace(/\D/g, '') || '',
+      numeroTelefone: form.numeroTelefone?.replace(/\D/g, '') || '',
+      cep: form.cep?.replace(/\D/g, '') || '',
+    });
+
+    if (!validacao.success) {
+      Alert.alert('Dados do Perfil', formatZodError(validacao.error));
       return;
     }
-    onSubmit(form);
+
+    onSubmit({
+      ...form,
+      nome: validacao.data.nome,
+      email: validacao.data.email,
+      ddd: validacao.data.ddd,
+      numeroTelefone: validacao.data.numeroTelefone,
+      cep: validacao.data.cep,
+      numero: validacao.data.numero,
+      role: validacao.data.role,
+      senha: validacao.data.senha,
+    });
   };
 
   return (
@@ -58,7 +81,7 @@ export function EditProfileModal({
     >
       <RoleSelector
         value={form.role}
-        onChange={(r) => setForm((p) => ({ ...p, role: r }))}
+        onChange={(r) => updateField('role', r)}
         variant="compact"
         label="Perfil do Tutor:"
       />
@@ -67,7 +90,7 @@ export function EditProfileModal({
         label="Nome Completo"
         placeholder="Seu nome"
         value={form.nome}
-        onChangeText={(t) => setForm((p) => ({ ...p, nome: t }))}
+        onChangeText={(t) => updateField('nome', t)}
         leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
       />
 
@@ -77,7 +100,7 @@ export function EditProfileModal({
         keyboardType="email-address"
         autoCapitalize="none"
         value={form.email}
-        onChangeText={(t) => setForm((p) => ({ ...p, email: t }))}
+        onChangeText={(t) => updateField('email', t)}
         leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
       />
 
@@ -89,7 +112,7 @@ export function EditProfileModal({
             keyboardType="numeric"
             maxLength={2}
             value={form.ddd}
-            onChangeText={(t) => setForm((p) => ({ ...p, ddd: t }))}
+            onChangeText={(t) => updateField('ddd', t)}
           />
         </View>
         <View style={{ flex: 3 }}>
@@ -99,7 +122,7 @@ export function EditProfileModal({
             keyboardType="numeric"
             maxLength={9}
             value={form.numeroTelefone}
-            onChangeText={(t) => setForm((p) => ({ ...p, numeroTelefone: t }))}
+            onChangeText={(t) => updateField('numeroTelefone', t)}
           />
         </View>
       </View>
@@ -110,7 +133,7 @@ export function EditProfileModal({
             label="CEP"
             placeholder="01310-100"
             value={form.cep}
-            onChangeText={(t) => setForm((p) => ({ ...p, cep: t }))}
+            onChangeText={(t) => updateField('cep', t)}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -118,7 +141,7 @@ export function EditProfileModal({
             label="Número"
             placeholder="100"
             value={form.numero}
-            onChangeText={(t) => setForm((p) => ({ ...p, numero: t }))}
+            onChangeText={(t) => updateField('numero', t)}
           />
         </View>
       </View>
@@ -128,7 +151,7 @@ export function EditProfileModal({
         placeholder="Deixe em branco para manter a atual"
         secureTextEntry
         value={form.senha || ''}
-        onChangeText={(t) => setForm((p) => ({ ...p, senha: t }))}
+        onChangeText={(t) => updateField('senha', t)}
         leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
       />
 
@@ -143,6 +166,7 @@ export function EditProfileModal({
           title="Salvar Alterações"
           variant="primary"
           isLoading={isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />

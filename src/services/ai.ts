@@ -1,19 +1,12 @@
 import axios from 'axios';
-import { Platform } from 'react-native';
+import { env } from '../config/env';
 import { AiMessage, AiPetInsight, AiChatResponsePayload, AiPetContextPayload } from '../types/ai';
 import { PetResponse } from '../types/pet';
 import { calcularIdadePet } from '../utils/petUtils';
 
-// Base URL do microserviço Python (FastAPI / Gemini 3.5 Flash Lite / RAG)
-const PYTHON_AI_URL = Platform.select({
-  android: 'http://10.0.2.2:8000',
-  ios: 'http://localhost:8000',
-  default: 'http://localhost:8000',
-});
-
 const pythonClient = axios.create({
-  baseURL: PYTHON_AI_URL,
-  timeout: 10000,
+  baseURL: env.aiUrl,
+  timeout: 12000,
   headers: {
     'Content-Type': 'application/json',
   },

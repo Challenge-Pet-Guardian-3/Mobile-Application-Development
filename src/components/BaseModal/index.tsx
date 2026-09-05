@@ -11,6 +11,7 @@ import {
   DimensionValue,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { shadows } from '../../utils/shadow';
 
 interface BaseModalProps {
   visible: boolean;
@@ -94,10 +95,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    ...shadows.xl,
   },
   header: {
     flexDirection: 'row',

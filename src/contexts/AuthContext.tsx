@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { AuthService } from '../services/auth';
 import { setOnUnauthorizedCallback } from '../services/http';
+import { queryClient } from '../lib/queryClient';
 import { UsuarioResponse } from '../types/user';
 import { LoginCredentials, RegisterCredentials } from '../types/auth';
 
@@ -13,6 +14,7 @@ export interface AuthContextData {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: UsuarioResponse | null) => void;
+  setSession: (session: { user: UsuarioResponse | null; token: string | null }) => void;
 }
 
 export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setOnUnauthorizedCallback(() => {
       setUser(null);
       setToken(null);
+      queryClient.clear();
     });
   }, []);
 
@@ -81,9 +84,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AuthService.logout();
       setUser(null);
       setToken(null);
+      queryClient.clear();
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const setSession = useCallback((session: { user: UsuarioResponse | null; token: string | null }) => {
+    setUser(session.user);
+    setToken(session.token);
   }, []);
 
   const value = useMemo(
@@ -96,9 +105,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       register,
       logout,
       setUser,
+      setSession,
     }),
-    [user, token, isLoading, login, register, logout]
+    [user, token, isLoading, login, register, logout, setSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}

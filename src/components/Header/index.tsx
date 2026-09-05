@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
+import { shadows } from '../../utils/shadow';
 
 export type HeaderProps = {
   title?: string;
@@ -93,10 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    ...shadows.lg,
     elevation: 3,
   },
   avatarText: {

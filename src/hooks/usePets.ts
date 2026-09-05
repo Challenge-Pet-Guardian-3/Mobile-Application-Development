@@ -12,24 +12,24 @@ export function usePets(page = 0, size = 20) {
 
 export function usePet(id?: number) {
   return useQuery({
-    queryKey: id ? queryKeys.pets.detail(id) : ['pets', 'detail', 'null'],
-    queryFn: () => (id ? PetService.getPetById(id) : Promise.reject('ID não fornecido')),
+    queryKey: queryKeys.pets.detail(id),
+    queryFn: () => (id ? PetService.getPetById(id) : Promise.reject(new Error('ID não fornecido'))),
     enabled: !!id,
   });
 }
 
 export function usePetHistory(id?: number) {
   return useQuery({
-    queryKey: id ? queryKeys.pets.history(id) : ['pets', 'history', 'null'],
-    queryFn: () => (id ? PetService.getPetHistory(id) : Promise.reject('ID não fornecido')),
+    queryKey: queryKeys.pets.history(id),
+    queryFn: () => (id ? PetService.getPetHistory(id) : Promise.reject(new Error('ID não fornecido'))),
     enabled: !!id,
   });
 }
 
 export function usePetPontos(id?: number) {
   return useQuery({
-    queryKey: id ? queryKeys.pets.pontos(id) : ['pets', 'pontos', 'null'],
-    queryFn: () => (id ? PetService.getPetPontos(id) : Promise.reject('ID não fornecido')),
+    queryKey: queryKeys.pets.pontos(id),
+    queryFn: () => (id ? PetService.getPetPontos(id) : Promise.reject(new Error('ID não fornecido'))),
     enabled: !!id,
   });
 }

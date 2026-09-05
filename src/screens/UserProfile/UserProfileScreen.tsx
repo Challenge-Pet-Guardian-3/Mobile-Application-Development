@@ -6,128 +6,55 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  Alert,
-  Switch,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-import { useSession } from '../../hooks/useSession';
-import { useUserPoints } from '../../hooks/useTasks';
-import { useRedeCuidado } from '../../hooks/useRedeCuidado';
 import { RoleBadge } from '../../components/RoleBadge';
 import { StatCard } from '../../components/StatCard';
-import { BaseModal } from '../../components/BaseModal';
+import { FaqModal } from '../../components/FaqModal';
+import { TermsModal } from '../../components/TermsModal';
+import { shadows } from '../../utils/shadow';
 import { EditProfileModal, EditProfileFormData } from '../../components/EditProfileModal';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { RootStackParamList } from '../../routes/types';
 
 interface UserProfileScreenProps {
-  navigation: NativeStackNavigationProp<any>;
+  navigation: NativeStackNavigationProp<RootStackParamList>;
 }
 
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
-  const { user, logout } = useSession();
-  const { data: pontosTotais } = useUserPoints(user?.id);
-  const { data: redeCuidado } = useRedeCuidado(user?.id);
-
-  const updateUserMutation = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
+  const {
+    user,
+    pontosTotais,
+    redeCuidado,
+    initialFormData,
+    salvarPerfil,
+    logoutComConfirmacao,
+    excluirContaComConfirmacao,
+    isUpdating,
+  } = useUserProfile();
 
   // Modais
   const [modalEditarPerfil, setModalEditarPerfil] = useState(false);
   const [modalFaq, setModalFaq] = useState(false);
   const [modalTermos, setModalTermos] = useState(false);
 
-  // Switches de Preferências
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState(true);
-  const [lembretesSaude, setLembretesSaude] = useState(true);
-
-  const editProfileInitialData: EditProfileFormData = {
-    nome: user?.nome || '',
-    email: user?.email || '',
-    senha: '',
-    ddd: user?.ddd || '',
-    numeroTelefone: user?.numeroTelefone || '',
-    role: user?.role || 'PREMIUM',
-    cep: user?.enderecos && user.enderecos.length > 0 ? user.enderecos[0].cep : '',
-    numero: user?.enderecos && user.enderecos.length > 0 ? user.enderecos[0].numero : '',
-  };
-
   const handleAbrirEdicao = useCallback(() => {
     setModalEditarPerfil(true);
   }, []);
 
-  // Salvar alterações na API Java (PUT /usuarios/{id})
-  const handleSalvarPerfil = useCallback(async (formEdit: EditProfileFormData) => {
-    if (!user) return;
-    if (!formEdit.nome.trim() || !formEdit.email.trim()) {
-      Alert.alert('Campos obrigatórios', 'Por favor, informe seu nome e e-mail.');
-      return;
-    }
-
-    try {
-      await updateUserMutation.mutateAsync({
-        id: user.id,
-        data: {
-          nome: formEdit.nome.trim(),
-          email: formEdit.email.trim().toLowerCase(),
-          senha: formEdit.senha?.trim() || '',
-          ddd: formEdit.ddd.replace(/\D/g, ''),
-          numeroTelefone: formEdit.numeroTelefone.replace(/\D/g, ''),
-          role: formEdit.role || 'PREMIUM',
-          endereco: {
-            cep: formEdit.cep.replace(/\D/g, ''),
-            numero: formEdit.numero.trim(),
-          },
-        },
+  const handleSalvarPerfil = useCallback(
+    (formEdit: EditProfileFormData) => {
+      salvarPerfil(formEdit, {
+        onSuccess: () => setModalEditarPerfil(false),
       });
-
-      setModalEditarPerfil(false);
-      Alert.alert('Sucesso!', 'Dados do perfil atualizados com sucesso.');
-    } catch {
-      Alert.alert('Erro', 'Não foi possível atualizar seus dados na API.');
-    }
-  }, [user, updateUserMutation]);
-
-  // Logout com confirmação
-  const handleLogout = useCallback(() => {
-    Alert.alert('Sair da Conta', 'Deseja realmente encerrar sua sessão no PetGuardian?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
-  }, [logout]);
-
-  // Excluir conta com confirmação
-  const handleExcluirConta = useCallback(() => {
-    if (!user) return;
-    Alert.alert(
-      'Excluir Conta',
-      'Tem certeza de que deseja apagar permanentemente sua conta e todos os dados associados? Esta ação não pode ser desfeita.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir Definitivamente',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteUserMutation.mutateAsync(user.id);
-            } catch {
-              Alert.alert('Erro', 'Não foi possível excluir a conta.');
-            }
-          },
-        },
-      ]
-    );
-  }, [user, deleteUserMutation]);
+    },
+    [salvarPerfil]
+  );
 
   const initials = (user?.nome || 'TU').substring(0, 2).toUpperCase();
-  const enderecoPrincipal = user?.enderecos && user.enderecos.length > 0 ? user.enderecos[0] : null;
+  const enderecoPrincipal = user?.enderecos?.[0] ?? null;
 
   return (
     <View style={styles.container}>
@@ -140,25 +67,27 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
           <Text style={styles.userName}>{user?.nome || 'Tutor Responsável'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'email@petguardian.com'}</Text>
+          {user?.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
 
           <View style={styles.roleBadgeBox}>
             <RoleBadge role={user?.role} />
           </View>
 
           <View style={styles.infoPillsRow}>
-            <View style={styles.infoPill}>
-              <Ionicons name="call-outline" size={12} color="#64748B" />
-              <Text style={styles.infoPillText}>
-                ({user?.ddd || '11'}) {user?.numeroTelefone || '98765-4321'}
-              </Text>
-            </View>
+            {user?.ddd && user?.numeroTelefone ? (
+              <View style={styles.infoPill}>
+                <Ionicons name="call-outline" size={12} color="#64748B" />
+                <Text style={styles.infoPillText}>
+                  ({user.ddd}) {user.numeroTelefone}
+                </Text>
+              </View>
+            ) : null}
 
             {enderecoPrincipal && (
               <View style={styles.infoPill}>
                 <Ionicons name="location-outline" size={12} color="#64748B" />
                 <Text style={styles.infoPillText}>
-                  {enderecoPrincipal.bairro || 'São Paulo'} • CEP {enderecoPrincipal.cep}
+                  {enderecoPrincipal.bairro ? `${enderecoPrincipal.bairro} • ` : ''}CEP {enderecoPrincipal.cep}
                 </Text>
               </View>
             )}
@@ -183,7 +112,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             iconName="paw"
             iconColor="#2563EB"
             iconBgColor="#EFF6FF"
-            value={redeCuidado?.pets?.length ? `${redeCuidado.pets.length}` : '1'}
+            value={redeCuidado?.pets?.length ? `${redeCuidado.pets.length}` : '0'}
             label="Pets Família"
           />
           <StatCard
@@ -217,37 +146,6 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
                 {(redeCuidado?.coCuidadores?.length || 0) + 1} cuidadores ativos
               </Text>
             </View>
-          </View>
-        </View>
-
-        {/* Preferências & Notificações */}
-        <View style={styles.menuBox}>
-          <Text style={styles.menuSectionTitle}>Preferências do App</Text>
-
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchLabel}>Notificações de Rotina</Text>
-              <Text style={styles.switchSub}>Lembretes de passeios, remédios e refeições</Text>
-            </View>
-            <Switch
-              value={notificacoesAtivas}
-              onValueChange={setNotificacoesAtivas}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={notificacoesAtivas ? '#2563EB' : '#F1F5F9'}
-            />
-          </View>
-
-          <View style={[styles.switchRow, { borderBottomWidth: 0 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchLabel}>Alertas de Saúde Preventiva</Text>
-              <Text style={styles.switchSub}>Recomendações e vacinas sugeridas pela IA</Text>
-            </View>
-            <Switch
-              value={lembretesSaude}
-              onValueChange={setLembretesSaude}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={lembretesSaude ? '#2563EB' : '#F1F5F9'}
-            />
           </View>
         </View>
 
@@ -312,7 +210,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={handleLogout} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={logoutComConfirmacao} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             </View>
@@ -324,7 +222,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
 
           <TouchableOpacity
             style={[styles.menuItem, { borderBottomWidth: 0 }]}
-            onPress={handleExcluirConta}
+            onPress={excluirContaComConfirmacao}
             activeOpacity={0.7}
           >
             <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
@@ -344,54 +242,14 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
       <EditProfileModal
         visible={modalEditarPerfil}
         onClose={() => setModalEditarPerfil(false)}
-        initialData={editProfileInitialData}
-        isLoading={updateUserMutation.isPending}
+        initialData={initialFormData}
+        isLoading={isUpdating}
         onSubmit={handleSalvarPerfil}
       />
 
-      {/* Modal de FAQ */}
-      <BaseModal
-        visible={modalFaq}
-        onClose={() => setModalFaq(false)}
-        title="Perguntas Frequentes"
-        subtitle="Dúvidas comuns sobre o PetGuardian"
-      >
-        <View style={styles.faqItem}>
-          <Text style={styles.faqQ}>Como os pontos são creditados ao Pet?</Text>
-          <Text style={styles.faqA}>
-            Ao concluir tarefas diárias na Home ou lições na aba de Trilhas, os pontos são registrados imediatamente na API Java e sobem a barra de bem-estar do pet ativo.
-          </Text>
-        </View>
+      <FaqModal visible={modalFaq} onClose={() => setModalFaq(false)} />
 
-        <View style={styles.faqItem}>
-          <Text style={styles.faqQ}>Como convidar familiares?</Text>
-          <Text style={styles.faqA}>
-            Acesse a aba Family Pet e clique no botão "+ Convidar Familiar" informando o e-mail cadastrado.
-          </Text>
-        </View>
-
-        <View style={styles.faqItem}>
-          <Text style={styles.faqQ}>Onde vejo o histórico clínico?</Text>
-          <Text style={styles.faqA}>
-            Na aba Family Pet, toque no card do animal para abrir a Ficha Completa com todo o histórico consolidado.
-          </Text>
-        </View>
-      </BaseModal>
-
-      {/* Modal de Termos de Uso */}
-      <BaseModal
-        visible={modalTermos}
-        onClose={() => setModalTermos(false)}
-        title="Termos & Privacidade"
-        subtitle="Diretrizes do ecossistema Clyvo"
-      >
-        <Text style={styles.termsText}>
-          O PetGuardian respeita a privacidade dos dados de sua família e de seus animais de estimação. Todos os registros de saúde e rotina são sincronizados com segurança em nosso backend em nuvem.
-        </Text>
-        <Text style={[styles.termsText, { marginTop: 10 }]}>
-          As recomendações da IA Preventiva possuem caráter orientador e não substituem o diagnóstico de um médico veterinário presencial.
-        </Text>
-      </BaseModal>
+      <TermsModal visible={modalTermos} onClose={() => setModalTermos(false)} />
     </View>
   );
 }
@@ -406,10 +264,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
     elevation: 2,
   },
   avatarContainer: {
@@ -420,10 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    ...shadows.lg,
     elevation: 3,
   },
   avatarInitials: { fontSize: 24, fontWeight: '900', color: '#FFFFFF' },
@@ -431,49 +283,37 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 13, color: '#64748B', marginTop: 2 },
   roleBadgeBox: { marginTop: 8 },
   infoPillsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 10 },
-  infoPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F1F5F9', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10 },
-  infoPillText: { fontSize: 11, color: '#64748B', fontWeight: '600' },
+  infoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  infoPillText: { fontSize: 11, fontWeight: '600', color: '#475569' },
   btnEditProfile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 14,
     gap: 6,
-    marginTop: 14,
-  },
-  btnEditProfileText: { fontSize: 12, fontWeight: '800', color: '#2563EB' },
-  statsRow: { flexDirection: 'row', gap: 10 },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 14,
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
-    elevation: 1,
-    gap: 4,
+    borderColor: '#BFDBFE',
   },
-  statIconBox: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  statVal: { fontSize: 16, fontWeight: '900', color: '#0F172A' },
-  statLabel: { fontSize: 11, color: '#64748B', fontWeight: '600' },
+  btnEditProfileText: { fontSize: 13, fontWeight: '800', color: '#2563EB' },
+  statsRow: { flexDirection: 'row', gap: 10 },
   menuBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 20,
     padding: 18,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    ...shadows.sm,
     elevation: 2,
   },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -482,16 +322,6 @@ const styles = StyleSheet.create({
   familySummary: { flexDirection: 'row', gap: 16, paddingVertical: 4 },
   familyItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   familyItemText: { fontSize: 13, fontWeight: '600', color: '#334155' },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  switchLabel: { fontSize: 13, fontWeight: '700', color: '#0F172A' },
-  switchSub: { fontSize: 11, color: '#64748B', marginTop: 2 },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -509,8 +339,4 @@ const styles = StyleSheet.create({
   },
   menuText: { fontSize: 14, color: '#0F172A', fontWeight: '700' },
   menuSubText: { fontSize: 11, color: '#64748B', marginTop: 1 },
-  faqItem: { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EDF2F7' },
-  faqQ: { fontSize: 13, fontWeight: '800', color: '#2563EB', marginBottom: 4 },
-  faqA: { fontSize: 12, color: '#475569', lineHeight: 18 },
-  termsText: { fontSize: 13, color: '#475569', lineHeight: 20 },
 });

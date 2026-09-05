@@ -4,8 +4,8 @@ import { queryKeys } from '../lib/queryKeys';
 
 export function useRedeCuidado(usuarioId?: number) {
   return useQuery({
-    queryKey: usuarioId ? queryKeys.users.redeCuidado(usuarioId) : ['users', 'redeCuidado', 'null'],
-    queryFn: () => (usuarioId ? UserService.getRedeCuidado(usuarioId) : Promise.reject('Usuario ID nulo')),
+    queryKey: queryKeys.users.redeCuidado(usuarioId),
+    queryFn: () => (usuarioId ? UserService.getRedeCuidado(usuarioId) : Promise.reject(new Error('Usuario ID nulo'))),
     enabled: !!usuarioId,
   });
 }

@@ -30,6 +30,19 @@ export interface ApiErrorResponse {
   status?: number;
   error?: string;
   message?: string;
+  mensagem?: string;
   path?: string;
   errors?: Record<string, string>;
+}
+
+/** Erro normalizado que a camada de serviços HTTP sempre lança (padrão mockmerce-app-prof). */
+export class ApiError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }

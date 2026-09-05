@@ -11,6 +11,7 @@ export interface PetRequest {
   castrado: boolean;
   usuarioId: number;
   idade?: number;
+  avatarId?: string;
 }
 
 export interface PetResponse {

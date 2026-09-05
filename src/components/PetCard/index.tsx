@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
 import { getAvatarById } from '../../constants/Avatares';
 
 interface PetCardProps {
   pet: PetResponse;
+  isResponsavelPrincipal?: boolean;
   onPress?: () => void;
 }
 
-export function PetCard({ pet, onPress }: PetCardProps) {
+export function PetCard({ pet, isResponsavelPrincipal, onPress }: PetCardProps) {
   const avatar = getAvatarById(pet.avatarId);
 
   return (
@@ -19,6 +20,13 @@ export function PetCard({ pet, onPress }: PetCardProps) {
       activeOpacity={0.85}
       disabled={!onPress}
     >
+      {isResponsavelPrincipal && (
+        <View style={styles.principalBadge}>
+          <Ionicons name="shield-checkmark" size={10} color="#FFFFFF" />
+          <Text style={styles.principalBadgeText}>Tutor Princ.</Text>
+        </View>
+      )}
+
       <View style={styles.avatarWrapper}>
         {avatar ? (
           <Image source={avatar} style={styles.avatarImg} />
@@ -44,6 +52,7 @@ export function PetCard({ pet, onPress }: PetCardProps) {
 
 const styles = StyleSheet.create({
   card: {
+    position: 'relative',
     width: '48%',
     backgroundColor: '#F8FAFC',
     padding: 14,
@@ -51,6 +60,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  principalBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#059669',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    zIndex: 2,
+  },
+  principalBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   avatarWrapper: {
     width: 52,

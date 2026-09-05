@@ -14,74 +14,27 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { PremiumLockCard } from '../../components/PremiumLockCard';
-import { usePets } from '../../hooks/usePets';
-import { useAiChat, useAiInsights } from '../../hooks/useAiAssistant';
-import { useSession } from '../../hooks/useSession';
-import { PetResponse } from '../../types/pet';
-
-const SUGESTOES_RAPIDAS = [
-  '🦴 Quantidade de ração por porte?',
-  '💉 Quais as vacinas obrigatórias?',
-  '🏃 Dicas para diminuir ansiedade',
-  '🦷 Como escovar os dentes do pet?',
-  '🍫 O que é tóxico para cães e gatos?',
-  '🛁 Frequência recomendada de banho',
-];
+import { shadows } from '../../utils/shadow';
+import { useAiAssistantScreen } from '../../hooks/useAiAssistantScreen';
 
 export default function AiAssistantScreen() {
-  const { user } = useSession();
-  const { data: petsData } = usePets();
-  const pets: PetResponse[] = petsData?.content || [];
-
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  const activePet: PetResponse | undefined = useMemo(() => {
-    if (pets.length === 0) return undefined;
-    if (selectedPetId) {
-      const found = pets.find((p) => p.id === selectedPetId);
-      if (found) return found;
-    }
-    return pets[0];
-  }, [pets, selectedPetId]);
-
-  const { data: insights, isLoading: isLoadingInsights } = useAiInsights(activePet);
-  const { messages, sendMessage, isLoading: isChatSending } = useAiChat(activePet);
-
-  const [inputText, setInputText] = useState('');
-
-  // Listener para estado do teclado (ajusta padding da barra dinamicamente)
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => setKeyboardVisible(true)
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardVisible(false)
-    );
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // Rolar automaticamente para o final do chat ao enviar/receber mensagem
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [messages, isChatSending]);
-
-  const handleSend = (texto?: string) => {
-    const promptToSend = (texto || inputText).trim();
-    if (!promptToSend) return;
-    sendMessage(promptToSend);
-    setInputText('');
-  };
+  const {
+    user,
+    pets,
+    selectedPetId,
+    setSelectedPetId,
+    activePet,
+    insights,
+    isLoadingInsights,
+    messages,
+    isChatSending,
+    inputText,
+    setInputText,
+    isKeyboardVisible,
+    scrollViewRef,
+    handleSend,
+    sugestoesRapidas,
+  } = useAiAssistantScreen();
 
   if (user?.role === 'COMUM') {
     return (
@@ -232,7 +185,7 @@ export default function AiAssistantScreen() {
             contentContainerStyle={styles.suggestionsScroll}
             keyboardShouldPersistTaps="handled"
           >
-            {SUGESTOES_RAPIDAS.map((sug, i) => (
+            {sugestoesRapidas.map((sug: string, i: number) => (
               <TouchableOpacity
                 key={i}
                 style={styles.suggestionChip}
@@ -323,10 +276,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
+    ...shadows.xs,
     elevation: 1,
   },
   insightsHeader: {

@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { shadows } from '../utils/shadow';
 
 import Home from '../screens/Home/HomeScreen';
 import FamilyPetScreen from '../screens/FamilyPet/FamilyPetScreen';
@@ -50,10 +51,7 @@ export default function Tabs() {
           borderRadius: 24,
           borderTopWidth: 0,
           elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
+          ...shadows.xxl,
           height: 64,
           position: 'absolute',
           paddingBottom: Platform.OS === 'ios' ? 10 : 8,
@@ -143,16 +141,11 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === 'android' ? 20 : 16,
     borderWidth: 3.5,
     borderColor: '#0F172A',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    ...shadows.colored('#000000', 0.25),
     elevation: 6,
   },
   centerButtonActive: {
     backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    ...shadows.colored('#2563EB', 0.4),
   },
 });
