@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   Text,
@@ -18,8 +18,9 @@ import { StreakCard } from '../../components/streakCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorState } from '../../components/ErrorState';
+import { TaskFormModal } from '../../components/TaskFormModal';
+import { TarefaResponse } from '../../types/task';
 import { shadows } from '../../utils/shadow';
-import { getAvatarById } from '../../constants/Avatares';
 import { useHomeData } from '../../hooks/useHomeData';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../routes/types';
@@ -43,8 +44,12 @@ export default function Home({ navigation }: HomeScreenProps) {
     tarefasConcluidas,
     petScore,
     alternarStatusTarefa,
+    atualizarTarefa,
     excluirTarefaComConfirmacao,
+    isUpdatingTask,
   } = useHomeData();
+
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
 
   // Handlers de navegação
   const handleNavigateToFamily = useCallback(() => {
@@ -139,7 +144,6 @@ export default function Home({ navigation }: HomeScreenProps) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petsScroll}>
             {pets.map((pet) => {
               const isSelected = activePet?.id === pet.id;
-              const avatar = getAvatarById(pet.avatarId);
               return (
                 <TouchableOpacity
                   key={pet.id}
@@ -148,11 +152,7 @@ export default function Home({ navigation }: HomeScreenProps) {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.petAvatarWrapper, isSelected && styles.petAvatarWrapperSelected]}>
-                    {avatar ? (
-                      <Image source={avatar} style={styles.petAvatarImg} />
-                    ) : (
-                      <MaterialCommunityIcons name="paw" size={18} color={isSelected ? '#FFFFFF' : '#64748B'} />
-                    )}
+                    <MaterialCommunityIcons name="paw" size={18} color={isSelected ? '#FFFFFF' : '#64748B'} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.petPillName, isSelected && styles.petPillNameSelected]} numberOfLines={1}>
@@ -210,6 +210,7 @@ export default function Home({ navigation }: HomeScreenProps) {
                 key={tarefa.id}
                 tarefa={tarefa}
                 onToggle={alternarStatusTarefa}
+                onEdit={setTarefaEmEdicao}
                 onDelete={excluirTarefaComConfirmacao}
               />
             ))
@@ -230,6 +231,32 @@ export default function Home({ navigation }: HomeScreenProps) {
 
         <View style={{ height: 110 }} />
       </ScrollView>
+
+      {/* Modal de Edição Rápida de Tarefa */}
+      <TaskFormModal
+        visible={!!tarefaEmEdicao}
+        onClose={() => setTarefaEmEdicao(null)}
+        mode="edit"
+        pets={pets}
+        isLoading={isUpdatingTask}
+        initialData={
+          tarefaEmEdicao
+            ? {
+                petId: tarefaEmEdicao.petId,
+                titulo: tarefaEmEdicao.titulo,
+                descricao: tarefaEmEdicao.descricao,
+                pontos: String(tarefaEmEdicao.pontosTarefa),
+              }
+            : null
+        }
+        onSubmit={(data) => {
+          if (tarefaEmEdicao) {
+            atualizarTarefa(tarefaEmEdicao.id, data, {
+              onSuccess: () => setTarefaEmEdicao(null),
+            });
+          }
+        }}
+      />
 
       <StatusBar style="dark" />
     </View>
@@ -283,10 +310,6 @@ const styles = StyleSheet.create({
   },
   petAvatarWrapperSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  petAvatarImg: {
-    width: '100%',
-    height: '100%',
   },
   petPillName: {
     fontSize: 13,

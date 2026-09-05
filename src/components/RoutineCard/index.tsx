@@ -7,35 +7,53 @@ import { TarefaResponse } from '../../types/task';
 interface RoutineCardProps {
   tarefa: TarefaResponse;
   onToggle: (id: number) => void;
+  onEdit?: (tarefa: TarefaResponse) => void;
   onDelete?: (id: number) => void;
 }
 
 export const RoutineCard = memo(function RoutineCard({
   tarefa,
   onToggle,
+  onEdit,
   onDelete,
 }: RoutineCardProps) {
   const isDone = tarefa.status === 'CONCLUIDO';
+  const isExpired = tarefa.status === 'EXPIRADO';
 
   return (
-    <View style={[styles.card, isDone && styles.cardDone]}>
+    <View style={[styles.card, isDone && styles.cardDone, isExpired && styles.cardExpired]}>
       <TouchableOpacity
         style={styles.contentLeft}
         onPress={() => onToggle(tarefa.id)}
         activeOpacity={0.7}
       >
-        <View style={[styles.checkbox, isDone && styles.checkboxDone]}>
+        <View
+          style={[
+            styles.checkbox,
+            isDone && styles.checkboxDone,
+            isExpired && styles.checkboxExpired,
+          ]}
+        >
           {isDone ? (
             <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+          ) : isExpired ? (
+            <Ionicons name="alert" size={14} color="#EF4444" />
           ) : (
             <View style={styles.checkboxInner} />
           )}
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[styles.title, isDone && styles.titleDone]} numberOfLines={1}>
-            {tarefa.titulo}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.title, isDone && styles.titleDone]} numberOfLines={1}>
+              {tarefa.titulo}
+            </Text>
+            {isExpired && (
+              <View style={styles.expiredBadge}>
+                <Text style={styles.expiredBadgeText}>Expirada</Text>
+              </View>
+            )}
+          </View>
           {tarefa.descricao ? (
             <Text style={[styles.description, isDone && styles.descriptionDone]} numberOfLines={1}>
               {tarefa.descricao}
@@ -49,9 +67,19 @@ export const RoutineCard = memo(function RoutineCard({
           <Text style={[styles.xpText, isDone && styles.xpTextDone]}>+{tarefa.pontosTarefa || 15} XP</Text>
         </View>
 
+        {onEdit && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onEdit(tarefa)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="pencil-outline" size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
+
         {onDelete && (
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={styles.actionButton}
             onPress={() => onDelete(tarefa.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
@@ -83,6 +111,10 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     opacity: 0.85,
   },
+  cardExpired: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
   contentLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -107,6 +139,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
+  checkboxExpired: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#EF4444',
+  },
   textContainer: {
     flex: 1,
   },
@@ -118,6 +154,17 @@ const styles = StyleSheet.create({
   titleDone: {
     textDecorationLine: 'line-through',
     color: '#94A3B8',
+  },
+  expiredBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  expiredBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#EF4444',
   },
   description: {
     fontSize: 12,
@@ -148,6 +195,9 @@ const styles = StyleSheet.create({
   },
   xpTextDone: {
     color: '#059669',
+  },
+  actionButton: {
+    padding: 4,
   },
   deleteButton: {
     padding: 2,

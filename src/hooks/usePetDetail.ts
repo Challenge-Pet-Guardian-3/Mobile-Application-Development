@@ -22,6 +22,7 @@ import { CoCuidadorResponse, PetResponse } from '../types/pet';
 import { HistoricoResponse } from '../types/historico';
 import { normalizarDataNascParaIso, formatarIsoParaBr } from '../utils/petUtils';
 import { PetSchema, formatZodError } from '../utils/schemas';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export interface ActionCallbacks {
   onSuccess?: () => void;
@@ -99,7 +100,6 @@ export function usePetDetail(routePetId?: number) {
       porte: activePet.porte || 'MEDIO',
       sexo: activePet.sexo || 'M',
       castrado: activePet.castrado || false,
-      avatarId: activePet.avatarId || '1',
     };
   }, [activePet]);
 
@@ -129,7 +129,6 @@ export function usePetDetail(routePetId?: number) {
             sexo: formData.sexo,
             castrado: formData.castrado,
             usuarioId: user.id,
-            avatarId: formData.avatarId || activePet.avatarId || '1',
           },
         },
         {
@@ -138,7 +137,7 @@ export function usePetDetail(routePetId?: number) {
             callbacks?.onSuccess?.();
           },
           onError: (err) => {
-            Alert.alert('Erro', 'Não foi possível atualizar o pet na API.');
+            Alert.alert('Erro ao Atualizar Pet', getApiErrorMessage(err, 'Não foi possível atualizar o pet na API.'));
             callbacks?.onError?.(err);
           },
         }
@@ -168,7 +167,7 @@ export function usePetDetail(routePetId?: number) {
                   callbacks?.onSuccess?.();
                 },
                 onError: (err) => {
-                  Alert.alert('Erro', 'Não foi possível excluir o pet.');
+                  Alert.alert('Erro ao Excluir Pet', getApiErrorMessage(err, 'Não foi possível excluir o pet.'));
                   callbacks?.onError?.(err);
                 },
               });
@@ -196,9 +195,9 @@ export function usePetDetail(routePetId?: number) {
             Alert.alert('Convite Enviado!', `Co-cuidador vinculado ao pet ${activePet.nome}.`);
             callbacks?.onSuccess?.();
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível enviar o convite. Verifique se o e-mail está cadastrado.');
-            callbacks?.onError?.(new Error('Erro no convite'));
+          onError: (err) => {
+            Alert.alert('Erro ao Convidar Cuidador', getApiErrorMessage(err, 'Não foi possível enviar o convite. Verifique se o e-mail está cadastrado.'));
+            callbacks?.onError?.(err);
           },
         }
       );
@@ -234,9 +233,9 @@ export function usePetDetail(routePetId?: number) {
                   Alert.alert('Sucesso', isSelf ? 'Você saiu do cuidado deste pet.' : 'Cuidador desvinculado.');
                   callbacks?.onSuccess?.();
                 },
-                onError: () => {
-                  Alert.alert('Erro', 'Não foi possível desvincular o cuidador.');
-                  callbacks?.onError?.(new Error('Erro ao desvincular'));
+                onError: (err) => {
+                  Alert.alert('Erro ao Desvincular Cuidador', getApiErrorMessage(err, 'Não foi possível desvincular o cuidador.'));
+                  callbacks?.onError?.(err);
                 },
               }
             );
@@ -272,9 +271,9 @@ export function usePetDetail(routePetId?: number) {
                     Alert.alert('Sucesso!', `${nomeNovoResponsavel} agora é o responsável principal.`);
                     callbacks?.onSuccess?.();
                   },
-                  onError: () => {
-                    Alert.alert('Erro', 'Não foi possível transferir a responsabilidade principal.');
-                    callbacks?.onError?.(new Error('Erro ao transferir'));
+                  onError: (err) => {
+                    Alert.alert('Erro na Transferência', getApiErrorMessage(err, 'Não foi possível transferir a responsabilidade principal.'));
+                    callbacks?.onError?.(err);
                   },
                 }
               );
@@ -302,9 +301,9 @@ export function usePetDetail(routePetId?: number) {
             Alert.alert('Sucesso!', 'Registro de saúde salvo no prontuário.');
             callbacks?.onSuccess?.();
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível registrar o histórico de saúde.');
-            callbacks?.onError?.(new Error('Erro ao criar histórico'));
+          onError: (err) => {
+            Alert.alert('Erro no Prontuário', getApiErrorMessage(err, 'Não foi possível registrar o histórico de saúde.'));
+            callbacks?.onError?.(err);
           },
         }
       );
@@ -331,9 +330,9 @@ export function usePetDetail(routePetId?: number) {
             Alert.alert('Sucesso!', 'Registro de saúde atualizado com sucesso.');
             callbacks?.onSuccess?.();
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível atualizar o registro.');
-            callbacks?.onError?.(new Error('Erro ao atualizar histórico'));
+          onError: (err) => {
+            Alert.alert('Erro no Prontuário', getApiErrorMessage(err, 'Não foi possível atualizar o registro.'));
+            callbacks?.onError?.(err);
           },
         }
       );
@@ -362,9 +361,9 @@ export function usePetDetail(routePetId?: number) {
                     Alert.alert('Pronto', 'Registro de saúde removido.');
                     callbacks?.onSuccess?.();
                   },
-                  onError: () => {
-                    Alert.alert('Erro', 'Não foi possível excluir o registro.');
-                    callbacks?.onError?.(new Error('Erro ao excluir histórico'));
+                  onError: (err) => {
+                    Alert.alert('Erro ao Excluir Registro', getApiErrorMessage(err, 'Não foi possível excluir o registro.'));
+                    callbacks?.onError?.(err);
                   },
                 }
               );

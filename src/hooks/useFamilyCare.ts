@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { usePets, useCreatePet, useInviteCaregiver } from './usePets';
-import { useTasks, useCreateTask, useDeleteTask } from './useTasks';
+import { useUserTasks, useTasks, useCreateTask, useUpdateTask, useDeleteTask } from './useTasks';
 import { useRedeCuidado } from './useRedeCuidado';
 import { normalizarDataNascParaIso } from '../utils/petUtils';
 import { PetFormData } from '../components/PetFormModal';
@@ -12,6 +12,7 @@ import { PetResponse } from '../types/pet';
 import { TarefaResponse } from '../types/task';
 import { RedeCuidadoResponse } from '../types/user';
 import { PetSchema, TaskSchema, InviteCaregiverSchema, formatZodError } from '../utils/schemas';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export interface ActionCallbacks {
   onSuccess?: () => void;
@@ -23,17 +24,28 @@ export function useFamilyCare() {
 
   // Queries de dados da família e dos pets
   const { data: petsData, isLoading: isLoadingPets, isFetching: isFetchingPets, refetch: refetchPets } = usePets();
-  const { data: tasksData, isLoading: isLoadingTasks, isFetching: isFetchingTasks, refetch: refetchTasks } = useTasks();
+  const {
+    data: userTasksData,
+    isLoading: isLoadingTasks,
+    isFetching: isFetchingTasks,
+    refetch: refetchTasks,
+  } = useUserTasks(user?.id, 0, 100, 'ALL');
+
+  // Fallback global de tarefas caso não haja usuário logado
+  const { data: globalTasksData } = useTasks(0, 100);
   const { data: redeCuidadoData, isLoading: isLoadingRede, isFetching: isFetchingRede, refetch: refetchRede } = useRedeCuidado(user?.id);
 
   // Mutations
   const createPetMutation = useCreatePet();
   const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
   const inviteMutation = useInviteCaregiver();
 
   const pets: PetResponse[] = petsData?.content || [];
-  const tasks: TarefaResponse[] = tasksData?.content || [];
+  const tasks: TarefaResponse[] = user?.id
+    ? userTasksData?.content || []
+    : globalTasksData?.content || [];
   const redeCuidado: RedeCuidadoResponse | undefined = redeCuidadoData;
 
   // Cadastrar novo pet na API Java (POST /pets)
@@ -68,7 +80,7 @@ export function useFamilyCare() {
             callbacks?.onSuccess?.();
           },
           onError: (err) => {
-            Alert.alert('Erro', 'Não foi possível cadastrar o pet na API Java.');
+            Alert.alert('Erro ao Cadastrar Pet', getApiErrorMessage(err, 'Não foi possível cadastrar o pet na API.'));
             callbacks?.onError?.(err);
           },
         }
@@ -110,7 +122,7 @@ export function useFamilyCare() {
             callbacks?.onSuccess?.();
           },
           onError: (err) => {
-            Alert.alert('Erro', 'Não foi possível cadastrar a tarefa na API Java.');
+            Alert.alert('Erro ao Cadastrar Tarefa', getApiErrorMessage(err, 'Não foi possível cadastrar a tarefa na API.'));
             callbacks?.onError?.(err);
           },
         }
@@ -145,13 +157,58 @@ export function useFamilyCare() {
             callbacks?.onSuccess?.();
           },
           onError: (err) => {
-            Alert.alert('Erro', 'Não foi possível enviar o convite.');
+            Alert.alert('Erro ao Convidar Cuidador', getApiErrorMessage(err, 'Não foi possível enviar o convite.'));
             callbacks?.onError?.(err);
           },
         }
       );
     },
     [user, inviteMutation]
+  );
+
+  // Atualizar tarefa existente na API Java (PUT /tarefas/{id})
+  const atualizarTarefa = useCallback(
+    (taskId: number, data: TaskFormData, callbacks?: ActionCallbacks) => {
+      if (!user) {
+        Alert.alert('Sessão expirada', 'Faça login novamente para atualizar uma tarefa.');
+        return;
+      }
+
+      const validacao = TaskSchema.safeParse(data);
+      if (!validacao.success) {
+        Alert.alert('Dados da Tarefa', formatZodError(validacao.error));
+        return;
+      }
+
+      const prazoData = new Date();
+      prazoData.setHours(23, 59, 0, 0);
+
+      updateTaskMutation.mutate(
+        {
+          id: taskId,
+          data: {
+            titulo: data.titulo.trim(),
+            descricao: data.descricao.trim(),
+            pontosTarefa: Number(data.pontos),
+            prazo: prazoData.toISOString().slice(0, 19),
+            usuarioId: user.id,
+            petId: data.petId,
+            status: 'PENDENTE',
+          },
+        },
+        {
+          onSuccess: () => {
+            Alert.alert('Sucesso!', 'Tarefa atualizada com sucesso!');
+            callbacks?.onSuccess?.();
+          },
+          onError: (err) => {
+            Alert.alert('Erro ao Atualizar Tarefa', getApiErrorMessage(err, 'Não foi possível atualizar a tarefa.'));
+            callbacks?.onError?.(err);
+          },
+        }
+      );
+    },
+    [user, updateTaskMutation]
   );
 
   // Remover tarefa da rotina do pet (DELETE /tarefas/{id})
@@ -163,7 +220,7 @@ export function useFamilyCare() {
           callbacks?.onSuccess?.();
         },
         onError: (err) => {
-          Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
+          Alert.alert('Erro ao Excluir Tarefa', getApiErrorMessage(err, 'Não foi possível excluir a tarefa.'));
           callbacks?.onError?.(err);
         },
       });
@@ -181,10 +238,12 @@ export function useFamilyCare() {
     isLoadingTasks,
     cadastrarPet,
     cadastrarTarefa,
+    atualizarTarefa,
     convidarCuidador,
     removerTarefa,
     isCreatingPet: createPetMutation.isPending,
     isCreatingTask: createTaskMutation.isPending,
+    isUpdatingTask: updateTaskMutation.isPending,
     isInvitingCaregiver: inviteMutation.isPending,
     isDeletingTask: deleteTaskMutation.isPending,
     refetchAll: () => {

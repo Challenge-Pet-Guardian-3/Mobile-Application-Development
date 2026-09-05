@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
-import { getAvatarById } from '../../constants/Avatares';
 
 interface PetCardProps {
   pet: PetResponse;
@@ -12,8 +11,6 @@ interface PetCardProps {
 }
 
 export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: PetCardProps) {
-  const avatar = getAvatarById(pet.avatarId);
-
   return (
     <TouchableOpacity
       style={styles.card}
@@ -29,11 +26,7 @@ export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: 
       )}
 
       <View style={styles.avatarWrapper}>
-        {avatar ? (
-          <Image source={avatar} style={styles.avatarImg} />
-        ) : (
-          <MaterialCommunityIcons name="paw" size={24} color="#2563EB" />
-        )}
+        <MaterialCommunityIcons name="paw" size={24} color="#2563EB" />
       </View>
 
       <Text style={styles.name} numberOfLines={1}>
@@ -98,10 +91,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     marginBottom: 8,
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
   },
   name: {
     fontSize: 14,

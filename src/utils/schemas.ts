@@ -72,17 +72,59 @@ export const ProfileEditSchema = z.object({
     }),
 });
 
+// Validador de data real no formato DD/MM/AAAA ou YYYY-MM-DD
+const isValidDateBrOrIso = (val: string): boolean => {
+  if (!val || typeof val !== 'string') return false;
+  const limpo = val.trim();
+  let d: number;
+  let m: number;
+  let y: number;
+
+  if (limpo.includes('/')) {
+    const parts = limpo.split('/');
+    if (parts.length !== 3) return false;
+    d = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    y = parseInt(parts[2], 10);
+  } else if (limpo.includes('-')) {
+    const parts = limpo.split('-');
+    if (parts.length !== 3) return false;
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    d = parseInt(parts[2], 10);
+  } else {
+    return false;
+  }
+
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return false;
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 2100) return false;
+
+  const dateObj = new Date(y, m - 1, d);
+  if (dateObj.getFullYear() !== y || dateObj.getMonth() !== m - 1 || dateObj.getDate() !== d) {
+    return false;
+  }
+
+  const hoje = new Date();
+  hoje.setHours(23, 59, 59, 999);
+  return dateObj <= hoje;
+};
+
 // Schema de Pet
 export const PetSchema = z.object({
   nome: NonEmptyString('O nome do pet é obrigatório.'),
   raca: NonEmptyString('A raça do pet é obrigatória.'),
-  dataNasc: NonEmptyString('A data de nascimento do pet é obrigatória.'),
+  dataNasc: z
+    .string()
+    .trim()
+    .min(1, 'A data de nascimento do pet é obrigatória.')
+    .refine(isValidDateBrOrIso, {
+      message: 'Data de nascimento inválida. Informe uma data real (DD/MM/AAAA) que não esteja no futuro.',
+    }),
   porte: z.enum(['PEQUENO', 'MEDIO', 'GRANDE'], {
     error: 'Porte inválido. Escolha PEQUENO, MEDIO ou GRANDE.',
   }),
   sexo: z.string().min(1, 'O sexo do pet é obrigatório.'),
   castrado: z.boolean().default(false),
-  avatarId: z.string().default('1'),
 });
 
 // Schema de Tarefa

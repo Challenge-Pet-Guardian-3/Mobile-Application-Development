@@ -17,6 +17,8 @@ interface TaskFormModalProps {
   onClose: () => void;
   pets: Array<{ id: number; nome: string }>;
   initialPetId?: number | null;
+  mode?: 'create' | 'edit';
+  initialData?: TaskFormData | null;
   onSubmit: (data: TaskFormData) => Promise<void> | void;
   isLoading?: boolean;
 }
@@ -33,6 +35,8 @@ export function TaskFormModal({
   onClose,
   pets,
   initialPetId,
+  mode = 'create',
+  initialData,
   onSubmit,
   isLoading = false,
 }: TaskFormModalProps) {
@@ -40,12 +44,21 @@ export function TaskFormModal({
 
   useEffect(() => {
     if (visible) {
-      setForm({
-        ...INITIAL_TASK_FORM,
-        petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
-      });
+      if (mode === 'edit' && initialData) {
+        setForm({
+          petId: initialData.petId,
+          titulo: initialData.titulo,
+          descricao: initialData.descricao,
+          pontos: String(initialData.pontos),
+        });
+      } else {
+        setForm({
+          ...INITIAL_TASK_FORM,
+          petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
+        });
+      }
     }
-  }, [visible, initialPetId, pets]);
+  }, [visible, initialPetId, pets, mode, initialData]);
 
   const updateField = <K extends keyof typeof INITIAL_TASK_FORM>(
     key: K,
@@ -74,8 +87,12 @@ export function TaskFormModal({
     <BaseModal
       visible={visible}
       onClose={onClose}
-      title="Criar Tarefa para o Pet"
-      subtitle="Defina rotinas de alimentação, passeios ou medicação"
+      title={mode === 'edit' ? 'Editar Tarefa' : 'Criar Tarefa para o Pet'}
+      subtitle={
+        mode === 'edit'
+          ? 'Atualize as instruções ou pontuação desta rotina'
+          : 'Defina rotinas de alimentação, passeios ou medicação'
+      }
     >
       <Text style={styles.fieldLabel}>Para qual Pet?</Text>
       <View style={styles.porteRow}>
@@ -130,7 +147,7 @@ export function TaskFormModal({
           style={{ flex: 1 }}
         />
         <CustomButton
-          title="Criar Tarefa"
+          title={mode === 'edit' ? 'Salvar Alterações' : 'Criar Tarefa'}
           variant="success"
           isLoading={isLoading}
           disabled={isLoading}

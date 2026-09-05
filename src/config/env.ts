@@ -18,6 +18,6 @@ const getHost = (): string => {
 const host = getHost();
 
 export const env = {
-  apiUrl: `http://${host}:8080`,
+  apiUrl: `http://${host}:8091`,
   aiUrl: `http://${host}:8000`,
 };

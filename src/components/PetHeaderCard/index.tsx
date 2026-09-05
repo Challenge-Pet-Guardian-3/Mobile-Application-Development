@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { PetResponse } from '../../types/pet';
-import { getAvatarById } from '../../constants/Avatares';
 import { formatarIdadePet } from '../../utils/petUtils';
 
 export interface PetHeaderCardProps {
@@ -13,16 +12,10 @@ export interface PetHeaderCardProps {
 }
 
 export function PetHeaderCard({ pet, onEdit, onDelete }: PetHeaderCardProps) {
-  const avatar = getAvatarById(pet.avatarId);
-
   return (
     <View style={styles.petHeaderCard}>
       <View style={styles.avatarLargeWrapper}>
-        {avatar ? (
-          <Image source={avatar} style={styles.avatarLargeImg} />
-        ) : (
-          <MaterialCommunityIcons name="paw" size={44} color="#2563EB" />
-        )}
+        <MaterialCommunityIcons name="paw" size={44} color="#2563EB" />
       </View>
 
       <Text style={styles.petHeaderName}>{pet.nome}</Text>
@@ -82,10 +75,6 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: '#2563EB',
     marginBottom: 12,
-  },
-  avatarLargeImg: {
-    width: '100%',
-    height: '100%',
   },
   petHeaderName: {
     fontSize: 22,

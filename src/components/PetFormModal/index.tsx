@@ -13,7 +13,6 @@ export interface PetFormData {
   porte: PetPorte;
   sexo: string;
   castrado: boolean;
-  avatarId?: string;
 }
 
 interface PetFormModalProps {
@@ -35,7 +34,6 @@ const INITIAL_PET_FORM: PetFormData = {
   porte: 'MEDIO',
   sexo: 'M',
   castrado: false,
-  avatarId: '1',
 };
 
 export function PetFormModal({

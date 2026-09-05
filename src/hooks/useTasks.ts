@@ -11,10 +11,13 @@ export function useTasks(page = 0, size = 50) {
   });
 }
 
-export function useUserTasks(userId?: number, page = 0, size = 50) {
+export function useUserTasks(userId?: number, page = 0, size = 50, status = 'ALL') {
   return useQuery({
-    queryKey: queryKeys.tasks.byUser(userId),
-    queryFn: () => (userId ? TaskService.getTarefasPorUsuario(userId, page, size) : Promise.reject(new Error('User ID nulo'))),
+    queryKey: [...queryKeys.tasks.byUser(userId), status, page, size],
+    queryFn: () =>
+      userId
+        ? TaskService.getTarefasPorUsuario(userId, page, size, status)
+        : Promise.reject(new Error('User ID nulo')),
     enabled: !!userId,
   });
 }
@@ -74,6 +77,49 @@ export function useCompleteTask() {
             ...old,
             content: old.content.map((task) =>
               task.id === id ? { ...task, status: 'CONCLUIDO' as const } : task
+            ),
+          };
+        }
+      );
+
+      return { previousTasksQueries };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasksQueries) {
+        context.previousTasksQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
+    },
+  });
+}
+
+export function useUncompleteTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, usuarioId }: { id: number; usuarioId: number }) =>
+      TaskService.desmarcarTarefa(id, usuarioId),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
+
+      const previousTasksQueries = queryClient.getQueriesData<Page<TarefaResponse>>({
+        queryKey: queryKeys.tasks.all,
+      });
+
+      queryClient.setQueriesData<Page<TarefaResponse>>(
+        { queryKey: queryKeys.tasks.all },
+        (old) => {
+          if (!old || !old.content) return old;
+          return {
+            ...old,
+            content: old.content.map((task) =>
+              task.id === id ? { ...task, status: 'PENDENTE' as const, conclusao: null } : task
             ),
           };
         }

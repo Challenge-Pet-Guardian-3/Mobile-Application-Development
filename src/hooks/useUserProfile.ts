@@ -6,6 +6,7 @@ import { useRedeCuidado } from './useRedeCuidado';
 import { useUpdateUser, useDeleteUser } from './useUsers';
 import { EditProfileFormData } from '../components/EditProfileModal';
 import { ProfileEditSchema, formatZodError } from '../utils/schemas';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export function useUserProfile() {
   const { user, logout } = useSession();
@@ -66,8 +67,8 @@ export function useUserProfile() {
             callbacks?.onSuccess?.();
             Alert.alert('Sucesso!', 'Dados do perfil atualizados com sucesso.');
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível atualizar seus dados na API.');
+          onError: (err) => {
+            Alert.alert('Erro ao Atualizar Perfil', getApiErrorMessage(err, 'Não foi possível atualizar seus dados na API.'));
           },
         }
       );
@@ -100,8 +101,8 @@ export function useUserProfile() {
           style: 'destructive',
           onPress: () => {
             deleteUserMutation.mutate(user.id, {
-              onError: () => {
-                Alert.alert('Erro', 'Não foi possível excluir a conta.');
+              onError: (err) => {
+                Alert.alert('Erro ao Excluir Conta', getApiErrorMessage(err, 'Não foi possível excluir a conta.'));
               },
             });
           },

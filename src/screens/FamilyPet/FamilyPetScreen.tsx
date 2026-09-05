@@ -21,6 +21,7 @@ import { FamilyTaskItem } from '../../components/FamilyTaskItem';
 import { useFamilyCare } from '../../hooks/useFamilyCare';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
+import { TarefaResponse } from '../../types/task';
 
 interface FamilyPetScreenProps {
   navigation: NativeStackNavigationProp<FamilyStackParamList>;
@@ -37,17 +38,25 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
     refetchAll,
     cadastrarPet,
     cadastrarTarefa,
+    atualizarTarefa,
     convidarCuidador,
     removerTarefa,
     isCreatingPet,
     isCreatingTask,
+    isUpdatingTask,
     isInvitingCaregiver,
   } = useFamilyCare();
 
   const coCuidadores = redeCuidado?.coCuidadores || [];
 
   // Controle Unificado de Modais
-  const [modalAtivo, setModalAtivo] = useState<'novoPet' | 'novaTarefa' | 'convite' | null>(null);
+  const [modalAtivo, setModalAtivo] = useState<'novoPet' | 'novaTarefa' | 'editarTarefa' | 'convite' | null>(null);
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
+
+  const handleEditTask = (tarefa: TarefaResponse) => {
+    setTarefaEmEdicao(tarefa);
+    setModalAtivo('editarTarefa');
+  };
 
   if (isLoading) {
     return <LoadingSpinner message="Carregando rede da família..." />;
@@ -141,6 +150,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
                     key={t.id}
                     tarefa={t}
                     petNome={petName}
+                    onEdit={handleEditTask}
                     onDelete={removerTarefa}
                   />
                 );
@@ -203,13 +213,40 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         onSubmit={(data) => cadastrarPet(data, { onSuccess: () => setModalAtivo(null) })}
       />
 
-      {/* Modal de Criação de Tarefa Reutilizável */}
+      {/* Modal de Criação / Edição de Tarefa Reutilizável */}
       <TaskFormModal
-        visible={modalAtivo === 'novaTarefa'}
-        onClose={() => setModalAtivo(null)}
+        visible={modalAtivo === 'novaTarefa' || modalAtivo === 'editarTarefa'}
+        onClose={() => {
+          setModalAtivo(null);
+          setTarefaEmEdicao(null);
+        }}
+        mode={modalAtivo === 'editarTarefa' ? 'edit' : 'create'}
+        initialData={
+          tarefaEmEdicao
+            ? {
+                petId: tarefaEmEdicao.petId,
+                titulo: tarefaEmEdicao.titulo,
+                descricao: tarefaEmEdicao.descricao,
+                pontos: String(tarefaEmEdicao.pontosTarefa),
+              }
+            : null
+        }
         pets={pets}
-        isLoading={isCreatingTask}
-        onSubmit={(data) => cadastrarTarefa(data, { onSuccess: () => setModalAtivo(null) })}
+        isLoading={isCreatingTask || isUpdatingTask}
+        onSubmit={(data) => {
+          if (modalAtivo === 'editarTarefa' && tarefaEmEdicao) {
+            atualizarTarefa(tarefaEmEdicao.id, data, {
+              onSuccess: () => {
+                setModalAtivo(null);
+                setTarefaEmEdicao(null);
+              },
+            });
+          } else {
+            cadastrarTarefa(data, {
+              onSuccess: () => setModalAtivo(null),
+            });
+          }
+        }}
       />
 
       {/* Modal de Convidar Co-Cuidador Reutilizável */}

@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
-import { getAvatarById } from '../../constants/Avatares';
 
 export interface PetAvatarCarouselProps {
   pets: PetResponse[];
@@ -18,7 +17,6 @@ export function PetAvatarCarousel({ pets, selectedPetId, onSelectPet }: PetAvata
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listaDePets}>
         {pets.map((pet) => {
           const isSelected = selectedPetId === pet.id;
-          const petAvatar = getAvatarById(pet.avatarId);
 
           return (
             <TouchableOpacity
@@ -28,15 +26,11 @@ export function PetAvatarCarousel({ pets, selectedPetId, onSelectPet }: PetAvata
               activeOpacity={0.8}
             >
               <View style={[styles.miniAvatarBorda, isSelected && styles.miniAvatarSelecionado]}>
-                {petAvatar ? (
-                  <Image source={petAvatar} style={styles.miniAvatarImg} />
-                ) : (
-                  <MaterialCommunityIcons
-                    name="paw"
-                    size={20}
-                    color={isSelected ? '#2563EB' : '#94A3B8'}
-                  />
-                )}
+                <MaterialCommunityIcons
+                  name="paw"
+                  size={20}
+                  color={isSelected ? '#2563EB' : '#94A3B8'}
+                />
               </View>
               <Text
                 style={[styles.miniAvatarTexto, isSelected && styles.miniAvatarTextoSelecionado]}
@@ -80,10 +74,6 @@ const styles = StyleSheet.create({
   },
   miniAvatarSelecionado: {
     borderColor: '#2563EB',
-  },
-  miniAvatarImg: {
-    width: '100%',
-    height: '100%',
   },
   miniAvatarTexto: {
     fontSize: 11,
