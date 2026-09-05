@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface CaregiverCardProps {
   nome: string;
@@ -8,6 +9,8 @@ interface CaregiverCardProps {
   isCurrentUser?: boolean;
   isPrincipal?: boolean;
   onPress?: () => void;
+  onTransfer?: () => void;
+  onRemove?: () => void;
 }
 
 export function CaregiverCard({
@@ -17,11 +20,13 @@ export function CaregiverCard({
   isCurrentUser = false,
   isPrincipal = false,
   onPress,
+  onTransfer,
+  onRemove,
 }: CaregiverCardProps) {
   const initials = (nome || 'TU').substring(0, 2).toUpperCase();
   const displayName = isCurrentUser ? `${nome} (Você)` : nome;
   const displayRole = roleText || (isPrincipal ? 'Responsável Principal' : email || 'Co-cuidador');
-  const badgeLabel = isPrincipal ? 'Tutor' : 'Co-cuidador';
+  const badgeLabel = isPrincipal ? 'Tutor Principal' : 'Co-cuidador';
 
   const CardWrapper = onPress ? TouchableOpacity : View;
 
@@ -48,29 +53,61 @@ export function CaregiverCard({
       </View>
 
       <View style={styles.infoWrapper}>
-        <Text style={styles.name} numberOfLines={1}>
-          {displayName}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <View
+            style={[
+              styles.roleBadge,
+              !isPrincipal && { backgroundColor: '#F1F5F9' },
+            ]}
+          >
+            <Text
+              style={[
+                styles.roleBadgeText,
+                !isPrincipal && { color: '#64748B' },
+              ]}
+            >
+              {badgeLabel}
+            </Text>
+          </View>
+        </View>
         <Text style={styles.role} numberOfLines={1}>
           {displayRole}
         </Text>
       </View>
 
-      <View
-        style={[
-          styles.roleBadge,
-          !isPrincipal && { backgroundColor: '#F1F5F9' },
-        ]}
-      >
-        <Text
-          style={[
-            styles.roleBadgeText,
-            !isPrincipal && { color: '#64748B' },
-          ]}
-        >
-          {badgeLabel}
-        </Text>
-      </View>
+      {/* Ações de Gestão do Cuidador */}
+      {(onTransfer || onRemove) && (
+        <View style={styles.actionsContainer}>
+          {onTransfer && (
+            <TouchableOpacity
+              style={styles.actionBtnTransfer}
+              onPress={onTransfer}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialCommunityIcons name="crown-outline" size={16} color="#D97706" />
+            </TouchableOpacity>
+          )}
+
+          {onRemove && (
+            <TouchableOpacity
+              style={styles.actionBtnRemove}
+              onPress={onRemove}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isCurrentUser ? 'exit-outline' : 'trash-outline'}
+                size={15}
+                color="#EF4444"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </CardWrapper>
   );
 }
@@ -99,11 +136,18 @@ const styles = StyleSheet.create({
   },
   infoWrapper: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   name: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1E293B',
+    flexShrink: 1,
   },
   role: {
     fontSize: 11,
@@ -112,13 +156,35 @@ const styles = StyleSheet.create({
   },
   roleBadge: {
     backgroundColor: '#EFF6FF',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
   },
   roleBadgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#2563EB',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionBtnTransfer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBtnRemove: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
+

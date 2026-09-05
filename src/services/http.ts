@@ -61,6 +61,11 @@ http.interceptors.response.use(
       return Promise.reject(new ApiError('UNAUTHORIZED', 'E-mail ou senha incorretos / Sessão expirada.', 401));
     }
 
+    if (data?.erros && Array.isArray(data.erros) && data.erros.length > 0) {
+      const msg = data.erros.map((e) => `${e.campo}: ${e.mensagem}`).join('\n');
+      return Promise.reject(new ApiError(data.error ?? 'VALIDATION_ERROR', msg, status));
+    }
+
     if (data?.mensagem) {
       return Promise.reject(new ApiError(data.error ?? 'API_ERROR', data.mensagem, status));
     }

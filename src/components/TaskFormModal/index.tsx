@@ -21,6 +21,13 @@ interface TaskFormModalProps {
   isLoading?: boolean;
 }
 
+const INITIAL_TASK_FORM = {
+  petId: null as number | null,
+  titulo: '',
+  descricao: '',
+  pontos: '',
+};
+
 export function TaskFormModal({
   visible,
   onClose,
@@ -29,36 +36,26 @@ export function TaskFormModal({
   onSubmit,
   isLoading = false,
 }: TaskFormModalProps) {
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
-  const [titulo, setTitulo] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [pontos, setPontos] = useState('');
+  const [form, setForm] = useState(INITIAL_TASK_FORM);
 
   useEffect(() => {
     if (visible) {
-      setSelectedPetId(initialPetId || (pets.length > 0 ? pets[0].id : null));
-      setTitulo('');
-      setDescricao('');
-      setPontos('');
+      setForm({
+        ...INITIAL_TASK_FORM,
+        petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
+      });
     }
   }, [visible, initialPetId, pets]);
 
-  const pontosNum = Number(pontos);
-  const isInvalido =
-    !selectedPetId ||
-    !titulo.trim() ||
-    !descricao.trim() ||
-    !pontos.trim() ||
-    isNaN(pontosNum) ||
-    pontosNum <= 0;
+  const updateField = <K extends keyof typeof INITIAL_TASK_FORM>(
+    key: K,
+    value: (typeof INITIAL_TASK_FORM)[K]
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = () => {
-    const validacao = TaskSchema.safeParse({
-      petId: selectedPetId,
-      titulo,
-      descricao,
-      pontos,
-    });
+    const validacao = TaskSchema.safeParse(form);
 
     if (!validacao.success) {
       Alert.alert('Dados Incompletos', formatZodError(validacao.error));
@@ -85,13 +82,13 @@ export function TaskFormModal({
         {pets.map((p) => (
           <TouchableOpacity
             key={p.id}
-            style={[styles.porteBtn, selectedPetId === p.id && styles.porteBtnSelected]}
-            onPress={() => setSelectedPetId(p.id)}
+            style={[styles.porteBtn, form.petId === p.id && styles.porteBtnSelected]}
+            onPress={() => updateField('petId', p.id)}
           >
             <Text
               style={[
                 styles.porteBtnText,
-                selectedPetId === p.id && styles.porteBtnTextSelected,
+                form.petId === p.id && styles.porteBtnTextSelected,
               ]}
             >
               {p.nome}
@@ -103,23 +100,26 @@ export function TaskFormModal({
       <CustomInput
         label="Título da Tarefa"
         placeholder="Ex: Passeio de 30min, Ração da tarde..."
-        value={titulo}
-        onChangeText={setTitulo}
+        maxLength={60}
+        value={form.titulo}
+        onChangeText={(t) => updateField('titulo', t)}
       />
 
       <CustomInput
         label="Descrição detalhada"
         placeholder="Instruções ou remédios a dar..."
-        value={descricao}
-        onChangeText={setDescricao}
+        maxLength={200}
+        value={form.descricao}
+        onChangeText={(t) => updateField('descricao', t)}
       />
 
       <CustomInput
         label="Pontos XP de Recompensa"
         placeholder="Ex: 15"
         keyboardType="numeric"
-        value={pontos}
-        onChangeText={setPontos}
+        maxLength={4}
+        value={form.pontos}
+        onChangeText={(t) => updateField('pontos', t.replace(/\D/g, ''))}
       />
 
       <View style={styles.modalButtonsRow}>
@@ -133,7 +133,7 @@ export function TaskFormModal({
           title="Criar Tarefa"
           variant="success"
           isLoading={isLoading}
-          disabled={isInvalido || isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />

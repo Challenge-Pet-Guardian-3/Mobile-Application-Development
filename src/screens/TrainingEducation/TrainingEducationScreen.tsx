@@ -147,8 +147,8 @@ export default function TrainingEducationScreen() {
               </View>
 
               <View style={styles.duoStatItem}>
-                <MaterialCommunityIcons name="crown" size={22} color="#FFC800" />
-                <Text style={[styles.duoStatVal, { color: '#B45309' }]}>Nível {Math.floor(totalXpGanho / 50) + 1}</Text>
+                <MaterialCommunityIcons name="trophy-outline" size={22} color="#FFC800" />
+                <Text style={[styles.duoStatVal, { color: '#B45309' }]}>Trilha Ativa</Text>
               </View>
             </View>
 

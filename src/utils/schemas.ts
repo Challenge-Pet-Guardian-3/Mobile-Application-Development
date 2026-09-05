@@ -99,6 +99,13 @@ export const InviteCaregiverSchema = z.object({
   petId: z.number().int().positive('Selecione qual pet será compartilhado.'),
 });
 
+// Schema de Registro de Histórico Clínico / Saúde do Pet
+export const HistoricoSchema = z.object({
+  tipoHist: NonEmptyString('Informe o tipo de evento, atendimento ou vacina.'),
+  dataHist: NonEmptyString('A data do evento é obrigatória.'),
+  petId: z.number().int().positive('O pet é obrigatório.'),
+});
+
 // Schema de Mensagem para o Assistente IA
 export const AiMessageInputSchema = z
   .string()
@@ -119,3 +126,4 @@ export type ProfileEditFormData = z.infer<typeof ProfileEditSchema>;
 export type PetSchemaData = z.infer<typeof PetSchema>;
 export type TaskFormData = z.infer<typeof TaskSchema>;
 export type InviteCaregiverFormData = z.infer<typeof InviteCaregiverSchema>;
+export type HistoricoFormData = z.infer<typeof HistoricoSchema>;

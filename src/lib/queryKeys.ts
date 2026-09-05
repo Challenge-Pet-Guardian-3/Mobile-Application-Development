@@ -18,6 +18,7 @@ export const queryKeys = {
     detail: (id?: number) => ['pets', 'detail', id ?? 0] as const,
     history: (id?: number) => ['pets', 'history', id ?? 0] as const,
     pontos: (id?: number) => ['pets', 'pontos', id ?? 0] as const,
+    caregivers: (id?: number) => ['pets', 'caregivers', id ?? 0] as const,
   },
 
   // Tarefas
@@ -41,5 +42,12 @@ export const queryKeys = {
   ai: {
     insights: (petId?: number) => ['ai', 'insights', petId ?? 0] as const,
     messages: (petId?: number) => ['ai', 'messages', petId ?? 0] as const,
+  },
+
+  // Prontuário de Saúde & Eventos Clínicos (Histórico)
+  historicos: {
+    all: ['historicos'] as const,
+    byPet: (petId?: number) => ['historicos', 'pet', petId ?? 0] as const,
+    detail: (id?: number) => ['historicos', 'detail', id ?? 0] as const,
   },
 };

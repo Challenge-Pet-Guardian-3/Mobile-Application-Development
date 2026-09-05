@@ -25,6 +25,11 @@ export interface Page<T> {
   empty: boolean;
 }
 
+export interface ValidationErrorDetail {
+  campo: string;
+  mensagem: string;
+}
+
 export interface ApiErrorResponse {
   timestamp?: string;
   status?: number;
@@ -32,6 +37,7 @@ export interface ApiErrorResponse {
   message?: string;
   mensagem?: string;
   path?: string;
+  erros?: ValidationErrorDetail[];
   errors?: Record<string, string>;
 }
 

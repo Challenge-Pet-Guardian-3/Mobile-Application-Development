@@ -16,7 +16,6 @@ export interface TrainingTrack {
   categoria: string;
   titulo: string;
   descricao: string;
-  nivel: number;
   icone: string;
   cor: string;
   licoes: TrainingLesson[];

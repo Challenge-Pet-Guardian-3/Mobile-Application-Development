@@ -46,10 +46,8 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
 
   const coCuidadores = redeCuidado?.coCuidadores || [];
 
-  // Modais
-  const [modalNovoPet, setModalNovoPet] = useState(false);
-  const [modalNovaTarefa, setModalNovaTarefa] = useState(false);
-  const [modalConvite, setModalConvite] = useState(false);
+  // Controle Unificado de Modais
+  const [modalAtivo, setModalAtivo] = useState<'novoPet' | 'novaTarefa' | 'convite' | null>(null);
 
   if (isLoading) {
     return <LoadingSpinner message="Carregando rede da família..." />;
@@ -83,7 +81,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         <View style={styles.sectionBox}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Animais da Família</Text>
-            <TouchableOpacity style={styles.btnAddPet} onPress={() => setModalNovoPet(true)}>
+            <TouchableOpacity style={styles.btnAddPet} onPress={() => setModalAtivo('novoPet')}>
               <Ionicons name="add" size={16} color="#FFFFFF" />
               <Text style={styles.btnAddPetText}>Adicionar Pet</Text>
             </TouchableOpacity>
@@ -106,6 +104,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
                     key={pet.id}
                     pet={pet}
                     isResponsavelPrincipal={isRespPrincipal}
+                    tarefasCount={petResumo?.tarefaIds?.length}
                     onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
                   />
                 );
@@ -120,7 +119,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
             <Text style={styles.sectionTitle}>Rotina & Tarefas</Text>
             <TouchableOpacity
               style={styles.btnAddTask}
-              onPress={() => setModalNovaTarefa(true)}
+              onPress={() => setModalAtivo('novaTarefa')}
             >
               <Ionicons name="add" size={16} color="#FFFFFF" />
               <Text style={styles.btnAddTaskText}>Nova Tarefa</Text>
@@ -156,7 +155,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
             <Text style={styles.sectionTitle}>Co-Cuidadores</Text>
             <TouchableOpacity
               style={styles.btnInvite}
-              onPress={() => setModalConvite(true)}
+              onPress={() => setModalAtivo('convite')}
             >
               <Ionicons name="person-add" size={14} color="#2563EB" />
               <Text style={styles.btnInviteText}>Convidar</Text>
@@ -195,31 +194,31 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         <View style={{ height: 110 }} />
       </ScrollView>
 
-      {/* Modal de Cadastro de Pet Reutilizável */}
+      {/* Modal de Criação de Pet Reutilizável */}
       <PetFormModal
-        visible={modalNovoPet}
-        onClose={() => setModalNovoPet(false)}
+        visible={modalAtivo === 'novoPet'}
+        onClose={() => setModalAtivo(null)}
         mode="create"
         isLoading={isCreatingPet}
-        onSubmit={(data) => cadastrarPet(data, { onSuccess: () => setModalNovoPet(false) })}
+        onSubmit={(data) => cadastrarPet(data, { onSuccess: () => setModalAtivo(null) })}
       />
 
       {/* Modal de Criação de Tarefa Reutilizável */}
       <TaskFormModal
-        visible={modalNovaTarefa}
-        onClose={() => setModalNovaTarefa(false)}
+        visible={modalAtivo === 'novaTarefa'}
+        onClose={() => setModalAtivo(null)}
         pets={pets}
         isLoading={isCreatingTask}
-        onSubmit={(data) => cadastrarTarefa(data, { onSuccess: () => setModalNovaTarefa(false) })}
+        onSubmit={(data) => cadastrarTarefa(data, { onSuccess: () => setModalAtivo(null) })}
       />
 
       {/* Modal de Convidar Co-Cuidador Reutilizável */}
       <InviteCaregiverModal
-        visible={modalConvite}
-        onClose={() => setModalConvite(false)}
+        visible={modalAtivo === 'convite'}
+        onClose={() => setModalAtivo(null)}
         pets={pets}
         isLoading={isInvitingCaregiver}
-        onSubmit={(data) => convidarCuidador(data, { onSuccess: () => setModalConvite(false) })}
+        onSubmit={(data) => convidarCuidador(data, { onSuccess: () => setModalAtivo(null) })}
       />
     </View>
   );

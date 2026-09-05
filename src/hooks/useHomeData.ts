@@ -60,11 +60,10 @@ export function useHomeData() {
     [tarefasDoPet]
   );
   const petScore = useMemo(() => {
-    if (pontosPetData?.pontosTotais !== undefined && pontosPetData.pontosTotais > 0) {
-      return Math.min(pontosPetData.pontosTotais, 100);
+    if (pontosPetData?.pontosTotais !== undefined) {
+      return pontosPetData.pontosTotais;
     }
-    const pontosBase = tarefasConcluidas.reduce((acc, t) => acc + (t.pontosTarefa ?? 0), 0);
-    return Math.min(pontosBase, 100);
+    return tarefasConcluidas.reduce((acc, t) => acc + (t.pontosTarefa ?? 0), 0);
   }, [pontosPetData, tarefasConcluidas]);
 
   const alternarStatusTarefa = useCallback(

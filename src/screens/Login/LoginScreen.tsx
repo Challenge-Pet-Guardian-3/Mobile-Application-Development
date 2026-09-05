@@ -17,7 +17,12 @@ import { shadows } from '../../utils/shadow';
 import { PasswordInput } from '../../components/PasswordInput';
 import { AuthHeader } from '../../components/AuthHeader';
 import { AuthFooter } from '../../components/AuthFooter';
-import { LoginSchema, formatZodError } from '../../utils/schemas';
+import { LoginSchema, formatZodError, LoginFormData } from '../../utils/schemas';
+
+const INITIAL_LOGIN_FORM: LoginFormData = {
+  email: '',
+  senha: '',
+};
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -26,22 +31,27 @@ type Props = {
 export default function LoginScreen({ navigation }: Props) {
   const { mutate: login, isPending, error, reset } = useLoginMutation();
 
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  const [form, setForm] = useState<LoginFormData>(INITIAL_LOGIN_FORM);
   const [validacaoErro, setValidacaoErro] = useState<string | null>(null);
+
+  const updateField = <K extends keyof LoginFormData>(key: K, value: LoginFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (validacaoErro) setValidacaoErro(null);
+    if (error) reset();
+  };
 
   const handleLogin = useCallback(() => {
     if (validacaoErro) setValidacaoErro(null);
     if (error) reset();
 
-    const validacao = LoginSchema.safeParse({ email, senha });
+    const validacao = LoginSchema.safeParse(form);
     if (!validacao.success) {
       setValidacaoErro(formatZodError(validacao.error));
       return;
     }
 
     login({ email: validacao.data.email, senha: validacao.data.senha });
-  }, [email, senha, login, validacaoErro, error, reset]);
+  }, [form, login, validacaoErro, error, reset]);
 
   const handleNavigateToRegister = useCallback(() => {
     navigation.navigate('Register');
@@ -72,22 +82,16 @@ export default function LoginScreen({ navigation }: Props) {
               placeholder="seu@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              value={email}
-              onChangeText={(t) => {
-                setEmail(t);
-                if (error) reset();
-              }}
+              value={form.email}
+              onChangeText={(t) => updateField('email', t)}
               leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
             />
 
             <PasswordInput
               label="Senha"
               placeholder="Sua senha secreta"
-              value={senha}
-              onChangeText={(t) => {
-                setSenha(t);
-                if (error) reset();
-              }}
+              value={form.senha}
+              onChangeText={(t) => updateField('senha', t)}
             />
 
             {mensagemErro && <Text style={styles.erroText}>{mensagemErro}</Text>}

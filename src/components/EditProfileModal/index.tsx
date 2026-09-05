@@ -19,6 +19,17 @@ export interface EditProfileFormData {
   senha?: string;
 }
 
+export const INITIAL_PROFILE_FORM: EditProfileFormData = {
+  nome: '',
+  email: '',
+  role: 'PREMIUM',
+  ddd: '',
+  numeroTelefone: '',
+  cep: '',
+  numero: '',
+  senha: '',
+};
+
 interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
@@ -34,11 +45,17 @@ export function EditProfileModal({
   onSubmit,
   isLoading = false,
 }: EditProfileModalProps) {
-  const [form, setForm] = useState<EditProfileFormData>(initialData);
+  const [form, setForm] = useState<EditProfileFormData>({
+    ...INITIAL_PROFILE_FORM,
+    ...initialData,
+  });
 
   useEffect(() => {
     if (visible) {
-      setForm(initialData);
+      setForm({
+        ...INITIAL_PROFILE_FORM,
+        ...initialData,
+      });
     }
   }, [visible, initialData]);
 
@@ -89,6 +106,7 @@ export function EditProfileModal({
       <CustomInput
         label="Nome Completo"
         placeholder="Seu nome"
+        maxLength={60}
         value={form.nome}
         onChangeText={(t) => updateField('nome', t)}
         leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
@@ -99,6 +117,7 @@ export function EditProfileModal({
         placeholder="seu@email.com"
         keyboardType="email-address"
         autoCapitalize="none"
+        maxLength={80}
         value={form.email}
         onChangeText={(t) => updateField('email', t)}
         leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
@@ -112,7 +131,7 @@ export function EditProfileModal({
             keyboardType="numeric"
             maxLength={2}
             value={form.ddd}
-            onChangeText={(t) => updateField('ddd', t)}
+            onChangeText={(t) => updateField('ddd', t.replace(/\D/g, '').slice(0, 2))}
           />
         </View>
         <View style={{ flex: 3 }}>
@@ -122,7 +141,7 @@ export function EditProfileModal({
             keyboardType="numeric"
             maxLength={9}
             value={form.numeroTelefone}
-            onChangeText={(t) => updateField('numeroTelefone', t)}
+            onChangeText={(t) => updateField('numeroTelefone', t.replace(/\D/g, '').slice(0, 9))}
           />
         </View>
       </View>
@@ -132,14 +151,21 @@ export function EditProfileModal({
           <CustomInput
             label="CEP"
             placeholder="01310-100"
+            keyboardType="numeric"
+            maxLength={9}
             value={form.cep}
-            onChangeText={(t) => updateField('cep', t)}
+            onChangeText={(t) => {
+              const digits = t.replace(/\D/g, '').slice(0, 8);
+              const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+              updateField('cep', formatted);
+            }}
           />
         </View>
         <View style={{ flex: 1 }}>
           <CustomInput
             label="Número"
             placeholder="100"
+            maxLength={10}
             value={form.numero}
             onChangeText={(t) => updateField('numero', t)}
           />
@@ -150,6 +176,7 @@ export function EditProfileModal({
         label="Nova Senha (opcional)"
         placeholder="Deixe em branco para manter a atual"
         secureTextEntry
+        maxLength={64}
         value={form.senha || ''}
         onChangeText={(t) => updateField('senha', t)}
         leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}

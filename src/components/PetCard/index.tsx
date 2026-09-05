@@ -7,10 +7,11 @@ import { getAvatarById } from '../../constants/Avatares';
 interface PetCardProps {
   pet: PetResponse;
   isResponsavelPrincipal?: boolean;
+  tarefasCount?: number;
   onPress?: () => void;
 }
 
-export function PetCard({ pet, isResponsavelPrincipal, onPress }: PetCardProps) {
+export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: PetCardProps) {
   const avatar = getAvatarById(pet.avatarId);
 
   return (
@@ -43,8 +44,17 @@ export function PetCard({ pet, isResponsavelPrincipal, onPress }: PetCardProps) 
         {pet.raca || 'Pet'}
       </Text>
 
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>Porte {pet.porte}</Text>
+      <View style={styles.badgesRow}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>Porte {pet.porte}</Text>
+        </View>
+        {tarefasCount !== undefined && tarefasCount > 0 ? (
+          <View style={[styles.badge, { backgroundColor: '#EFF6FF' }]}>
+            <Text style={[styles.badgeText, { color: '#2563EB' }]}>
+              {tarefasCount} {tarefasCount === 1 ? 'tarefa' : 'tarefas'}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -104,6 +114,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 8,
   },
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 4,
+  },
   badge: {
     backgroundColor: '#E2E8F0',
     paddingVertical: 3,
@@ -116,3 +132,4 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
 });
+

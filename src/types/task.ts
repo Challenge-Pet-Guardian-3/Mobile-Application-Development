@@ -5,7 +5,7 @@ export interface TarefaRequest {
   pontosTarefa: number;
   descricao: string;
   prazo: string; // ISO 8601 LocalDateTime
-  usuarioId?: number | null;
+  usuarioId: number;
   petId: number;
   status: EnumStatus;
 }

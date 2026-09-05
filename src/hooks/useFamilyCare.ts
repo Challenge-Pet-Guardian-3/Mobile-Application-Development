@@ -99,7 +99,7 @@ export function useFamilyCare() {
           titulo: data.titulo.trim(),
           descricao: data.descricao.trim(),
           pontosTarefa: Number(data.pontos),
-          prazo: prazoData.toISOString(),
+          prazo: prazoData.toISOString().slice(0, 19),
           usuarioId: user.id,
           petId: data.petId,
           status: 'PENDENTE',

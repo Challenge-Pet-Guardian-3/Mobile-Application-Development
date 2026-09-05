@@ -28,6 +28,16 @@ interface PetFormModalProps {
   submitButtonTitle?: string;
 }
 
+const INITIAL_PET_FORM: PetFormData = {
+  nome: '',
+  raca: '',
+  dataNasc: '',
+  porte: 'MEDIO',
+  sexo: 'M',
+  castrado: false,
+  avatarId: '1',
+};
+
 export function PetFormModal({
   visible,
   onClose,
@@ -39,51 +49,27 @@ export function PetFormModal({
   isLoading = false,
   submitButtonTitle,
 }: PetFormModalProps) {
-  const [nome, setNome] = useState('');
-  const [raca, setRaca] = useState('');
-  const [dataNasc, setDataNasc] = useState('');
-  const [porte, setPorte] = useState<PetPorte>('MEDIO');
-  const [sexo, setSexo] = useState('M');
-  const [castrado, setCastrado] = useState(false);
-  const [avatarId, setAvatarId] = useState('1');
+  const [form, setForm] = useState<PetFormData>(INITIAL_PET_FORM);
 
   useEffect(() => {
     if (visible) {
-      setNome(initialData?.nome || '');
-      setRaca(initialData?.raca || '');
-      setDataNasc(initialData?.dataNasc || '');
-      setPorte(initialData?.porte || 'MEDIO');
-      setSexo(initialData?.sexo || 'M');
-      setCastrado(initialData?.castrado ?? false);
-      setAvatarId(initialData?.avatarId || '1');
+      setForm({ ...INITIAL_PET_FORM, ...initialData });
     }
   }, [visible, initialData]);
 
+  const updateField = <K extends keyof PetFormData>(key: K, value: PetFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSubmit = () => {
-    const validacao = PetSchema.safeParse({
-      nome,
-      raca,
-      dataNasc,
-      porte,
-      sexo,
-      castrado,
-      avatarId,
-    });
+    const validacao = PetSchema.safeParse(form);
 
     if (!validacao.success) {
       Alert.alert('Atenção', formatZodError(validacao.error));
       return;
     }
 
-    onSubmit({
-      nome: validacao.data.nome,
-      raca: validacao.data.raca,
-      dataNasc: validacao.data.dataNasc,
-      porte: validacao.data.porte,
-      sexo: validacao.data.sexo,
-      castrado: validacao.data.castrado,
-      avatarId: validacao.data.avatarId,
-    });
+    onSubmit(validacao.data);
   };
 
   const modalTitle = title || (mode === 'create' ? 'Cadastrar Novo Pet' : 'Editar Ficha do Pet');
@@ -95,29 +81,40 @@ export function PetFormModal({
   const buttonTitle =
     submitButtonTitle || (mode === 'create' ? 'Cadastrar Pet' : 'Salvar Alterações');
 
-  const isInvalido = !nome.trim() || !raca.trim() || !dataNasc.trim();
-
   return (
     <BaseModal visible={visible} onClose={onClose} title={modalTitle} subtitle={modalSubtitle}>
       <CustomInput
         label="Nome do Pet"
         placeholder="Ex: Luna, Thor, Bob..."
-        value={nome}
-        onChangeText={setNome}
+        maxLength={50}
+        value={form.nome}
+        onChangeText={(t) => updateField('nome', t)}
       />
 
       <CustomInput
         label="Raça"
         placeholder="Ex: Golden Retriever, SRD, Poodle..."
-        value={raca}
-        onChangeText={setRaca}
+        maxLength={50}
+        value={form.raca}
+        onChangeText={(t) => updateField('raca', t)}
       />
 
       <CustomInput
         label="Data de Nascimento"
         placeholder="DD/MM/AAAA (ex: 15/05/2023)"
-        value={dataNasc}
-        onChangeText={setDataNasc}
+        keyboardType="numeric"
+        maxLength={10}
+        value={form.dataNasc}
+        onChangeText={(t) => {
+          const digits = t.replace(/\D/g, '').slice(0, 8);
+          let formatted = digits;
+          if (digits.length > 4) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+          } else if (digits.length > 2) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+          }
+          updateField('dataNasc', formatted);
+        }}
       />
 
       {/* Porte */}
@@ -126,13 +123,13 @@ export function PetFormModal({
         {(['PEQUENO', 'MEDIO', 'GRANDE'] as PetPorte[]).map((p) => (
           <TouchableOpacity
             key={p}
-            style={[styles.porteBtn, porte === p && styles.porteBtnSelected]}
-            onPress={() => setPorte(p)}
+            style={[styles.porteBtn, form.porte === p && styles.porteBtnSelected]}
+            onPress={() => updateField('porte', p)}
           >
             <Text
               style={[
                 styles.porteBtnText,
-                porte === p && styles.porteBtnTextSelected,
+                form.porte === p && styles.porteBtnTextSelected,
               ]}
             >
               {p}
@@ -145,22 +142,22 @@ export function PetFormModal({
       <Text style={styles.fieldLabel}>Sexo</Text>
       <View style={styles.porteRow}>
         <TouchableOpacity
-          style={[styles.porteBtn, sexo === 'M' && styles.porteBtnSelected]}
-          onPress={() => setSexo('M')}
+          style={[styles.porteBtn, form.sexo === 'M' && styles.porteBtnSelected]}
+          onPress={() => updateField('sexo', 'M')}
         >
           <Text
-            style={[styles.porteBtnText, sexo === 'M' && styles.porteBtnTextSelected]}
+            style={[styles.porteBtnText, form.sexo === 'M' && styles.porteBtnTextSelected]}
           >
             Macho
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.porteBtn, sexo === 'F' && styles.porteBtnSelected]}
-          onPress={() => setSexo('F')}
+          style={[styles.porteBtn, form.sexo === 'F' && styles.porteBtnSelected]}
+          onPress={() => updateField('sexo', 'F')}
         >
           <Text
-            style={[styles.porteBtnText, sexo === 'F' && styles.porteBtnTextSelected]}
+            style={[styles.porteBtnText, form.sexo === 'F' && styles.porteBtnTextSelected]}
           >
             Fêmea
           </Text>
@@ -171,22 +168,22 @@ export function PetFormModal({
       <Text style={styles.fieldLabel}>Castrado?</Text>
       <View style={styles.porteRow}>
         <TouchableOpacity
-          style={[styles.porteBtn, castrado && styles.porteBtnSelected]}
-          onPress={() => setCastrado(true)}
+          style={[styles.porteBtn, form.castrado && styles.porteBtnSelected]}
+          onPress={() => updateField('castrado', true)}
         >
           <Text
-            style={[styles.porteBtnText, castrado && styles.porteBtnTextSelected]}
+            style={[styles.porteBtnText, form.castrado && styles.porteBtnTextSelected]}
           >
             Sim
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.porteBtn, !castrado && styles.porteBtnSelected]}
-          onPress={() => setCastrado(false)}
+          style={[styles.porteBtn, !form.castrado && styles.porteBtnSelected]}
+          onPress={() => updateField('castrado', false)}
         >
           <Text
-            style={[styles.porteBtnText, !castrado && styles.porteBtnTextSelected]}
+            style={[styles.porteBtnText, !form.castrado && styles.porteBtnTextSelected]}
           >
             Não
           </Text>
@@ -202,9 +199,9 @@ export function PetFormModal({
         />
         <CustomButton
           title={buttonTitle}
-          variant={mode === 'create' ? 'success' : 'primary'}
+          variant="primary"
           isLoading={isLoading}
-          disabled={isInvalido || isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />

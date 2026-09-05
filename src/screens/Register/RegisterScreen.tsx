@@ -19,7 +19,19 @@ import { AuthHeader } from '../../components/AuthHeader';
 import { AuthFooter } from '../../components/AuthFooter';
 import { RoleSelector } from '../../components/RoleSelector';
 import { UsuarioRole } from '../../types/user';
-import { RegisterSchema, formatZodError } from '../../utils/schemas';
+import { RegisterSchema, formatZodError, RegisterFormData } from '../../utils/schemas';
+
+const INITIAL_REGISTER_FORM: RegisterFormData = {
+  nome: '',
+  email: '',
+  senha: '',
+  confirmarSenha: '',
+  ddd: '',
+  numeroTelefone: '',
+  role: 'PREMIUM',
+  cep: '',
+  numero: '',
+};
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -28,15 +40,7 @@ type Props = {
 export default function RegisterScreen({ navigation }: Props) {
   const { mutate: register, isPending, error: mutationError, reset: resetMutation } = useRegisterMutation();
 
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [ddd, setDdd] = useState('');
-  const [numeroTelefone, setNumeroTelefone] = useState('');
-  const [role, setRole] = useState<UsuarioRole>('PREMIUM');
-  const [cep, setCep] = useState('');
-  const [numero, setNumero] = useState('');
+  const [form, setForm] = useState<RegisterFormData>(INITIAL_REGISTER_FORM);
   const [validacaoErro, setValidacaoErro] = useState<string | null>(null);
 
   const limparErros = useCallback(() => {
@@ -44,23 +48,23 @@ export default function RegisterScreen({ navigation }: Props) {
     if (mutationError) resetMutation();
   }, [validacaoErro, mutationError, resetMutation]);
 
+  const updateField = <K extends keyof RegisterFormData>(key: K, value: RegisterFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    limparErros();
+  };
+
   const handleRegister = useCallback(() => {
     limparErros();
 
-    const dddLimpo = ddd.replace(/\D/g, '');
-    const telLimpo = numeroTelefone.replace(/\D/g, '');
-    const cepLimpo = cep.replace(/\D/g, '');
+    const dddLimpo = form.ddd.replace(/\D/g, '');
+    const telLimpo = form.numeroTelefone.replace(/\D/g, '');
+    const cepLimpo = form.cep.replace(/\D/g, '');
 
     const validacao = RegisterSchema.safeParse({
-      nome,
-      email,
+      ...form,
       ddd: dddLimpo,
       numeroTelefone: telLimpo,
-      role,
       cep: cepLimpo,
-      numero,
-      senha,
-      confirmarSenha,
     });
 
     if (!validacao.success) {
@@ -78,7 +82,7 @@ export default function RegisterScreen({ navigation }: Props) {
       cep: validacao.data.cep,
       numero: validacao.data.numero,
     });
-  }, [nome, email, senha, confirmarSenha, ddd, numeroTelefone, role, cep, numero, register, limparErros]);
+  }, [form, register, limparErros]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
@@ -103,8 +107,8 @@ export default function RegisterScreen({ navigation }: Props) {
           <View style={styles.formContainer}>
             {/* Seletor de Perfil Reutilizável (COMUM ou PREMIUM) */}
             <RoleSelector
-              value={role}
-              onChange={(newRole) => setRole(newRole)}
+              value={form.role}
+              onChange={(newRole) => updateField('role', newRole)}
               variant="cards"
               label="Escolha seu Perfil de Tutor:"
             />
@@ -112,11 +116,9 @@ export default function RegisterScreen({ navigation }: Props) {
             <CustomInput
               label="Nome Completo"
               placeholder="Ex: Carlos Eduardo"
-              value={nome}
-              onChangeText={(t) => {
-                setNome(t);
-                limparErros();
-              }}
+              maxLength={60}
+              value={form.nome}
+              onChangeText={(t) => updateField('nome', t)}
               leftIcon={<Ionicons name="person-outline" size={18} color="#94A3B8" />}
             />
 
@@ -125,11 +127,9 @@ export default function RegisterScreen({ navigation }: Props) {
               placeholder="seu@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              value={email}
-              onChangeText={(t) => {
-                setEmail(t);
-                limparErros();
-              }}
+              maxLength={80}
+              value={form.email}
+              onChangeText={(t) => updateField('email', t)}
               leftIcon={<Ionicons name="mail-outline" size={18} color="#94A3B8" />}
             />
 
@@ -140,11 +140,8 @@ export default function RegisterScreen({ navigation }: Props) {
                   placeholder="11"
                   keyboardType="numeric"
                   maxLength={2}
-                  value={ddd}
-                  onChangeText={(t) => {
-                    setDdd(t.replace(/\D/g, '').slice(0, 2));
-                    limparErros();
-                  }}
+                  value={form.ddd}
+                  onChangeText={(t) => updateField('ddd', t.replace(/\D/g, '').slice(0, 2))}
                 />
               </View>
               <View style={{ flex: 3 }}>
@@ -152,18 +149,9 @@ export default function RegisterScreen({ navigation }: Props) {
                   label="Telefone"
                   placeholder="987654321"
                   keyboardType="numeric"
-                  maxLength={11}
-                  value={numeroTelefone}
-                  onChangeText={(t) => {
-                    const digits = t.replace(/\D/g, '');
-                    if (digits.length === 11 && !ddd) {
-                      setDdd(digits.slice(0, 2));
-                      setNumeroTelefone(digits.slice(2, 11));
-                    } else {
-                      setNumeroTelefone(digits.slice(0, 9));
-                    }
-                    limparErros();
-                  }}
+                  maxLength={9}
+                  value={form.numeroTelefone}
+                  onChangeText={(t) => updateField('numeroTelefone', t.replace(/\D/g, '').slice(0, 9))}
                 />
               </View>
             </View>
@@ -175,12 +163,11 @@ export default function RegisterScreen({ navigation }: Props) {
                   placeholder="07749-000"
                   keyboardType="numeric"
                   maxLength={9}
-                  value={cep}
+                  value={form.cep}
                   onChangeText={(t) => {
                     const digits = t.replace(/\D/g, '').slice(0, 8);
                     const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
-                    setCep(formatted);
-                    limparErros();
+                    updateField('cep', formatted);
                   }}
                 />
               </View>
@@ -188,11 +175,9 @@ export default function RegisterScreen({ navigation }: Props) {
                 <CustomInput
                   label="Número"
                   placeholder="100"
-                  value={numero}
-                  onChangeText={(t) => {
-                    setNumero(t);
-                    limparErros();
-                  }}
+                  maxLength={10}
+                  value={form.numero}
+                  onChangeText={(t) => updateField('numero', t)}
                 />
               </View>
             </View>
@@ -200,21 +185,17 @@ export default function RegisterScreen({ navigation }: Props) {
             <PasswordInput
               label="Senha"
               placeholder="Mínimo 6 caracteres"
-              value={senha}
-              onChangeText={(t) => {
-                setSenha(t);
-                limparErros();
-              }}
+              maxLength={64}
+              value={form.senha}
+              onChangeText={(t) => updateField('senha', t)}
             />
 
             <PasswordInput
               label="Confirmar Senha"
               placeholder="Repita a senha"
-              value={confirmarSenha}
-              onChangeText={(t) => {
-                setConfirmarSenha(t);
-                limparErros();
-              }}
+              maxLength={64}
+              value={form.confirmarSenha}
+              onChangeText={(t) => updateField('confirmarSenha', t)}
             />
 
             {erroExibido && <Text style={styles.erroText}>{erroExibido}</Text>}

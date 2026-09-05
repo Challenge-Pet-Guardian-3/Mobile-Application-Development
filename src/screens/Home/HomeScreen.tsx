@@ -173,9 +173,9 @@ export default function Home({ navigation }: HomeScreenProps) {
           <TouchableOpacity activeOpacity={0.9} onPress={handleNavigateToPetDetail}>
             <PetScoreBar
               score={petScore}
-              maxScore={100}
               petName={activePet.nome}
-              level={Math.max(1, Math.floor(petScore / 25) + 1)}
+              tarefasConcluidas={tarefasConcluidas.length}
+              totalTarefas={tarefasDoPet.length}
             />
           </TouchableOpacity>
         )}

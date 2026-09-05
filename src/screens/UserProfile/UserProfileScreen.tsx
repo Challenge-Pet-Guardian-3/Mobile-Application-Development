@@ -36,18 +36,16 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
   } = useUserProfile();
 
   // Modais
-  const [modalEditarPerfil, setModalEditarPerfil] = useState(false);
-  const [modalFaq, setModalFaq] = useState(false);
-  const [modalTermos, setModalTermos] = useState(false);
+  const [modalAtivo, setModalAtivo] = useState<'editar' | 'faq' | 'termos' | null>(null);
 
   const handleAbrirEdicao = useCallback(() => {
-    setModalEditarPerfil(true);
+    setModalAtivo('editar');
   }, []);
 
   const handleSalvarPerfil = useCallback(
     (formEdit: EditProfileFormData) => {
       salvarPerfil(formEdit, {
-        onSuccess: () => setModalEditarPerfil(false),
+        onSuccess: () => setModalAtivo(null),
       });
     },
     [salvarPerfil]
@@ -173,7 +171,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
         <View style={styles.menuBox}>
           <Text style={styles.menuSectionTitle}>Conta & Suporte</Text>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setModalFaq(true)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setModalAtivo('faq')} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="help-circle-outline" size={20} color="#475569" />
             </View>
@@ -184,7 +182,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setModalTermos(true)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setModalAtivo('termos')} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="document-text-outline" size={20} color="#475569" />
             </View>
@@ -225,16 +223,16 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
 
       {/* Modal de Edição de Perfil Reutilizável */}
       <EditProfileModal
-        visible={modalEditarPerfil}
-        onClose={() => setModalEditarPerfil(false)}
+        visible={modalAtivo === 'editar'}
+        onClose={() => setModalAtivo(null)}
         initialData={initialFormData}
         isLoading={isUpdating}
         onSubmit={handleSalvarPerfil}
       />
 
-      <FaqModal visible={modalFaq} onClose={() => setModalFaq(false)} />
+      <FaqModal visible={modalAtivo === 'faq'} onClose={() => setModalAtivo(null)} />
 
-      <TermsModal visible={modalTermos} onClose={() => setModalTermos(false)} />
+      <TermsModal visible={modalAtivo === 'termos'} onClose={() => setModalAtivo(null)} />
     </View>
   );
 }

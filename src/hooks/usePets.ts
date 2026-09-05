@@ -85,9 +85,64 @@ export function useInviteCaregiver() {
       responsavelPrincipalId: number;
       email: string;
     }) => PetService.convidarPorEmail(petId, responsavelPrincipalId, email),
-    onSuccess: () => {
+    onSuccess: (_, { petId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.caregivers(petId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
+    },
+  });
+}
+
+export function usePetCaregivers(petId?: number) {
+  return useQuery({
+    queryKey: queryKeys.pets.caregivers(petId),
+    queryFn: () => (petId ? PetService.getCuidadores(petId) : Promise.resolve([])),
+    enabled: !!petId,
+  });
+}
+
+export function useRemoveCaregiver() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      petId,
+      usuarioId,
+      solicitanteId,
+    }: {
+      petId: number;
+      usuarioId: number;
+      solicitanteId: number;
+    }) => PetService.desvincularCuidador(petId, usuarioId, solicitanteId),
+    onSuccess: (_, { petId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.caregivers(petId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
+    },
+  });
+}
+
+export function useTransferResponsibility() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      petId,
+      responsavelAtualId,
+      novoResponsavelId,
+    }: {
+      petId: number;
+      responsavelAtualId: number;
+      novoResponsavelId: number;
+    }) =>
+      PetService.transferirResponsabilidade(petId, {
+        responsavelAtualId,
+        novoResponsavelId,
+      }),
+    onSuccess: (_, { petId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.caregivers(petId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });
 }

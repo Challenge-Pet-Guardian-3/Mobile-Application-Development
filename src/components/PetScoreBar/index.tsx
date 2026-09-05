@@ -5,30 +5,32 @@ import { shadows } from '../../utils/shadow';
 
 interface PetScoreBarProps {
   score: number;
-  maxScore?: number;
   petName?: string;
-  level?: number;
+  tarefasConcluidas?: number;
+  totalTarefas?: number;
 }
 
 export const PetScoreBar = memo(function PetScoreBar({
   score,
-  maxScore = 100,
   petName = 'Pet',
-  level = 1,
+  tarefasConcluidas = 0,
+  totalTarefas = 0,
 }: PetScoreBarProps) {
-  const percentage = Math.min(Math.max((score / maxScore) * 100, 0), 100);
+  // Porcentagem de tarefas da rotina diária concluídas
+  const percentage =
+    totalTarefas > 0 ? Math.round((tarefasConcluidas / totalTarefas) * 100) : 100;
 
-  // Status de bem-estar suave
-  let statusTexto = 'Precisa de Atenção';
+  // Status de bem-estar baseado na rotina diária
+  let statusTexto = 'Tarefas Pendentes 📋';
   let statusCor = '#EF4444';
   let statusBg = '#FEF2F2';
 
-  if (percentage >= 70) {
-    statusTexto = 'Excelente & Radiante ✨';
+  if (percentage === 100) {
+    statusTexto = 'Tudo em Dia ✨';
     statusCor = '#10B981';
     statusBg = '#ECFDF5';
-  } else if (percentage >= 40) {
-    statusTexto = 'Bem Cuidado 👍';
+  } else if (percentage >= 50) {
+    statusTexto = 'Em Andamento 👍';
     statusCor = '#F59E0B';
     statusBg = '#FFFBEB';
   }
@@ -48,9 +50,9 @@ export const PetScoreBar = memo(function PetScoreBar({
           </View>
         </View>
 
-        <View style={styles.levelBadge}>
-          <Text style={styles.levelLabel}>NÍVEL</Text>
-          <Text style={styles.levelVal}>{level}</Text>
+        <View style={styles.pointsBadge}>
+          <MaterialCommunityIcons name="star" size={14} color="#D97706" />
+          <Text style={styles.pointsBadgeText}>{score} XP</Text>
         </View>
       </View>
 
@@ -61,9 +63,11 @@ export const PetScoreBar = memo(function PetScoreBar({
       </View>
 
       <View style={styles.footerRow}>
-        <Text style={styles.pointsLabel}>Score do Pet</Text>
+        <Text style={styles.pointsLabel}>
+          Rotina Diária: {tarefasConcluidas}/{totalTarefas} {totalTarefas === 1 ? 'tarefa' : 'tarefas'}
+        </Text>
         <Text style={styles.pointsValue}>
-          <Text style={styles.currentPoints}>{score}</Text> / {maxScore} pts
+          <Text style={styles.currentPoints}>{score}</Text> XP Acumulados
         </Text>
       </View>
     </View>
@@ -116,23 +120,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  levelBadge: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+  pointsBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
-  levelLabel: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  levelVal: {
-    color: '#FFFFFF',
+  pointsBadgeText: {
+    color: '#D97706',
     fontWeight: '900',
-    fontSize: 14,
+    fontSize: 13,
   },
   progressContainer: {
     marginBottom: 10,

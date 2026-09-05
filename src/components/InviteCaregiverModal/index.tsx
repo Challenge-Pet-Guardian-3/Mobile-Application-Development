@@ -19,6 +19,11 @@ interface InviteCaregiverModalProps {
   isLoading?: boolean;
 }
 
+const INITIAL_INVITE_FORM = {
+  email: '',
+  petId: null as number | null,
+};
+
 export function InviteCaregiverModal({
   visible,
   onClose,
@@ -27,31 +32,33 @@ export function InviteCaregiverModal({
   onSubmit,
   isLoading = false,
 }: InviteCaregiverModalProps) {
-  const [email, setEmail] = useState('');
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [form, setForm] = useState(INITIAL_INVITE_FORM);
 
   useEffect(() => {
     if (visible) {
-      setEmail('');
-      setSelectedPetId(initialPetId || (pets.length > 0 ? pets[0].id : null));
+      setForm({
+        ...INITIAL_INVITE_FORM,
+        petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
+      });
     }
   }, [visible, initialPetId, pets]);
 
+  const updateField = <K extends keyof typeof INITIAL_INVITE_FORM>(
+    key: K,
+    value: (typeof INITIAL_INVITE_FORM)[K]
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSubmit = () => {
-    const validacao = InviteCaregiverSchema.safeParse({
-      email,
-      petId: selectedPetId,
-    });
+    const validacao = InviteCaregiverSchema.safeParse(form);
 
     if (!validacao.success) {
       Alert.alert('Atenção', formatZodError(validacao.error));
       return;
     }
 
-    onSubmit({
-      email: validacao.data.email,
-      petId: validacao.data.petId,
-    });
+    onSubmit(validacao.data);
   };
 
   return (
@@ -66,8 +73,9 @@ export function InviteCaregiverModal({
         placeholder="familiar@email.com"
         keyboardType="email-address"
         autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
+        maxLength={80}
+        value={form.email}
+        onChangeText={(t) => updateField('email', t)}
       />
 
       <Text style={styles.fieldLabel}>Selecione o Pet</Text>
@@ -75,13 +83,13 @@ export function InviteCaregiverModal({
         {pets.map((p) => (
           <TouchableOpacity
             key={p.id}
-            style={[styles.porteBtn, selectedPetId === p.id && styles.porteBtnSelected]}
-            onPress={() => setSelectedPetId(p.id)}
+            style={[styles.porteBtn, form.petId === p.id && styles.porteBtnSelected]}
+            onPress={() => updateField('petId', p.id)}
           >
             <Text
               style={[
                 styles.porteBtnText,
-                selectedPetId === p.id && styles.porteBtnTextSelected,
+                form.petId === p.id && styles.porteBtnTextSelected,
               ]}
             >
               {p.nome}
@@ -101,7 +109,7 @@ export function InviteCaregiverModal({
           title="Enviar Convite"
           variant="primary"
           isLoading={isLoading}
-          disabled={!email.trim() || !email.includes('@') || !selectedPetId || isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{ flex: 1 }}
         />
