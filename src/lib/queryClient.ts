@@ -5,7 +5,7 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutos
-      gcTime: 1000 * 60 * 15, // 15 minutos (antigo cacheTime)
+      gcTime: 1000 * 60 * 15, // 15 minutos
       retry: (failureCount, error: unknown) => {
         // Não tentar novamente se for erro 404, 401 ou 403
         const status = axios.isAxiosError(error) ? error.response?.status : undefined;

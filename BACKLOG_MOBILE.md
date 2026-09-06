@@ -91,7 +91,7 @@
 | **[FEATURE 03] CRUDs Pet-Centric** | **PBI-05** | CRUD 1: Gestão de Pets, Care Circle Familiar e Histórico Consolidado | 3 pts | 1 - Critical | 9.5h |
 | | **PBI-06** | CRUD 2: Gestão de Rotina Diária, Conclusão de Tarefas & Score do Pet | 3 pts | 1 - Critical | 9.0h |
 | **[FEATURE 04] Documentação** | **PBI-07** | README.md Técnico e Roteiro de Vídeo Demonstrativo | 3 pts | 2 - High | 4.5h |
-| **TOTAL CONSOLIDADO** | **4 Features** | **7 PBIs / 25 Child Tasks Técnicas** | **20 pts** | — | **50.5h** |
+| **TOTAL CONSOLIDADO** | **4 Features** | **7 PBIs / 27 Child Tasks Técnicas** | **20 pts** | — | **50.5h** |
 
 ---
 
