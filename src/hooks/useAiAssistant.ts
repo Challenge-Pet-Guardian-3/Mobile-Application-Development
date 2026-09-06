@@ -28,7 +28,8 @@ export function useAiChat(pet?: PetResponse | null) {
   }, [pet?.id, pet?.nome]);
 
   const sendMutation = useMutation({
-    mutationFn: (text: string) => AiService.enviarMensagem(text, pet),
+    mutationFn: (variables: { text: string; historico: AiMessage[] }) =>
+      AiService.enviarMensagem(variables.text, pet, variables.historico),
     onSuccess: (response) => {
       setMessages((prev) => [...prev, response]);
     },
@@ -57,8 +58,12 @@ export function useAiChat(pet?: PetResponse | null) {
         timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages((prev) => [...prev, userMsg]);
-      sendMutation.mutate(trimmed);
+      setMessages((prev) => {
+        const next = [...prev, userMsg];
+        // Envia as mensagens anteriores como contexto multi-turnos
+        sendMutation.mutate({ text: trimmed, historico: prev });
+        return next;
+      });
     },
     [sendMutation]
   );

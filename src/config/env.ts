@@ -19,5 +19,5 @@ const host = getHost();
 
 export const env = {
   apiUrl: `http://${host}:8091`,
-  aiUrl: `http://${host}:8000`,
+  aiUrl: 'https://disruptive-architectures-iot-iob-ia.onrender.com',
 };

@@ -67,15 +67,27 @@ export const AiService = {
     ];
   },
 
-  // Envia a mensagem do tutor diretamente para a IA Generativa (Google Gemini 3.5 Flash Lite)
-  async enviarMensagem(pergunta: string, pet?: PetResponse | null): Promise<AiMessage> {
+  // Envia a mensagem do tutor diretamente para a IA Generativa (Google Gemini 3.5 Flash Lite com histórico)
+  async enviarMensagem(
+    pergunta: string,
+    pet?: PetResponse | null,
+    historico?: AiMessage[]
+  ): Promise<AiMessage> {
     const petContext = formatPetContext(pet);
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const historicoPayload = historico
+      ?.filter((m) => m.text && m.text.trim().length > 0 && !m.id.startsWith('welcome_'))
+      .map((m) => ({
+        sender: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+        text: m.text,
+      }));
 
     try {
       const response = await pythonClient.post<AiChatResponsePayload>('/ai/chat', {
         pergunta,
         petContext,
+        historico: historicoPayload,
       });
 
       if (response.data && response.data.resposta) {

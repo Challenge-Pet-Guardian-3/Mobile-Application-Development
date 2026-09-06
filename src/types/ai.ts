@@ -36,6 +36,18 @@ export interface AiPetContextPayload {
   ultimaConsulta?: string;
 }
 
+export interface AiMessageHistoricoItem {
+  sender: 'user' | 'assistant' | 'model';
+  text: string;
+}
+
+export interface AiChatRequestPayload {
+  pergunta: string;
+  petContext?: AiPetContextPayload | null;
+  historico?: AiMessageHistoricoItem[];
+  sessionId?: string;
+}
+
 export interface AiChatResponsePayload {
   resposta: string;
   categoria?: AiCategory;
