@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 
-interface PetCardProps {
+export interface PetCardProps {
   pet: PetResponse;
   isResponsavelPrincipal?: boolean;
   tarefasCount?: number;
@@ -12,13 +12,28 @@ interface PetCardProps {
   onPress?: () => void;
 }
 
-export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, pontosTotais, onPress }: PetCardProps) {
+export const PetCard = memo(function PetCard({
+  pet,
+  isResponsavelPrincipal,
+  tarefasCount,
+  pontosTotais,
+  onPress,
+}: PetCardProps) {
+  const accessibilityLabel = `${pet.nome}, ${pet.raca || 'Pet'}, Porte ${pet.porte}${
+    isResponsavelPrincipal ? ', você é tutor principal' : ''
+  }${tarefasCount ? `, ${tarefasCount} tarefas` : ''}${
+    pontosTotais !== undefined ? `, ${pontosTotais} pontos acumulados` : ''
+  }`;
+
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.85}
       disabled={!onPress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
       {isResponsavelPrincipal && (
         <View style={styles.principalBadge}>
@@ -59,7 +74,7 @@ export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, pontosTotai
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

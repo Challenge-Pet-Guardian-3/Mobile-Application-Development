@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useSession } from './useSession';
 import { usePets, useCreatePet, useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
 import { PetService } from '../services/pets';
@@ -44,6 +44,7 @@ function mutationCallbacks(title: string, defaultMsg: string, callbacks?: Action
 
 export function useFamilyCare() {
   const { user } = useSession();
+  const queryClient = useQueryClient();
 
   // Queries de dados da família e dos pets
   const { data: petsData, isLoading: isLoadingPets, isFetching: isFetchingPets, refetch: refetchPets } = usePets();
@@ -60,24 +61,24 @@ export function useFamilyCare() {
 
   const pets: PetResponse[] = petsData?.content || [];
 
-  // Busca pontuação individual de cada pet da família em paralelo
-  const pontosQueries = useQueries({
+  // Busca pontuação individual de cada pet da família em paralelo com memoização nativa via combine
+  const pontosMap = useQueries({
     queries: pets.map((p) => ({
       queryKey: queryKeys.pets.pontos(p.id),
       queryFn: () => PetService.getPetPontos(p.id),
       enabled: !!p.id,
+      staleTime: 1000 * 60 * 2,
     })),
+    combine: (results) => {
+      const map = new Map<number, number>();
+      results.forEach((q) => {
+        if (q.data) {
+          map.set(q.data.petId, q.data.pontosTotais);
+        }
+      });
+      return map;
+    },
   });
-
-  const pontosMap = useMemo(() => {
-    const map = new Map<number, number>();
-    pontosQueries.forEach((q) => {
-      if (q.data) {
-        map.set(q.data.petId, q.data.pontosTotais);
-      }
-    });
-    return map;
-  }, [pontosQueries]);
 
   // Mutations
   const createPetMutation = useCreatePet();
@@ -332,7 +333,7 @@ export function useFamilyCare() {
         refetchPets();
         refetchTasks();
         refetchRede();
-        pontosQueries.forEach((q) => q.refetch());
+        queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
       },
     },
     family: {

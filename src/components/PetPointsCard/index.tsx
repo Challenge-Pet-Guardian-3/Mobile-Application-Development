@@ -11,6 +11,17 @@ export interface PetPointsCardProps {
   petName?: string;
 }
 
+interface PointsCategoryItem {
+  key: string;
+  title: string;
+  desc: string;
+  points: number;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  pointsColor: string;
+}
+
 export const PetPointsCard = memo(function PetPointsCard({
   pontos,
   isLoading = false,
@@ -18,7 +29,7 @@ export const PetPointsCard = memo(function PetPointsCard({
 }: PetPointsCardProps) {
   if (isLoading && !pontos) {
     return (
-      <View style={styles.card}>
+      <View style={styles.card} accessible={true} accessibilityRole="progressbar" accessibilityLabel={`Carregando pontuação de ${petName}`}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={colors.primary[600]} />
           <Text style={styles.loadingText}>Carregando pontuação de {petName}...</Text>
@@ -31,8 +42,33 @@ export const PetPointsCard = memo(function PetPointsCard({
   const pontosTarefas = pontos?.pontosTarefas ?? 0;
   const pontosAulas = pontos?.pontosAulas ?? 0;
 
+  const categories: PointsCategoryItem[] = [
+    {
+      key: 'tarefas',
+      title: 'Tarefas da Rotina',
+      desc: 'Cuidados e saúde diária',
+      points: pontosTarefas,
+      icon: 'clipboard-check-outline',
+      iconBg: colors.primary[50],
+      iconColor: colors.primary[600],
+      pointsColor: colors.primary[700],
+    },
+    {
+      key: 'aulas',
+      title: 'Aulas e Treinos',
+      desc: 'Trilhas e adestramento',
+      points: pontosAulas,
+      icon: 'school-outline',
+      iconBg: colors.success[50],
+      iconColor: colors.success[600],
+      pointsColor: colors.success[700],
+    },
+  ];
+
+  const accessibilityCardLabel = `Painel de pontuação de ${petName}. Total: ${pontosTotais} pontos. Tarefas da rotina: ${pontosTarefas} pontos. Aulas e treinos: ${pontosAulas} pontos.`;
+
   return (
-    <View style={styles.card}>
+    <View style={styles.card} accessible={true} accessibilityRole="summary" accessibilityLabel={accessibilityCardLabel}>
       {/* Topo: Título e Pontos Totais */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
@@ -53,29 +89,20 @@ export const PetPointsCard = memo(function PetPointsCard({
 
       {/* Detalhamento dos Pontos (Tarefas + Aulas) */}
       <View style={styles.breakdownRow}>
-        {/* Card de Tarefas */}
-        <View style={styles.breakdownCard}>
-          <View style={styles.breakdownHeader}>
-            <View style={[styles.breakdownIconWrapper, { backgroundColor: colors.primary[50] }]}>
-              <MaterialCommunityIcons name="clipboard-check-outline" size={18} color={colors.primary[600]} />
+        {categories.map((cat) => (
+          <View key={cat.key} style={styles.breakdownCard}>
+            <View style={styles.breakdownHeader}>
+              <View style={[styles.breakdownIconWrapper, { backgroundColor: cat.iconBg }]}>
+                <MaterialCommunityIcons name={cat.icon} size={18} color={cat.iconColor} />
+              </View>
+              <Text style={[styles.breakdownPoints, { color: cat.pointsColor }]}>
+                +{cat.points} pts
+              </Text>
             </View>
-            <Text style={[styles.breakdownPoints, { color: colors.primary[700] }]}>+{pontosTarefas} pts</Text>
+            <Text style={styles.breakdownTitle}>{cat.title}</Text>
+            <Text style={styles.breakdownDesc}>{cat.desc}</Text>
           </View>
-          <Text style={styles.breakdownTitle}>Tarefas da Rotina</Text>
-          <Text style={styles.breakdownDesc}>Cuidados e saúde diária</Text>
-        </View>
-
-        {/* Card de Aulas */}
-        <View style={styles.breakdownCard}>
-          <View style={styles.breakdownHeader}>
-            <View style={[styles.breakdownIconWrapper, { backgroundColor: colors.success[50] }]}>
-              <MaterialCommunityIcons name="school-outline" size={18} color={colors.success[600]} />
-            </View>
-            <Text style={[styles.breakdownPoints, { color: colors.success[700] }]}>+{pontosAulas} pts</Text>
-          </View>
-          <Text style={styles.breakdownTitle}>Aulas e Treinos</Text>
-          <Text style={styles.breakdownDesc}>Trilhas e adestramento</Text>
-        </View>
+        ))}
       </View>
     </View>
   );
