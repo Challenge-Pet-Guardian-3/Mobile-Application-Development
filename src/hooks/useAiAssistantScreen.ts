@@ -3,6 +3,7 @@ import { Keyboard, Platform, ScrollView } from 'react-native';
 import { usePets } from './usePets';
 import { useSession } from './useSession';
 import { useAiChat, useAiInsights } from './useAiAssistant';
+import { AiService } from '../services/ai';
 import { PetResponse } from '../types/pet';
 import { AiMessageInputSchema } from '../utils/schemas';
 
@@ -24,6 +25,11 @@ export function useAiAssistantScreen() {
   const [inputText, setInputText] = useState('');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Executa warm-up silencioso em background caso a instância do Render esteja hibernando (cold start)
+  useEffect(() => {
+    AiService.ping();
+  }, []);
 
   const activePet: PetResponse | undefined = useMemo(() => {
     if (pets.length === 0) return undefined;

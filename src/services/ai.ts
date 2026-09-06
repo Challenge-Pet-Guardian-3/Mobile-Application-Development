@@ -6,7 +6,7 @@ import { calcularIdadePet } from '../utils/petUtils';
 
 const pythonClient = axios.create({
   baseURL: env.aiUrl,
-  timeout: 12000,
+  timeout: 75000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,6 +33,16 @@ function formatPetContext(pet?: PetResponse | null): AiPetContextPayload | null 
 }
 
 export const AiService = {
+  // Realiza um ping leve no servidor Python para acordar a instância no Render (warm-up de cold start)
+  async ping(): Promise<boolean> {
+    try {
+      await pythonClient.get('/');
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   // Consulta o microserviço Python para obter insights preventivos gerados por IA
   async getInsightsDoPet(pet?: PetResponse | null): Promise<AiPetInsight[]> {
     if (!pet) return [];

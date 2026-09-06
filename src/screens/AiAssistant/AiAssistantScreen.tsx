@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -192,7 +193,8 @@ export default function AiAssistantScreen() {
               <View style={styles.aiAvatar}>
                 <MaterialCommunityIcons name="robot" size={16} color="#2563EB" />
               </View>
-              <View style={[styles.msgBubble, styles.msgBubbleAi]}>
+              <View style={[styles.msgBubble, styles.msgBubbleAi, styles.sendingBubble]}>
+                <ActivityIndicator size="small" color="#2563EB" style={{ marginRight: 8 }} />
                 <Text style={styles.msgTextAi}>Consultando inteligência preventiva...</Text>
               </View>
             </View>
@@ -407,6 +409,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     borderBottomLeftRadius: 4,
+  },
+  sendingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   msgText: {
     fontSize: 13,
