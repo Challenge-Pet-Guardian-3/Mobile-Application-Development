@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BaseModal } from '../BaseModal';
@@ -19,7 +19,7 @@ export interface EditProfileFormData {
   senha?: string;
 }
 
-export const INITIAL_PROFILE_FORM: EditProfileFormData = {
+const INITIAL_PROFILE_FORM: EditProfileFormData = {
   nome: '',
   email: '',
   role: 'PREMIUM',
@@ -38,30 +38,20 @@ interface EditProfileModalProps {
   isLoading?: boolean;
 }
 
-export function EditProfileModal({
-  visible,
+const EditProfileBody = memo(function EditProfileBody({
   onClose,
   initialData,
   onSubmit,
   isLoading = false,
-}: EditProfileModalProps) {
-  const [form, setForm] = useState<EditProfileFormData>({
+}: Omit<EditProfileModalProps, 'visible'>) {
+  const [form, setForm] = useState<EditProfileFormData>(() => ({
     ...INITIAL_PROFILE_FORM,
     ...initialData,
-  });
+  }));
 
-  useEffect(() => {
-    if (visible) {
-      setForm({
-        ...INITIAL_PROFILE_FORM,
-        ...initialData,
-      });
-    }
-  }, [visible, initialData]);
-
-  const updateField = <K extends keyof EditProfileFormData>(key: K, value: EditProfileFormData[K]) => {
+  const updateField = useCallback(<K extends keyof EditProfileFormData>(key: K, value: EditProfileFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  }, []);
 
   const handleSubmit = () => {
     const validacao = ProfileEditSchema.safeParse({
@@ -90,12 +80,7 @@ export function EditProfileModal({
   };
 
   return (
-    <BaseModal
-      visible={visible}
-      onClose={onClose}
-      title="Editar Meu Perfil"
-      subtitle="Atualize suas informações cadastrais na API Java"
-    >
+    <>
       <RoleSelector
         value={form.role}
         onChange={(r) => updateField('role', r)}
@@ -198,6 +183,35 @@ export function EditProfileModal({
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
+});
+
+export function EditProfileModal({
+  visible,
+  onClose,
+  initialData,
+  onSubmit,
+  isLoading = false,
+}: EditProfileModalProps) {
+  const formKey = visible ? (initialData.email || 'user_profile') : 'closed';
+
+  return (
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title="Editar Meu Perfil"
+      subtitle="Atualize suas informações cadastrais na API Java"
+    >
+      {visible ? (
+        <EditProfileBody
+          key={formKey}
+          onClose={onClose}
+          initialData={initialData}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+        />
+      ) : null}
     </BaseModal>
   );
 }

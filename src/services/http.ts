@@ -3,11 +3,9 @@ import { StorageService } from './storage';
 import { env } from '../config/env';
 import { ApiError, ApiErrorResponse } from '../types/api';
 
-export const API_BASE_URL = env.apiUrl;
-
 // Instância centralizada do Axios
 export const http = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: env.apiUrl,
   timeout: 12000,
   headers: {
     'Content-Type': 'application/json',

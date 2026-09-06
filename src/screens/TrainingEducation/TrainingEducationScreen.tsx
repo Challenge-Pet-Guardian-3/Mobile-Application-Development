@@ -19,31 +19,12 @@ import { LessonDetailModal } from '../../components/LessonDetailModal';
 import { useTrainings } from '../../hooks/useTrainings';
 
 export default function TrainingEducationScreen() {
-  const {
-    isUserComum,
-    pets,
-    selectedPetIndex,
-    setSelectedPetIndex,
-    petAtivo,
-    trilhas,
-    isLoadingTrilhas,
-    isFetching,
-    refetch,
-    trilhaAtivaIndex,
-    setTrilhaAtivaIndex,
-    trilhaAtual,
-    totalLicoes,
-    licoesConcluidas,
-    progressoPercent,
-    licaoSelecionada,
-    setLicaoSelecionada,
-    totalXpGanho,
-    handleConcluirLicao,
-    isConcluindo,
-  } = useTrainings();
+  const { status, pet, trail, actions } = useTrainings();
+  const { petAtivo } = pet;
+  const { trilhaAtual } = trail;
 
   // Se o usuário for Comum, exibe mensagem clara e amigável sobre o recurso Premium
-  if (isUserComum) {
+  if (status.isUserComum) {
     return (
       <View style={styles.container}>
         <View style={styles.headerPad}>
@@ -70,8 +51,8 @@ export default function TrainingEducationScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isFetching && !isLoadingTrilhas}
-            onRefresh={refetch}
+            refreshing={status.isFetching && !status.isLoadingTrilhas}
+            onRefresh={actions.refetch}
             tintColor="#58CC02"
           />
         }
@@ -81,17 +62,17 @@ export default function TrainingEducationScreen() {
         </View>
 
         {/* Seletor de Pets da Família */}
-        {pets.length > 0 && (
+        {pet.pets.length > 0 && (
           <View style={styles.petSelectorBox}>
             <Text style={styles.petSelectorLabel}>Pet em Treinamento:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petSelectorScroll}>
-              {pets.map((p, idx) => {
+              {pet.pets.map((p, idx) => {
                 const isSelected = p.id === petAtivo?.id;
                 return (
                   <TouchableOpacity
                     key={p.id}
                     style={[styles.petChip, isSelected && styles.petChipActive]}
-                    onPress={() => setSelectedPetIndex(idx)}
+                    onPress={() => pet.setSelectedPetIndex(idx)}
                     activeOpacity={0.8}
                   >
                     <Ionicons
@@ -109,11 +90,11 @@ export default function TrainingEducationScreen() {
           </View>
         )}
 
-        {isLoadingTrilhas ? (
+        {status.isLoadingTrilhas ? (
           <View style={{ paddingVertical: 40 }}>
             <LoadingSpinner message="Buscando trilhas do pet..." size="small" />
           </View>
-        ) : trilhas.length === 0 ? (
+        ) : trail.trilhas.length === 0 ? (
           /* Empty State Amigável quando o pet não possui trilhas cadastradas */
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
@@ -137,13 +118,13 @@ export default function TrainingEducationScreen() {
               <View style={styles.duoStatItem}>
                 <MaterialCommunityIcons name="fire" size={24} color="#FF9600" />
                 <Text style={styles.duoStatVal}>
-                  {licoesConcluidas} {licoesConcluidas === 1 ? 'Lição' : 'Lições'}
+                  {trail.licoesConcluidas} {trail.licoesConcluidas === 1 ? 'Lição' : 'Lições'}
                 </Text>
               </View>
 
               <View style={styles.duoStatItem}>
                 <MaterialCommunityIcons name="diamond" size={22} color="#1CB0F6" />
-                <Text style={[styles.duoStatVal, { color: '#0284C7' }]}>{totalXpGanho} XP</Text>
+                <Text style={[styles.duoStatVal, { color: '#0284C7' }]}>{pet.totalXpGanho} XP</Text>
               </View>
 
               <View style={styles.duoStatItem}>
@@ -162,9 +143,9 @@ export default function TrainingEducationScreen() {
                 {/* Barra de Progresso Duolingo */}
                 <View style={styles.duoProgressWrapper}>
                   <View style={styles.duoProgressBar}>
-                    <View style={[styles.duoProgressFill, { width: `${progressoPercent}%` }]} />
+                    <View style={[styles.duoProgressFill, { width: `${trail.progressoPercent}%` }]} />
                   </View>
-                  <Text style={styles.duoProgressText}>{progressoPercent}% Completo</Text>
+                  <Text style={styles.duoProgressText}>{trail.progressoPercent}% Completo</Text>
                 </View>
               </View>
 
@@ -175,13 +156,13 @@ export default function TrainingEducationScreen() {
 
             {/* Seletor de Trilhas (Pills) */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trackPillsScroll}>
-              {trilhas.map((t, idx) => (
+              {trail.trilhas.map((t, idx) => (
                 <TouchableOpacity
                   key={t.id}
-                  style={[styles.trackPill, trilhaAtivaIndex === idx && { backgroundColor: t.cor, borderColor: t.cor }]}
-                  onPress={() => setTrilhaAtivaIndex(idx)}
+                  style={[styles.trackPill, trail.trilhaAtivaIndex === idx && { backgroundColor: t.cor, borderColor: t.cor }]}
+                  onPress={() => trail.setTrilhaAtivaIndex(idx)}
                 >
-                  <Text style={[styles.trackPillText, trilhaAtivaIndex === idx && styles.trackPillTextActive]}>
+                  <Text style={[styles.trackPillText, trail.trilhaAtivaIndex === idx && styles.trackPillTextActive]}>
                     {t.titulo}
                   </Text>
                 </TouchableOpacity>
@@ -192,7 +173,7 @@ export default function TrainingEducationScreen() {
             <TrainingTrail
               licoes={trilhaAtual?.licoes}
               corTrilha={trilhaAtual?.cor}
-              onSelectLicao={(licao) => setLicaoSelecionada({ trilhaId: trilhaAtual.id, licao })}
+              onSelectLicao={(licao) => trail.setLicaoSelecionada({ trilhaId: trilhaAtual.id, licao })}
             />
           </>
         )}
@@ -200,12 +181,12 @@ export default function TrainingEducationScreen() {
 
       {/* Modal de Lição Interativa Duolingo */}
       <LessonDetailModal
-        visible={!!licaoSelecionada}
-        licao={licaoSelecionada?.licao ?? null}
+        visible={!!trail.licaoSelecionada}
+        licao={trail.licaoSelecionada?.licao ?? null}
         corTrilha={trilhaAtual?.cor}
-        isConcluindo={isConcluindo}
-        onClose={() => setLicaoSelecionada(null)}
-        onConcluir={handleConcluirLicao}
+        isConcluindo={status.isConcluindo}
+        onClose={() => trail.setLicaoSelecionada(null)}
+        onConcluir={actions.concluirLicao}
       />
     </View>
   );

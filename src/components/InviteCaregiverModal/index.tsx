@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useCallback, memo } from 'react';
+import { View, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
+import { PetSelector } from '../PetSelector';
 import { InviteCaregiverSchema, formatZodError } from '../../utils/schemas';
 
 export interface InviteCaregiverData {
@@ -19,36 +20,25 @@ interface InviteCaregiverModalProps {
   isLoading?: boolean;
 }
 
-const INITIAL_INVITE_FORM = {
-  email: '',
-  petId: null as number | null,
-};
-
-export function InviteCaregiverModal({
-  visible,
+const InviteCaregiverBody = memo(function InviteCaregiverBody({
   onClose,
   pets,
   initialPetId,
   onSubmit,
   isLoading = false,
-}: InviteCaregiverModalProps) {
-  const [form, setForm] = useState(INITIAL_INVITE_FORM);
+}: Omit<InviteCaregiverModalProps, 'visible'>) {
+  const [form, setForm] = useState(() => ({
+    email: '',
+    petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
+  }));
 
-  useEffect(() => {
-    if (visible) {
-      setForm({
-        ...INITIAL_INVITE_FORM,
-        petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
-      });
-    }
-  }, [visible, initialPetId, pets]);
+  const handleEmailChange = useCallback((email: string) => {
+    setForm((prev) => ({ ...prev, email }));
+  }, []);
 
-  const updateField = <K extends keyof typeof INITIAL_INVITE_FORM>(
-    key: K,
-    value: (typeof INITIAL_INVITE_FORM)[K]
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const handlePetSelect = useCallback((petId: number) => {
+    setForm((prev) => ({ ...prev, petId }));
+  }, []);
 
   const handleSubmit = () => {
     const validacao = InviteCaregiverSchema.safeParse(form);
@@ -62,12 +52,7 @@ export function InviteCaregiverModal({
   };
 
   return (
-    <BaseModal
-      visible={visible}
-      onClose={onClose}
-      title="Convidar Familiar"
-      subtitle="Vincule um membro da família para compartilhar a rotina do animal."
-    >
+    <>
       <CustomInput
         label="E-mail do Familiar"
         placeholder="familiar@email.com"
@@ -75,28 +60,15 @@ export function InviteCaregiverModal({
         autoCapitalize="none"
         maxLength={80}
         value={form.email}
-        onChangeText={(t) => updateField('email', t)}
+        onChangeText={handleEmailChange}
       />
 
-      <Text style={styles.fieldLabel}>Selecione o Pet</Text>
-      <View style={styles.porteRow}>
-        {pets.map((p) => (
-          <TouchableOpacity
-            key={p.id}
-            style={[styles.porteBtn, form.petId === p.id && styles.porteBtnSelected]}
-            onPress={() => updateField('petId', p.id)}
-          >
-            <Text
-              style={[
-                styles.porteBtnText,
-                form.petId === p.id && styles.porteBtnTextSelected,
-              ]}
-            >
-              {p.nome}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <PetSelector
+        label="Selecione o Pet"
+        pets={pets}
+        selectedPetId={form.petId}
+        onSelectPet={handlePetSelect}
+      />
 
       <View style={styles.modalButtonsRow}>
         <CustomButton
@@ -114,45 +86,40 @@ export function InviteCaregiverModal({
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
+});
+
+export function InviteCaregiverModal({
+  visible,
+  onClose,
+  pets,
+  initialPetId,
+  onSubmit,
+  isLoading = false,
+}: InviteCaregiverModalProps) {
+  return (
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title="Convidar Familiar"
+      subtitle="Vincule um membro da família para compartilhar a rotina do animal."
+    >
+      {visible ? (
+        <InviteCaregiverBody
+          key={initialPetId || 'default'}
+          onClose={onClose}
+          pets={pets}
+          initialPetId={initialPetId}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+        />
+      ) : null}
     </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  porteRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  porteBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  porteBtnSelected: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
-  },
-  porteBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  porteBtnTextSelected: {
-    color: '#FFFFFF',
-  },
   modalButtonsRow: {
     flexDirection: 'row',
     gap: 12,

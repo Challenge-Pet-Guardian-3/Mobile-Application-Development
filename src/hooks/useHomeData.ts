@@ -8,8 +8,29 @@ import { TarefaResponse } from '../types/task';
 import { TaskFormData } from '../components/TaskFormModal';
 import { TaskSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
+import { normalizarPrazoParaIso } from '../utils/petUtils';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../routes/types';
+import { calcularDiasSemanaAtual, calcularTotalOfensiva, formatarDataIsoYmd } from '../utils/streakUtils';
 
-export function useHomeData() {
+function categorizarTarefas(lista: TarefaResponse[]) {
+  const concluidas: TarefaResponse[] = [];
+  const pendentes: TarefaResponse[] = [];
+  const expiradas: TarefaResponse[] = [];
+  const ativas: TarefaResponse[] = [];
+
+  for (const t of lista) {
+    if (t.status === 'CONCLUIDO') concluidas.push(t);
+    else if (t.status === 'PENDENTE') pendentes.push(t);
+    else if (t.status === 'EXPIRADO') expiradas.push(t);
+
+    if (t.status !== 'EXPIRADO') ativas.push(t);
+  }
+
+  return { concluidas, pendentes, expiradas, ativas };
+}
+
+export function useHomeData(navigation?: NativeStackNavigationProp<RootStackParamList>) {
   const { user } = useSession();
 
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
@@ -72,20 +93,35 @@ export function useHomeData() {
     return allTasks.filter((t) => t.petId === activePet.id);
   }, [allTasks, activePet]);
 
-  const tarefasConcluidas = useMemo(
-    () => tarefasDoPet.filter((t) => t.status === 'CONCLUIDO'),
-    [tarefasDoPet]
-  );
-  const tarefasPendentes = useMemo(
-    () => tarefasDoPet.filter((t) => t.status !== 'CONCLUIDO'),
-    [tarefasDoPet]
-  );
+  const metricasPet = useMemo(() => categorizarTarefas(tarefasDoPet), [tarefasDoPet]);
+
+  const hojeYmd = useMemo(() => formatarDataIsoYmd(new Date()), []);
+
+  // Tarefas da rotina do dia (hoje) para o pet ativo
+  const tarefasDoPetHoje = useMemo(() => {
+    if (!activePet || !hojeYmd) return [];
+    return tarefasDoPet.filter((t) => {
+      const dataPrazo = formatarDataIsoYmd(t.prazo);
+      const dataConclusao = formatarDataIsoYmd(t.conclusao);
+      return dataPrazo === hojeYmd || dataConclusao === hojeYmd;
+    });
+  }, [tarefasDoPet, activePet, hojeYmd]);
+
+  const metricasPetHoje = useMemo(() => categorizarTarefas(tarefasDoPetHoje), [tarefasDoPetHoje]);
+
   const petScore = useMemo(() => {
     if (pontosPetData?.pontosTotais !== undefined) {
       return pontosPetData.pontosTotais;
     }
-    return tarefasConcluidas.reduce((acc, t) => acc + (t.pontosTarefa ?? 0), 0);
-  }, [pontosPetData, tarefasConcluidas]);
+    return metricasPet.concluidas.reduce((acc, t) => acc + (t.pontosTarefa ?? 0), 0);
+  }, [pontosPetData, metricasPet.concluidas]);
+
+  const ofensivaFamiliar = useMemo(() => {
+    return {
+      streakDays: calcularDiasSemanaAtual(allTasks),
+      totalStreak: calcularTotalOfensiva(allTasks),
+    };
+  }, [allTasks]);
 
   const alternarStatusTarefa = useCallback(
     (taskId: number) => {
@@ -105,6 +141,12 @@ export function useHomeData() {
               Alert.alert('Erro ao Desmarcar', getApiErrorMessage(err, 'Não foi possível desmarcar a tarefa.'));
             },
           }
+        );
+      } else if (tarefa.status === 'EXPIRADO') {
+        Alert.alert(
+          'Tarefa Expirada',
+          'Esta tarefa já expirou e não pode ser concluída diretamente. Para reativá-la como pendente, clique no lápis de edição e defina uma nova data e horário futuro.',
+          [{ text: 'Entendi' }]
         );
       } else {
         completeTaskMutation.mutate(
@@ -156,8 +198,12 @@ export function useHomeData() {
         return;
       }
 
-      const prazoData = new Date();
-      prazoData.setHours(23, 59, 0, 0);
+      const statusFinal = data.status || 'PENDENTE';
+      const prazoIso = normalizarPrazoParaIso(data.prazo);
+      const conclusaoIso =
+        statusFinal === 'CONCLUIDO'
+          ? (data.conclusao ? normalizarPrazoParaIso(data.conclusao, '12:00:00') : new Date().toISOString().slice(0, 19))
+          : null;
 
       updateTaskMutation.mutate(
         {
@@ -166,15 +212,15 @@ export function useHomeData() {
             titulo: data.titulo.trim(),
             descricao: data.descricao.trim(),
             pontosTarefa: Number(data.pontos),
-            prazo: prazoData.toISOString().slice(0, 19),
+            prazo: prazoIso,
             usuarioId: user.id,
             petId: data.petId,
-            status: 'PENDENTE',
+            status: statusFinal,
+            conclusao: conclusaoIso,
           },
         },
         {
           onSuccess: () => {
-            Alert.alert('Sucesso!', 'Tarefa atualizada com sucesso!');
             callbacks?.onSuccess?.();
           },
           onError: (err) => {
@@ -195,29 +241,135 @@ export function useHomeData() {
     ]);
   }, [refetchPets, user?.id, refetchUserTasks, refetchGlobalTasks, refetchPontos]);
 
-  return {
-    user,
-    pets,
-    isLoadingPets,
-    isLoadingTasks,
-    isFetching: isFetchingPets || isFetchingTasks,
-    isError: isErrorPets || isErrorTasks,
-    error: petsError || tasksError,
-    refetch,
-    selectedPetId,
-    setSelectedPetId,
-    activePet,
-    allTasks,
+  // Controle de Visualização da Rotina (Hoje vs Todas)
+  const [filtroRotina, setFiltroRotina] = useState<'HOJE' | 'TODAS'>('HOJE');
+
+  // Controle de Modal de Edição de Tarefas
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
+
+  const handleToggleTarefa = useCallback(
+    (taskId: number) => {
+      const tarefa = tarefasDoPet.find((t) => t.id === taskId);
+      if (tarefa?.status === 'EXPIRADO') {
+        Alert.alert(
+          'Tarefa Expirada',
+          'Esta tarefa expirou e não pode ser concluída diretamente. Deseja definir um novo horário futuro para reativá-la?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Editar Tarefa',
+              onPress: () => setTarefaEmEdicao(tarefa),
+            },
+          ]
+        );
+        return;
+      }
+      alternarStatusTarefa(taskId);
+    },
+    [tarefasDoPet, alternarStatusTarefa]
+  );
+
+  const initialTaskData = useMemo(() => {
+    if (!tarefaEmEdicao) return null;
+    return {
+      petId: tarefaEmEdicao.petId,
+      titulo: tarefaEmEdicao.titulo,
+      descricao: tarefaEmEdicao.descricao,
+      pontos: String(tarefaEmEdicao.pontosTarefa),
+      prazo: tarefaEmEdicao.prazo,
+      status: tarefaEmEdicao.status,
+      conclusao: tarefaEmEdicao.conclusao,
+    };
+  }, [tarefaEmEdicao]);
+
+  const rotinaAtual = useMemo(() => {
+    const isHoje = filtroRotina === 'HOJE';
+    return {
+      tarefas: isHoje ? tarefasDoPetHoje : tarefasDoPet,
+      concluidas: isHoje ? metricasPetHoje.concluidas.length : metricasPet.concluidas.length,
+      ativas: isHoje ? metricasPetHoje.ativas.length : metricasPet.ativas.length,
+      expiradas: isHoje ? metricasPetHoje.expiradas.length : metricasPet.expiradas.length,
+    };
+  }, [
+    filtroRotina,
+    tarefasDoPetHoje,
     tarefasDoPet,
-    tarefasConcluidas,
-    tarefasPendentes,
-    petScore,
-    alternarStatusTarefa,
-    atualizarTarefa,
-    excluirTarefaComConfirmacao,
-    isCompletingTask: completeTaskMutation.isPending,
-    isUncompletingTask: uncompleteTaskMutation.isPending,
-    isUpdatingTask: updateTaskMutation.isPending,
-    isDeletingTask: deleteTaskMutation.isPending,
+    metricasPetHoje.concluidas.length,
+    metricasPet.concluidas.length,
+    metricasPetHoje.ativas.length,
+    metricasPet.ativas.length,
+    metricasPetHoje.expiradas.length,
+    metricasPet.expiradas.length,
+  ]);
+
+  const handleCloseEditModal = useCallback(() => {
+    setTarefaEmEdicao(null);
+  }, []);
+
+  const handleSubmitEditModal = useCallback(
+    (data: TaskFormData) => {
+      if (tarefaEmEdicao) {
+        atualizarTarefa(tarefaEmEdicao.id, data, {
+          onSuccess: handleCloseEditModal,
+        });
+      }
+    },
+    [tarefaEmEdicao, atualizarTarefa, handleCloseEditModal]
+  );
+
+  // Handlers de Navegação
+  const handleNavigateToFamily = useCallback(() => {
+    navigation?.navigate('Family');
+  }, [navigation]);
+
+  const handleNavigateToPetDetail = useCallback(() => {
+    navigation?.navigate('Family', { screen: 'PetDetail', params: { petId: activePet?.id } });
+  }, [navigation, activePet]);
+
+  const handleNavigateToAi = useCallback(() => {
+    navigation?.navigate('IA');
+  }, [navigation]);
+
+  return {
+    status: {
+      isLoading: isLoadingPets,
+      isLoadingTasks,
+      isFetching: isFetchingPets || isFetchingTasks,
+      isError: isErrorPets || isErrorTasks,
+      error: petsError || tasksError,
+      refetch,
+    },
+    pets: {
+      list: pets,
+      active: activePet,
+      selectedId: selectedPetId,
+      select: setSelectedPetId,
+    },
+    routine: {
+      current: rotinaAtual,
+      filter: filtroRotina,
+      setFilter: setFiltroRotina,
+      score: petScore,
+      streak: ofensivaFamiliar,
+      allPetTasks: tarefasDoPet,
+      todayTasks: tarefasDoPetHoje,
+      completedToday: metricasPetHoje.concluidas,
+      activeToday: metricasPetHoje.ativas,
+      toggleTask: handleToggleTarefa,
+    },
+    taskModal: {
+      editingTask: tarefaEmEdicao,
+      initialData: initialTaskData,
+      isUpdating: updateTaskMutation.isPending,
+      openEdit: setTarefaEmEdicao,
+      close: handleCloseEditModal,
+      submit: handleSubmitEditModal,
+      remove: excluirTarefaComConfirmacao,
+    },
+    navigation: {
+      toFamily: handleNavigateToFamily,
+      toPetDetail: handleNavigateToPetDetail,
+      toAi: handleNavigateToAi,
+    },
   };
 }

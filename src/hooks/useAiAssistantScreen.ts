@@ -6,7 +6,7 @@ import { useAiChat, useAiInsights } from './useAiAssistant';
 import { PetResponse } from '../types/pet';
 import { AiMessageInputSchema } from '../utils/schemas';
 
-export const SUGESTOES_RAPIDAS = [
+const SUGESTOES_RAPIDAS = [
   '🦴 Quantidade de ração por porte?',
   '💉 Quais as vacinas obrigatórias?',
   '🏃 Dicas para diminuir ansiedade',
@@ -73,19 +73,25 @@ export function useAiAssistantScreen() {
   return {
     user,
     isUserComum: user?.role === 'COMUM',
-    pets,
-    activePet,
-    selectedPetId,
-    setSelectedPetId,
-    insights: insights || [],
-    isLoadingInsights,
-    messages,
-    isChatSending,
-    inputText,
-    setInputText,
-    isKeyboardVisible,
-    scrollViewRef,
-    handleSend,
-    sugestoesRapidas: SUGESTOES_RAPIDAS,
+    pet: {
+      pets,
+      activePet,
+      selectedPetId,
+      setSelectedPetId,
+    },
+    insights: {
+      data: insights || [],
+      isLoading: isLoadingInsights,
+    },
+    chat: {
+      messages,
+      isSending: isChatSending,
+      inputText,
+      setInputText,
+      handleSend,
+      sugestoesRapidas: SUGESTOES_RAPIDAS,
+      scrollViewRef,
+      isKeyboardVisible,
+    },
   };
 }

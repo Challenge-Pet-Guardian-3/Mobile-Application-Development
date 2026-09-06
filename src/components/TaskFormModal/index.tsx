@@ -1,15 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useCallback, memo } from 'react';
+import { View, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
+import { CustomDateInput } from '../CustomDateInput';
+import { TaskStatusSelector } from '../TaskStatusSelector';
+import { PetSelector } from '../PetSelector';
+import { ExpiredTaskBanner } from '../ExpiredTaskBanner';
 import { TaskSchema, formatZodError } from '../../utils/schemas';
+import {
+  formatarIsoParaBr,
+  obterPrazoFuturoPadraoBr,
+  normalizarPrazoParaIso,
+} from '../../utils/petUtils';
 
 export interface TaskFormData {
   petId: number;
   titulo: string;
   descricao: string;
   pontos: string;
+  prazo?: string;
+  status?: 'PENDENTE' | 'CONCLUIDO' | 'EXPIRADO';
+  conclusao?: string | null;
 }
 
 interface TaskFormModalProps {
@@ -23,15 +35,56 @@ interface TaskFormModalProps {
   isLoading?: boolean;
 }
 
-const INITIAL_TASK_FORM = {
-  petId: null as number | null,
+interface TaskFormState {
+  petId: number | null;
+  titulo: string;
+  descricao: string;
+  pontos: string;
+  prazo: string;
+  status: 'PENDENTE' | 'CONCLUIDO';
+}
+
+const INITIAL_TASK_FORM: TaskFormState = {
+  petId: null,
   titulo: '',
   descricao: '',
   pontos: '',
+  prazo: '',
+  status: 'PENDENTE',
 };
 
-export function TaskFormModal({
-  visible,
+function getInitialForm(
+  mode: 'create' | 'edit',
+  initialData?: TaskFormData | null,
+  initialPetId?: number | null,
+  pets?: Array<{ id: number; nome: string }>
+): TaskFormState {
+  if (mode === 'edit' && initialData) {
+    const isExpirada = initialData.status === 'EXPIRADO';
+    const prazoBr = formatarIsoParaBr(initialData.prazo, true);
+    const prazoValido = isExpirada
+      ? obterPrazoFuturoPadraoBr()
+      : (prazoBr || obterPrazoFuturoPadraoBr());
+
+    return {
+      petId: initialData.petId,
+      titulo: initialData.titulo,
+      descricao: initialData.descricao,
+      pontos: String(initialData.pontos),
+      prazo: prazoValido,
+      status: initialData.status === 'CONCLUIDO' ? 'CONCLUIDO' : 'PENDENTE',
+    };
+  }
+
+  return {
+    ...INITIAL_TASK_FORM,
+    petId: initialPetId || (pets && pets.length > 0 ? pets[0].id : null),
+    prazo: obterPrazoFuturoPadraoBr(),
+    status: 'PENDENTE',
+  };
+}
+
+const TaskFormBody = memo(function TaskFormBody({
   onClose,
   pets,
   initialPetId,
@@ -39,33 +92,34 @@ export function TaskFormModal({
   initialData,
   onSubmit,
   isLoading = false,
-}: TaskFormModalProps) {
-  const [form, setForm] = useState(INITIAL_TASK_FORM);
+}: Omit<TaskFormModalProps, 'visible'>) {
+  const [form, setForm] = useState<TaskFormState>(() =>
+    getInitialForm(mode, initialData, initialPetId, pets)
+  );
 
-  useEffect(() => {
-    if (visible) {
-      if (mode === 'edit' && initialData) {
-        setForm({
-          petId: initialData.petId,
-          titulo: initialData.titulo,
-          descricao: initialData.descricao,
-          pontos: String(initialData.pontos),
-        });
-      } else {
-        setForm({
-          ...INITIAL_TASK_FORM,
-          petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
-        });
-      }
-    }
-  }, [visible, initialPetId, pets, mode, initialData]);
+  const handlePetSelect = useCallback((petId: number) => {
+    setForm((prev) => ({ ...prev, petId }));
+  }, []);
 
-  const updateField = <K extends keyof typeof INITIAL_TASK_FORM>(
-    key: K,
-    value: (typeof INITIAL_TASK_FORM)[K]
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const handleTituloChange = useCallback((titulo: string) => {
+    setForm((prev) => ({ ...prev, titulo }));
+  }, []);
+
+  const handleDescricaoChange = useCallback((descricao: string) => {
+    setForm((prev) => ({ ...prev, descricao }));
+  }, []);
+
+  const handlePontosChange = useCallback((p: string) => {
+    setForm((prev) => ({ ...prev, pontos: p.replace(/\D/g, '') }));
+  }, []);
+
+  const handlePrazoChange = useCallback((prazo: string) => {
+    setForm((prev) => ({ ...prev, prazo }));
+  }, []);
+
+  const handleStatusChange = useCallback((newStatus: 'PENDENTE' | 'CONCLUIDO') => {
+    setForm((prev) => ({ ...prev, status: newStatus }));
+  }, []);
 
   const handleSubmit = () => {
     const validacao = TaskSchema.safeParse(form);
@@ -75,51 +129,48 @@ export function TaskFormModal({
       return;
     }
 
+    const prazoIso = normalizarPrazoParaIso(form.prazo);
+    const dataPrazo = new Date(prazoIso);
+    if (isNaN(dataPrazo.getTime()) || dataPrazo.getTime() <= Date.now()) {
+      Alert.alert(
+        'Prazo Inválido',
+        'O prazo da tarefa deve ser uma data e horário futuro.'
+      );
+      return;
+    }
+
     onSubmit({
       petId: validacao.data.petId,
       titulo: validacao.data.titulo,
       descricao: validacao.data.descricao,
       pontos: String(validacao.data.pontos),
+      prazo: form.prazo,
+      status: form.status,
+      conclusao: form.status === 'CONCLUIDO' ? (initialData?.conclusao || null) : null,
     });
   };
 
+  const isExpiredEdit = mode === 'edit' && initialData?.status === 'EXPIRADO';
+
   return (
-    <BaseModal
-      visible={visible}
-      onClose={onClose}
-      title={mode === 'edit' ? 'Editar Tarefa' : 'Criar Tarefa para o Pet'}
-      subtitle={
-        mode === 'edit'
-          ? 'Atualize as instruções ou pontuação desta rotina'
-          : 'Defina rotinas de alimentação, passeios ou medicação'
-      }
-    >
-      <Text style={styles.fieldLabel}>Para qual Pet?</Text>
-      <View style={styles.porteRow}>
-        {pets.map((p) => (
-          <TouchableOpacity
-            key={p.id}
-            style={[styles.porteBtn, form.petId === p.id && styles.porteBtnSelected]}
-            onPress={() => updateField('petId', p.id)}
-          >
-            <Text
-              style={[
-                styles.porteBtnText,
-                form.petId === p.id && styles.porteBtnTextSelected,
-              ]}
-            >
-              {p.nome}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+    <>
+      {/* Banner de Tarefa Expirada Modularizado */}
+      {isExpiredEdit && <ExpiredTaskBanner />}
+
+      {/* Seletor Reutilizável de Pet */}
+      <PetSelector
+        label="Para qual Pet?"
+        pets={pets}
+        selectedPetId={form.petId}
+        onSelectPet={handlePetSelect}
+      />
 
       <CustomInput
         label="Título da Tarefa"
         placeholder="Ex: Passeio de 30min, Ração da tarde..."
         maxLength={60}
         value={form.titulo}
-        onChangeText={(t) => updateField('titulo', t)}
+        onChangeText={handleTituloChange}
       />
 
       <CustomInput
@@ -127,7 +178,7 @@ export function TaskFormModal({
         placeholder="Instruções ou remédios a dar..."
         maxLength={200}
         value={form.descricao}
-        onChangeText={(t) => updateField('descricao', t)}
+        onChangeText={handleDescricaoChange}
       />
 
       <CustomInput
@@ -136,8 +187,26 @@ export function TaskFormModal({
         keyboardType="numeric"
         maxLength={4}
         value={form.pontos}
-        onChangeText={(t) => updateField('pontos', t.replace(/\D/g, ''))}
+        onChangeText={handlePontosChange}
       />
+
+      {/* Data e Horário de Conclusão / Prazo */}
+      <CustomDateInput
+        label="Data e Horário de Conclusão Prevista (Prazo)"
+        placeholder="DD/MM/AAAA HH:mm"
+        showTime
+        quickTimePresets
+        value={form.prazo}
+        onChangeDate={handlePrazoChange}
+      />
+
+      {/* Controle de Status no modo Edição */}
+      {mode === 'edit' && (
+        <TaskStatusSelector
+          status={form.status}
+          onStatusChange={handleStatusChange}
+        />
+      )}
 
       <View style={styles.modalButtonsRow}>
         <CustomButton
@@ -155,45 +224,55 @@ export function TaskFormModal({
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
+});
+
+export function TaskFormModal({
+  visible,
+  onClose,
+  pets,
+  initialPetId,
+  mode = 'create',
+  initialData,
+  onSubmit,
+  isLoading = false,
+}: TaskFormModalProps) {
+  // Chave estável baseada em id/identidade que reinicializa o formulário de forma pura (sem useEffect + setState)
+  const formKey = visible
+    ? (mode === 'edit' && initialData
+        ? `edit_${initialData.petId}_${initialData.titulo}`
+        : `create_${initialPetId || 'default'}`)
+    : 'closed';
+
+  return (
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title={mode === 'edit' ? 'Editar Tarefa' : 'Criar Tarefa para o Pet'}
+      subtitle={
+        mode === 'edit'
+          ? 'Atualize instruções, prazo previsto ou altere o status'
+          : 'Defina rotinas de alimentação, passeios ou medicação'
+      }
+    >
+      {visible ? (
+        <TaskFormBody
+          key={formKey}
+          onClose={onClose}
+          pets={pets}
+          initialPetId={initialPetId}
+          mode={mode}
+          initialData={initialData}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+        />
+      ) : null}
     </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  porteRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  porteBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  porteBtnSelected: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
-  },
-  porteBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  porteBtnTextSelected: {
-    color: '#FFFFFF',
-  },
   modalButtonsRow: {
     flexDirection: 'row',
     gap: 12,

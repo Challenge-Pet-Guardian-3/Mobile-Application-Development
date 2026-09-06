@@ -1,27 +1,26 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { PetFormModal, PetFormData } from '../../components/PetFormModal';
-import { InviteCaregiverModal, InviteCaregiverData } from '../../components/InviteCaregiverModal';
-import { HistoricoFormModal, HistoricoFormSubmitData } from '../../components/HistoricoFormModal';
 import { PetAvatarCarousel } from '../../components/PetAvatarCarousel';
 import { PetHeaderCard } from '../../components/PetHeaderCard';
-import { PetHealthHistoryList } from '../../components/PetHealthHistoryList';
-import { PetHistoryList } from '../../components/PetHistoryList';
 import { CaregiverCard } from '../../components/CaregiverCard';
+import { PetHistoryList } from '../../components/PetHistoryList';
+import { PetHealthHistoryList } from '../../components/PetHealthHistoryList';
+import { PetFormModal } from '../../components/PetFormModal';
+import { InviteCaregiverModal } from '../../components/InviteCaregiverModal';
+import { HistoricoFormModal } from '../../components/HistoricoFormModal';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { shadows } from '../../utils/shadow';
 import { useSession } from '../../hooks/useSession';
 import { usePetDetail } from '../../hooks/usePetDetail';
-import { HistoricoResponse } from '../../types/historico';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
 
@@ -31,108 +30,17 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
   const routePetId = route?.params?.petId;
   const { user } = useSession();
 
-  const {
-    pets,
-    activePet,
-    setSelectedPetId,
-    historyData,
-    historicos,
-    caregivers,
-    isResponsavelPrincipal,
-    initialPetData,
-    isLoading,
-    isLoadingHistory,
-    isLoadingHistoricos,
-    salvarEdicaoPet,
-    excluirPet,
-    convidarCuidador,
-    removerCuidador,
-    transferirResponsabilidade,
-    criarHistorico,
-    atualizarHistorico,
-    excluirHistorico,
-    isUpdatingPet,
-    isInvitingCaregiver,
-    isSavingHistorico,
-  } = usePetDetail(routePetId);
-
-  const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
-  const [modalConviteVisivel, setModalConviteVisivel] = useState(false);
-  const [modalHistoricoVisivel, setModalHistoricoVisivel] = useState(false);
-  const [itemEdicaoHistorico, setItemEdicaoHistorico] = useState<HistoricoResponse | null>(null);
-
-  const abrirEdicao = useCallback(() => {
-    if (!activePet) return;
-    setModalEdicaoVisivel(true);
-  }, [activePet]);
-
-  const handleSalvarEdicao = useCallback(
-    (formData: PetFormData) => {
-      salvarEdicaoPet(formData, {
-        onSuccess: () => setModalEdicaoVisivel(false),
-      });
-    },
-    [salvarEdicaoPet]
-  );
-
-  const handleExcluirPet = useCallback(() => {
-    excluirPet({
-      onSuccess: () => {
-        navigation.goBack();
-      },
-    });
-  }, [excluirPet, navigation]);
-
-  const handleConvidarCuidador = useCallback(
-    (data: InviteCaregiverData) => {
-      convidarCuidador(data.email, {
-        onSuccess: () => setModalConviteVisivel(false),
-      });
-    },
-    [convidarCuidador]
-  );
-
-  const handleAbrirNovoHistorico = useCallback(() => {
-    setItemEdicaoHistorico(null);
-    setModalHistoricoVisivel(true);
-  }, []);
-
-  const handleAbrirEdicaoHistorico = useCallback((item: HistoricoResponse) => {
-    setItemEdicaoHistorico(item);
-    setModalHistoricoVisivel(true);
-  }, []);
-
-  const handleSalvarHistorico = useCallback(
-    (data: HistoricoFormSubmitData) => {
-      if (itemEdicaoHistorico) {
-        atualizarHistorico(itemEdicaoHistorico.id, data, {
-          onSuccess: () => setModalHistoricoVisivel(false),
-        });
-      } else {
-        criarHistorico(data, {
-          onSuccess: () => setModalHistoricoVisivel(false),
-        });
-      }
-    },
-    [itemEdicaoHistorico, atualizarHistorico, criarHistorico]
-  );
-
-  const handleExcluirHistorico = useCallback(
-    (item: HistoricoResponse) => {
-      excluirHistorico(item.id, item.tipoHist);
-    },
-    [excluirHistorico]
-  );
-
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
-  if (isLoading) {
+  const { status, pet, modals, actions } = usePetDetail(routePetId, handleGoBack);
+
+  if (status.isLoading) {
     return <LoadingSpinner message="Carregando perfil do pet..." />;
   }
 
-  if (pets.length === 0) {
+  if (pet.list.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.paddingHeader}>
@@ -166,18 +74,19 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
 
         {/* Carrossel de seleção do Pet */}
         <PetAvatarCarousel
-          pets={pets}
-          selectedPetId={activePet?.id}
-          onSelectPet={setSelectedPetId}
+          pets={pet.list}
+          selectedPetId={pet.active?.id}
+          onSelectPet={pet.select}
         />
 
-        {activePet && (
+        {pet.active && (
           <View style={styles.contentPadding}>
             {/* Card Principal do Perfil do Pet */}
             <PetHeaderCard
-              pet={activePet}
-              onEdit={abrirEdicao}
-              onDelete={handleExcluirPet}
+              pet={pet.active}
+              isResponsavelPrincipal={pet.isPrincipal}
+              onEdit={modals.abrirEdicao}
+              onDelete={actions.excluirPet}
             />
 
             {/* Rede de Cuidado / Cuidadores do Pet */}
@@ -186,13 +95,13 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                 <View style={styles.sectionTitleRow}>
                   <Ionicons name="people" size={18} color="#2563EB" />
                   <Text style={styles.sectionTitle}>
-                    Rede de Cuidado ({caregivers.length || 1})
+                    Rede de Cuidado ({pet.caregivers.length || 1})
                   </Text>
                 </View>
-                {isResponsavelPrincipal && (
+                {pet.isPrincipal && (
                   <TouchableOpacity
                     style={styles.btnInvite}
-                    onPress={() => setModalConviteVisivel(true)}
+                    onPress={() => modals.setConviteVisivel(true)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="person-add" size={13} color="#2563EB" />
@@ -201,7 +110,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                 )}
               </View>
 
-              {caregivers.length === 0 ? (
+              {pet.caregivers.length === 0 ? (
                 user && (
                   <CaregiverCard
                     nome={user.nome || 'Tutor'}
@@ -212,7 +121,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                   />
                 )
               ) : (
-                caregivers.map((c) => {
+                pet.caregivers.map((c) => {
                   const isMe = c.usuarioId === user?.id;
                   return (
                     <CaregiverCard
@@ -222,13 +131,13 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                       isPrincipal={c.responsavelPrincipal}
                       isCurrentUser={isMe}
                       onTransfer={
-                        isResponsavelPrincipal && !isMe
-                          ? () => transferirResponsabilidade(c.usuarioId, c.nome)
+                        pet.isPrincipal && !isMe
+                          ? () => actions.transferirResponsabilidade(c.usuarioId, c.nome)
                           : undefined
                       }
                       onRemove={
-                        isResponsavelPrincipal || isMe
-                          ? () => removerCuidador(c.usuarioId, c.nome)
+                        pet.isPrincipal || isMe
+                          ? () => actions.removerCuidador(c.usuarioId, c.nome)
                           : undefined
                       }
                     />
@@ -239,17 +148,17 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
 
             {/* Prontuário de Saúde & Eventos Clínicos (CRUD /historicos) */}
             <PetHealthHistoryList
-              historicos={historicos}
-              isLoading={isLoadingHistoricos}
-              onAdd={handleAbrirNovoHistorico}
-              onEdit={handleAbrirEdicaoHistorico}
-              onDelete={handleExcluirHistorico}
+              historicos={pet.historicos}
+              isLoading={status.isLoadingHistoricos}
+              onAdd={modals.abrirNovoHistorico}
+              onEdit={modals.abrirEdicaoHistorico}
+              onDelete={modals.excluirHistorico}
             />
 
             {/* Histórico Consolidado de Rotina e Cuidados */}
             <PetHistoryList
-              historico={historyData?.tarefasConcluidas || []}
-              isLoading={isLoadingHistory}
+              historico={pet.historyData?.tarefasConcluidas || []}
+              isLoading={status.isLoadingHistory}
             />
           </View>
         )}
@@ -257,36 +166,36 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
 
       {/* Modal de Edição de Ficha do Pet Reutilizável */}
       <PetFormModal
-        visible={modalEdicaoVisivel}
-        onClose={() => setModalEdicaoVisivel(false)}
+        visible={modals.edicaoVisivel}
+        onClose={() => modals.setEdicaoVisivel(false)}
         mode="edit"
-        title={`Editar Ficha de ${activePet?.nome || 'Pet'}`}
+        title={`Editar Ficha de ${pet.active?.nome || 'Pet'}`}
         subtitle="Atualize os dados e informações cadastrais do animal"
-        initialData={initialPetData}
-        isLoading={isUpdatingPet}
-        onSubmit={handleSalvarEdicao}
+        initialData={pet.initialData}
+        isLoading={actions.isUpdatingPet}
+        onSubmit={modals.salvarEdicao}
       />
 
       {/* Modal de Convidar Cuidador para o Pet */}
       <InviteCaregiverModal
-        visible={modalConviteVisivel}
-        onClose={() => setModalConviteVisivel(false)}
-        pets={activePet ? [activePet] : pets}
-        initialPetId={activePet?.id}
-        isLoading={isInvitingCaregiver}
-        onSubmit={handleConvidarCuidador}
+        visible={modals.conviteVisivel}
+        onClose={() => modals.setConviteVisivel(false)}
+        pets={pet.active ? [pet.active] : pet.list}
+        initialPetId={pet.active?.id}
+        isLoading={actions.isInvitingCaregiver}
+        onSubmit={modals.convidarCuidador}
       />
 
       {/* Modal de CRUD de Registro de Saúde / Histórico */}
-      {activePet && (
+      {pet.active && (
         <HistoricoFormModal
-          visible={modalHistoricoVisivel}
-          onClose={() => setModalHistoricoVisivel(false)}
-          mode={itemEdicaoHistorico ? 'edit' : 'create'}
-          petId={activePet.id}
-          initialData={itemEdicaoHistorico}
-          isLoading={isSavingHistorico}
-          onSubmit={handleSalvarHistorico}
+          visible={modals.historicoVisivel}
+          onClose={() => modals.setHistoricoVisivel(false)}
+          mode={modals.itemEdicaoHistorico ? 'edit' : 'create'}
+          petId={pet.active.id}
+          initialData={modals.itemEdicaoHistorico}
+          isLoading={actions.isSavingHistorico}
+          onSubmit={modals.salvarHistorico}
         />
       )}
     </View>
@@ -383,4 +292,3 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 });
-

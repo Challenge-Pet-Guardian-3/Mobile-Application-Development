@@ -108,6 +108,10 @@ export function CaregiverCard({
           )}
         </View>
       )}
+
+      {onPress && !onTransfer && !onRemove && (
+        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+      )}
     </CardWrapper>
   );
 }

@@ -8,7 +8,7 @@ import { usePets, usePetPontos } from './usePets';
 import { useSession } from './useSession';
 import { PetResponse } from '../types/pet';
 
-export function useTrilhas(petId?: number, enabled = true) {
+function useTrilhas(petId?: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.training.byPet(petId),
     queryFn: () => (petId ? TrainingService.getTrilhas(petId) : Promise.resolve([])),
@@ -16,7 +16,7 @@ export function useTrilhas(petId?: number, enabled = true) {
   });
 }
 
-export function useConcluirLicao() {
+function useConcluirLicao() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -99,26 +99,33 @@ export function useTrainings() {
   const progressoPercent = Math.round((licoesConcluidas / totalLicoes) * 100);
 
   return {
-    user,
-    isUserComum,
-    pets,
-    selectedPetIndex,
-    setSelectedPetIndex,
-    petAtivo,
-    trilhas,
-    isLoadingTrilhas,
-    trilhaAtivaIndex,
-    setTrilhaAtivaIndex,
-    trilhaAtual,
-    totalLicoes,
-    licoesConcluidas,
-    progressoPercent,
-    licaoSelecionada,
-    setLicaoSelecionada,
-    totalXpGanho,
-    handleConcluirLicao,
-    isConcluindo: concluirLicaoMutation.isPending,
-    isFetching: isFetchingTrilhas,
-    refetch,
+    status: {
+      isUserComum,
+      isLoadingTrilhas,
+      isFetching: isFetchingTrilhas,
+      isConcluindo: concluirLicaoMutation.isPending,
+    },
+    pet: {
+      pets,
+      selectedPetIndex,
+      setSelectedPetIndex,
+      petAtivo,
+      totalXpGanho,
+    },
+    trail: {
+      trilhas,
+      trilhaAtivaIndex,
+      setTrilhaAtivaIndex,
+      trilhaAtual,
+      totalLicoes,
+      licoesConcluidas,
+      progressoPercent,
+      licaoSelecionada,
+      setLicaoSelecionada,
+    },
+    actions: {
+      refetch,
+      concluirLicao: handleConcluirLicao,
+    },
   };
 }

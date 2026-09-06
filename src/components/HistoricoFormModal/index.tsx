@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
+import { CustomDateInput } from '../CustomDateInput';
 import { CustomButton } from '../CustomButton';
 import { HistoricoSchema, formatZodError } from '../../utils/schemas';
-import { formatarIsoParaBr, normalizarDataNascParaIso } from '../../utils/petUtils';
+import { formatarIsoParaBr, normalizarDataNascParaIso, formatarDataHojeBr } from '../../utils/petUtils';
 
 export interface HistoricoFormSubmitData {
   tipoHist: string;
@@ -36,57 +37,35 @@ const SUGESTOES_EVENTOS = [
   'Cirurgia / Castração',
 ];
 
-const INITIAL_FORM = {
-  tipoHist: '',
-  dataHist: '',
-};
+interface HistoricoFormState {
+  tipoHist: string;
+  dataHist: string;
+}
 
-export function HistoricoFormModal({
-  visible,
+const HistoricoFormBody = memo(function HistoricoFormBody({
   onClose,
   mode = 'create',
   petId,
   initialData,
   onSubmit,
   isLoading = false,
-}: HistoricoFormModalProps) {
-  const [form, setForm] = useState(INITIAL_FORM);
-
-  useEffect(() => {
-    if (visible) {
-      if (initialData) {
-        setForm({
-          tipoHist: initialData.tipoHist || '',
-          dataHist: initialData.dataHist ? formatarIsoParaBr(initialData.dataHist) : '',
-        });
-      } else {
-        // Data atual por padrão no cadastro
-        const hoje = new Date();
-        const dia = String(hoje.getDate()).padStart(2, '0');
-        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-        const ano = hoje.getFullYear();
-        setForm({
-          tipoHist: '',
-          dataHist: `${dia}/${mes}/${ano}`,
-        });
-      }
+}: Omit<HistoricoFormModalProps, 'visible'>) {
+  const [form, setForm] = useState<HistoricoFormState>(() => {
+    if (initialData) {
+      return {
+        tipoHist: initialData.tipoHist || '',
+        dataHist: initialData.dataHist ? formatarIsoParaBr(initialData.dataHist) : '',
+      };
     }
-  }, [visible, initialData]);
+    return {
+      tipoHist: '',
+      dataHist: formatarDataHojeBr(),
+    };
+  });
 
-  const updateField = (key: keyof typeof INITIAL_FORM, value: string) => {
+  const updateField = useCallback((key: keyof HistoricoFormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleDataChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 8);
-    let formatted = cleaned;
-    if (cleaned.length > 4) {
-      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
-    } else if (cleaned.length > 2) {
-      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-    }
-    updateField('dataHist', formatted);
-  };
+  }, []);
 
   const handleSubmit = () => {
     const validacao = HistoricoSchema.safeParse({
@@ -111,12 +90,7 @@ export function HistoricoFormModal({
   };
 
   return (
-    <BaseModal
-      visible={visible}
-      onClose={onClose}
-      title={mode === 'edit' ? 'Editar Registro de Saúde' : 'Novo Registro de Saúde'}
-      subtitle="Cadastre vacinas, consultas médicas, exames e procedimentos veterinários."
-    >
+    <>
       <CustomInput
         label="Tipo de Evento / Atendimento"
         placeholder="Ex: Vacina V10, Consulta de Rotina..."
@@ -150,13 +124,11 @@ export function HistoricoFormModal({
         ))}
       </View>
 
-      <CustomInput
-        label="Data do Evento (DD/MM/AAAA)"
+      <CustomDateInput
+        label="Data do Evento"
         placeholder="DD/MM/AAAA"
-        keyboardType="numeric"
-        maxLength={10}
         value={form.dataHist}
-        onChangeText={handleDataChange}
+        onChangeDate={(d) => updateField('dataHist', d)}
       />
 
       <View style={styles.modalButtonsRow}>
@@ -175,6 +147,41 @@ export function HistoricoFormModal({
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
+});
+
+export function HistoricoFormModal({
+  visible,
+  onClose,
+  mode = 'create',
+  petId,
+  initialData,
+  onSubmit,
+  isLoading = false,
+}: HistoricoFormModalProps) {
+  const formKey = visible
+    ? (initialData?.id ? `hist_${initialData.id}` : `pet_${petId}_create`)
+    : 'closed';
+
+  return (
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title={mode === 'edit' ? 'Editar Registro de Saúde' : 'Novo Registro de Saúde'}
+      subtitle="Cadastre vacinas, consultas médicas, exames e procedimentos veterinários."
+    >
+      {visible ? (
+        <HistoricoFormBody
+          key={formKey}
+          onClose={onClose}
+          mode={mode}
+          petId={petId}
+          initialData={initialData}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+        />
+      ) : null}
     </BaseModal>
   );
 }

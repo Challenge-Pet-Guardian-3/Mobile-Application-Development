@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,56 +9,28 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
-import { shadows } from '../../utils/shadow';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { PetCard } from '../../components/PetCard';
+import { CaregiverCard } from '../../components/CaregiverCard';
 import { PetFormModal } from '../../components/PetFormModal';
 import { TaskFormModal } from '../../components/TaskFormModal';
 import { InviteCaregiverModal } from '../../components/InviteCaregiverModal';
-import { PetCard } from '../../components/PetCard';
-import { CaregiverCard } from '../../components/CaregiverCard';
+import { ManageCaregiverModal } from '../../components/ManageCaregiverModal';
 import { FamilySummaryCard } from '../../components/FamilySummaryCard';
-import { FamilyTaskItem } from '../../components/FamilyTaskItem';
-import { useFamilyCare } from '../../hooks/useFamilyCare';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { TasksRoutineSection } from '../../components/TasksRoutineSection';
+import { shadows } from '../../utils/shadow';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
-import { TarefaResponse } from '../../types/task';
+import { useFamilyCare } from '../../hooks/useFamilyCare';
 
 interface FamilyPetScreenProps {
   navigation: NativeStackNavigationProp<FamilyStackParamList>;
 }
 
 export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
-  const {
-    user,
-    pets,
-    tasks,
-    redeCuidado,
-    isLoading,
-    isFetching,
-    refetchAll,
-    cadastrarPet,
-    cadastrarTarefa,
-    atualizarTarefa,
-    convidarCuidador,
-    removerTarefa,
-    isCreatingPet,
-    isCreatingTask,
-    isUpdatingTask,
-    isInvitingCaregiver,
-  } = useFamilyCare();
+  const { status, family, modals, actions } = useFamilyCare();
 
-  const coCuidadores = redeCuidado?.coCuidadores || [];
-
-  // Controle Unificado de Modais
-  const [modalAtivo, setModalAtivo] = useState<'novoPet' | 'novaTarefa' | 'editarTarefa' | 'convite' | null>(null);
-  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
-
-  const handleEditTask = (tarefa: TarefaResponse) => {
-    setTarefaEmEdicao(tarefa);
-    setModalAtivo('editarTarefa');
-  };
-
-  if (isLoading) {
+  if (status.isLoading) {
     return <LoadingSpinner message="Carregando rede da família..." />;
   }
 
@@ -69,8 +41,8 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isFetching && !isLoading}
-            onRefresh={refetchAll}
+            refreshing={status.isFetching && !status.isLoading}
+            onRefresh={status.refetchAll}
             tintColor="#10B981"
           />
         }
@@ -79,24 +51,27 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
 
         {/* Resumo da Rede de Cuidado */}
         <FamilySummaryCard
-          tutorNome={user?.nome}
-          petsCount={pets.length}
-          tarefasPendentes={redeCuidado?.totalTarefasPendentes ?? tasks.length}
-          tarefasConcluidas={redeCuidado?.totalTarefasConcluidas ?? 0}
-          pontosAcumulados={redeCuidado?.pontosAcumulados || 0}
+          tutorNome={family.user?.nome}
+          petsCount={family.pets.length}
+          tarefasPendentes={
+            family.redeCuidado?.totalTarefasPendentes ??
+            family.allTasks.filter((t) => t.status === 'PENDENTE').length
+          }
+          tarefasConcluidas={family.redeCuidado?.totalTarefasConcluidas ?? 0}
+          pontosAcumulados={family.redeCuidado?.pontosAcumulados || 0}
         />
 
         {/* Seção de Animais da Família */}
         <View style={styles.sectionBox}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Animais da Família</Text>
-            <TouchableOpacity style={styles.btnAddPet} onPress={() => setModalAtivo('novoPet')}>
+            <TouchableOpacity style={styles.btnAddPet} onPress={() => modals.abrir('novoPet')}>
               <Ionicons name="add" size={16} color="#FFFFFF" />
               <Text style={styles.btnAddPetText}>Adicionar Pet</Text>
             </TouchableOpacity>
           </View>
 
-          {pets.length === 0 ? (
+          {family.pets.length === 0 ? (
             <View style={styles.emptyBox}>
               <MaterialCommunityIcons name="paw-off" size={28} color="#CBD5E1" />
               <Text style={styles.emptyTitle}>Nenhum pet cadastrado</Text>
@@ -104,8 +79,8 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
             </View>
           ) : (
             <View style={styles.petsGrid}>
-              {pets.map((pet) => {
-                const petResumo = redeCuidado?.pets?.find((p) => p.id === pet.id);
+              {family.pets.map((pet) => {
+                const petResumo = family.redeCuidado?.pets?.find((p) => p.id === pet.id);
                 const isRespPrincipal = petResumo ? petResumo.responsavelPrincipal : true;
 
                 return (
@@ -122,60 +97,51 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
           )}
         </View>
 
-        {/* Seção de Tarefas da Rotina */}
-        <View style={styles.sectionBox}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Rotina & Tarefas</Text>
-            <TouchableOpacity
-              style={styles.btnAddTask}
-              onPress={() => setModalAtivo('novaTarefa')}
-            >
-              <Ionicons name="add" size={16} color="#FFFFFF" />
-              <Text style={styles.btnAddTaskText}>Nova Tarefa</Text>
-            </TouchableOpacity>
-          </View>
-
-          {tasks.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Ionicons name="checkbox-outline" size={28} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>Nenhuma tarefa ativa</Text>
-              <Text style={styles.emptySub}>Crie rotinas diárias para seu pet acumular pontos XP!</Text>
-            </View>
-          ) : (
-            <View style={{ gap: 8 }}>
-              {tasks.map((t) => {
-                const petName = pets.find((p) => p.id === t.petId)?.nome || 'Pet';
-                return (
-                  <FamilyTaskItem
-                    key={t.id}
-                    tarefa={t}
-                    petNome={petName}
-                    onEdit={handleEditTask}
-                    onDelete={removerTarefa}
-                  />
-                );
-              })}
-            </View>
-          )}
-        </View>
+        {/* Seção Reutilizável de Tarefas da Rotina */}
+        <TasksRoutineSection
+          title={family.filtroRotina === 'HOJE' ? 'Rotina de Hoje' : 'Rotina & Tarefas'}
+          subtitle={`${family.tasks.length} ${family.tasks.length === 1 ? 'tarefa' : 'tarefas'} ${family.filtroRotina === 'HOJE' ? 'hoje' : 'no total'}`}
+          filter={family.filtroRotina}
+          onFilterChange={family.setFiltroRotina}
+          countHoje={family.totalTarefasHoje}
+          countTodas={family.totalTarefasGeral}
+          tasks={family.tasks}
+          pets={family.pets}
+          headerButton={{
+            label: 'Nova Tarefa',
+            icon: 'add',
+            variant: 'primary',
+            onPress: () => modals.abrir('novaTarefa'),
+          }}
+          emptyTitle={family.filtroRotina === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa ativa'}
+          emptyDesc={
+            family.filtroRotina === 'HOJE'
+              ? 'Nenhuma tarefa agendada para hoje na família.'
+              : 'Crie rotinas diárias para seu pet acumular pontos XP!'
+          }
+          onEditTask={modals.abrirEdicaoTarefa}
+          onDeleteTask={actions.removerTarefa}
+        />
 
         {/* Seção de Co-Cuidadores */}
         <View style={styles.sectionBox}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Co-Cuidadores</Text>
-            <TouchableOpacity
-              style={styles.btnInvite}
-              onPress={() => setModalAtivo('convite')}
-            >
-              <Ionicons name="person-add" size={14} color="#2563EB" />
-              <Text style={styles.btnInviteText}>Convidar</Text>
-            </TouchableOpacity>
+            {family.petsOndeSouPrincipal.length > 0 && (
+              <TouchableOpacity
+                style={styles.btnInvite}
+                onPress={modals.abrirConvite}
+              >
+                <Ionicons name="person-add" size={14} color="#2563EB" />
+                <Text style={styles.btnInviteText}>Convidar</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Meu perfil */}
-          {user && (
+          {family.user && (
             <CaregiverCard
-              nome={user.nome || 'Tutor'}
+              nome={family.user.nome || 'Tutor'}
               roleText="Responsável Principal"
               isCurrentUser
               isPrincipal
@@ -183,9 +149,9 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
           )}
 
           {/* Co-cuidadores */}
-          {coCuidadores.map((c) => {
+          {family.coCuidadores.map((c) => {
             const petsDoCuidador = c.petIds
-              ?.map((pId) => pets.find((p) => p.id === pId)?.nome)
+              ?.map((pId) => family.pets.find((p) => p.id === pId)?.nome)
               .filter(Boolean)
               .join(', ');
 
@@ -196,6 +162,11 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
                 email={c.email}
                 roleText={petsDoCuidador ? `Ajuda com: ${petsDoCuidador}` : 'Co-cuidador'}
                 isPrincipal={c.responsavelPrincipal}
+                onPress={
+                  family.petsOndeSouPrincipal.length > 0
+                    ? () => modals.abrirGerenciamento(c)
+                    : undefined
+                }
               />
             );
           })}
@@ -206,56 +177,43 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
 
       {/* Modal de Criação de Pet Reutilizável */}
       <PetFormModal
-        visible={modalAtivo === 'novoPet'}
-        onClose={() => setModalAtivo(null)}
+        visible={modals.ativo === 'novoPet'}
+        onClose={modals.fechar}
         mode="create"
-        isLoading={isCreatingPet}
-        onSubmit={(data) => cadastrarPet(data, { onSuccess: () => setModalAtivo(null) })}
+        isLoading={actions.isCreatingPet}
+        onSubmit={(data) => actions.cadastrarPet(data, { onSuccess: modals.fechar })}
       />
 
       {/* Modal de Criação / Edição de Tarefa Reutilizável */}
       <TaskFormModal
-        visible={modalAtivo === 'novaTarefa' || modalAtivo === 'editarTarefa'}
-        onClose={() => {
-          setModalAtivo(null);
-          setTarefaEmEdicao(null);
-        }}
-        mode={modalAtivo === 'editarTarefa' ? 'edit' : 'create'}
-        initialData={
-          tarefaEmEdicao
-            ? {
-                petId: tarefaEmEdicao.petId,
-                titulo: tarefaEmEdicao.titulo,
-                descricao: tarefaEmEdicao.descricao,
-                pontos: String(tarefaEmEdicao.pontosTarefa),
-              }
-            : null
-        }
-        pets={pets}
-        isLoading={isCreatingTask || isUpdatingTask}
-        onSubmit={(data) => {
-          if (modalAtivo === 'editarTarefa' && tarefaEmEdicao) {
-            atualizarTarefa(tarefaEmEdicao.id, data, {
-              onSuccess: () => {
-                setModalAtivo(null);
-                setTarefaEmEdicao(null);
-              },
-            });
-          } else {
-            cadastrarTarefa(data, {
-              onSuccess: () => setModalAtivo(null),
-            });
-          }
-        }}
+        visible={modals.ativo === 'novaTarefa' || modals.ativo === 'editarTarefa'}
+        onClose={modals.fecharModalTarefa}
+        mode={modals.ativo === 'editarTarefa' ? 'edit' : 'create'}
+        initialData={modals.initialTaskData}
+        pets={family.pets}
+        isLoading={actions.isCreatingTask || actions.isUpdatingTask}
+        onSubmit={modals.submeterTarefa}
       />
 
       {/* Modal de Convidar Co-Cuidador Reutilizável */}
       <InviteCaregiverModal
-        visible={modalAtivo === 'convite'}
-        onClose={() => setModalAtivo(null)}
-        pets={pets}
-        isLoading={isInvitingCaregiver}
-        onSubmit={(data) => convidarCuidador(data, { onSuccess: () => setModalAtivo(null) })}
+        visible={modals.ativo === 'convite'}
+        onClose={modals.fechar}
+        pets={family.petsOndeSouPrincipal}
+        isLoading={actions.isInvitingCaregiver}
+        onSubmit={(data) => actions.convidarCuidador(data, { onSuccess: modals.fechar })}
+      />
+
+      {/* Modal de Gestão / Remoção / Transferência de Co-Cuidador */}
+      <ManageCaregiverModal
+        visible={modals.ativo === 'gerenciarCuidador'}
+        onClose={modals.fecharGerenciamento}
+        cuidador={modals.cuidadorEmGestao}
+        petsOndeSouPrincipal={family.petsOndeSouPrincipal}
+        onTogglePetVinculo={modals.togglePetVinculo}
+        onTransferirTitularidade={modals.transferirTitularidade}
+        onRemoverDeTodosPets={modals.removerDeTodosPets}
+        isLoading={modals.isLoadingGerenciamento}
       />
     </View>
   );
@@ -277,8 +235,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
   btnAddPet: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
   btnAddPetText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
-  btnAddTask: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
-  btnAddTaskText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
   btnInvite: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
   btnInviteText: { color: '#2563EB', fontWeight: '800', fontSize: 12 },
   emptyBox: { alignItems: 'center', padding: 20, gap: 4 },

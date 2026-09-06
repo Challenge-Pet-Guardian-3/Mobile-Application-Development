@@ -7,11 +7,12 @@ import { formatarIdadePet } from '../../utils/petUtils';
 
 export interface PetHeaderCardProps {
   pet: PetResponse;
+  isResponsavelPrincipal?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export function PetHeaderCard({ pet, onEdit, onDelete }: PetHeaderCardProps) {
+export function PetHeaderCard({ pet, isResponsavelPrincipal = true, onEdit, onDelete }: PetHeaderCardProps) {
   return (
     <View style={styles.petHeaderCard}>
       <View style={styles.avatarLargeWrapper}>
@@ -38,17 +39,26 @@ export function PetHeaderCard({ pet, onEdit, onDelete }: PetHeaderCardProps) {
         </View>
       </View>
 
-      <View style={styles.actionButtonsRow}>
-        <TouchableOpacity style={styles.btnEditar} onPress={onEdit} activeOpacity={0.8}>
-          <Ionicons name="pencil" size={15} color="#2563EB" />
-          <Text style={styles.btnEditarText}>Editar Ficha</Text>
-        </TouchableOpacity>
+      {isResponsavelPrincipal ? (
+        <View style={styles.actionButtonsRow}>
+          <TouchableOpacity style={styles.btnEditar} onPress={onEdit} activeOpacity={0.8}>
+            <Ionicons name="pencil" size={15} color="#2563EB" />
+            <Text style={styles.btnEditarText}>Editar Ficha</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnExcluir} onPress={onDelete} activeOpacity={0.8}>
-          <Ionicons name="trash-outline" size={15} color="#EF4444" />
-          <Text style={styles.btnExcluirText}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.btnExcluir} onPress={onDelete} activeOpacity={0.8}>
+            <Ionicons name="trash-outline" size={15} color="#EF4444" />
+            <Text style={styles.btnExcluirText}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.coCuidadorNotice}>
+          <Ionicons name="shield-checkmark" size={16} color="#0284C7" />
+          <Text style={styles.coCuidadorNoticeText}>
+            Você é co-cuidador deste pet. Somente o tutor principal pode editar informações ou excluir a ficha.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -142,5 +152,25 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontWeight: '800',
     fontSize: 12,
+  },
+  coCuidadorNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 4,
+  },
+  coCuidadorNoticeText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0369A1',
+    lineHeight: 15,
   },
 });

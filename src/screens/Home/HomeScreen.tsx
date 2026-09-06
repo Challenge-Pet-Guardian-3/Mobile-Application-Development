@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   Text,
   View,
-  Image,
   StyleSheet,
   ScrollView,
   Platform,
@@ -13,13 +12,12 @@ import {
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { PetScoreBar } from '../../components/PetScoreBar';
-import { RoutineCard } from '../../components/RoutineCard';
 import { StreakCard } from '../../components/streakCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorState } from '../../components/ErrorState';
 import { TaskFormModal } from '../../components/TaskFormModal';
-import { TarefaResponse } from '../../types/task';
+import { TasksRoutineSection } from '../../components/TasksRoutineSection';
 import { shadows } from '../../utils/shadow';
 import { useHomeData } from '../../hooks/useHomeData';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -30,45 +28,13 @@ interface HomeScreenProps {
 }
 
 export default function Home({ navigation }: HomeScreenProps) {
-  const {
-    pets,
-    isLoadingPets,
-    isFetching,
-    isError,
-    error,
-    refetch,
-    selectedPetId,
-    setSelectedPetId,
-    activePet,
-    tarefasDoPet,
-    tarefasConcluidas,
-    petScore,
-    alternarStatusTarefa,
-    atualizarTarefa,
-    excluirTarefaComConfirmacao,
-    isUpdatingTask,
-  } = useHomeData();
+  const { status, pets, routine, taskModal, navigation: nav } = useHomeData(navigation);
 
-  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
-
-  // Handlers de navegação
-  const handleNavigateToFamily = useCallback(() => {
-    navigation.navigate('Family');
-  }, [navigation]);
-
-  const handleNavigateToPetDetail = useCallback(() => {
-    navigation.navigate('Family', { screen: 'PetDetail', params: { petId: activePet?.id } });
-  }, [navigation, activePet]);
-
-  const handleNavigateToAi = useCallback(() => {
-    navigation.navigate('IA');
-  }, [navigation]);
-
-  if (isLoadingPets && pets.length === 0) {
+  if (status.isLoading && pets.list.length === 0) {
     return <LoadingSpinner message="Carregando dados do PetGuardian..." />;
   }
 
-  if (isError && pets.length === 0) {
+  if (status.isError && pets.list.length === 0) {
     return (
       <View style={styles.container}>
         <ScrollView
@@ -76,16 +42,16 @@ export default function Home({ navigation }: HomeScreenProps) {
           contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl
-              refreshing={isFetching && !isLoadingPets}
-              onRefresh={refetch}
+              refreshing={status.isFetching && !status.isLoading}
+              onRefresh={status.refetch}
               tintColor="#10B981"
             />
           }
         >
           <Header subtitle="Visão Geral do Cuidado" />
           <ErrorState
-            message={error?.message || 'Não foi possível carregar os dados do painel.'}
-            onRetry={refetch}
+            message={status.error?.message || 'Não foi possível carregar os dados do painel.'}
+            onRetry={status.refetch}
           />
         </ScrollView>
         <StatusBar style="dark" />
@@ -94,7 +60,7 @@ export default function Home({ navigation }: HomeScreenProps) {
   }
 
   // Se não houver pets cadastrados
-  if (pets.length === 0) {
+  if (pets.list.length === 0) {
     return (
       <View style={styles.container}>
         <ScrollView
@@ -102,8 +68,8 @@ export default function Home({ navigation }: HomeScreenProps) {
           contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl
-              refreshing={isFetching && !isLoadingPets}
-              onRefresh={refetch}
+              refreshing={status.isFetching && !status.isLoading}
+              onRefresh={status.refetch}
               tintColor="#10B981"
             />
           }
@@ -116,7 +82,7 @@ export default function Home({ navigation }: HomeScreenProps) {
             description="Cadastre seu primeiro pet na aba Family Pet para desbloquear a rotina de cuidados e o score de bem-estar."
             buttonText="Cadastrar Pet na Family"
             buttonColor="#10B981"
-            onButtonPress={handleNavigateToFamily}
+            onButtonPress={nav.toFamily}
           />
         </ScrollView>
         <StatusBar style="dark" />
@@ -131,8 +97,8 @@ export default function Home({ navigation }: HomeScreenProps) {
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
-            refreshing={isFetching && !isLoadingPets}
-            onRefresh={refetch}
+            refreshing={status.isFetching && !status.isLoading}
+            onRefresh={status.refetch}
             tintColor="#10B981"
           />
         }
@@ -142,13 +108,13 @@ export default function Home({ navigation }: HomeScreenProps) {
         {/* Seletor Horizontal de Pets Ativos */}
         <View style={styles.petSelectorContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petsScroll}>
-            {pets.map((pet) => {
-              const isSelected = activePet?.id === pet.id;
+            {pets.list.map((pet) => {
+              const isSelected = pets.active?.id === pet.id;
               return (
                 <TouchableOpacity
                   key={pet.id}
                   style={[styles.petPill, isSelected && styles.petPillSelected]}
-                  onPress={() => setSelectedPetId(pet.id)}
+                  onPress={() => pets.select(pet.id)}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.petAvatarWrapper, isSelected && styles.petAvatarWrapperSelected]}>
@@ -169,56 +135,51 @@ export default function Home({ navigation }: HomeScreenProps) {
         </View>
 
         {/* Barra de Score e Bem-Estar do Pet Ativo */}
-        {activePet && (
-          <TouchableOpacity activeOpacity={0.9} onPress={handleNavigateToPetDetail}>
+        {pets.active && (
+          <TouchableOpacity activeOpacity={0.9} onPress={nav.toPetDetail}>
             <PetScoreBar
-              score={petScore}
-              petName={activePet.nome}
-              tarefasConcluidas={tarefasConcluidas.length}
-              totalTarefas={tarefasDoPet.length}
+              score={routine.score}
+              petName={pets.active.nome}
+              tarefasConcluidas={routine.completedToday.length}
+              totalTarefas={routine.activeToday.length}
             />
           </TouchableOpacity>
         )}
 
         {/* Ofensiva Familiar */}
-        <StreakCard totalStreak={tarefasConcluidas.length} />
+        <StreakCard
+          streakDays={routine.streak.streakDays}
+          totalStreak={routine.streak.totalStreak}
+        />
 
-        {/* Seção de Tarefas da Rotina */}
-        <View style={styles.tasksSection}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Rotina de Hoje</Text>
-              <Text style={styles.sectionSubtitle}>
-                {tarefasConcluidas.length} de {tarefasDoPet.length} concluídas hoje
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.btnGerenciarTarefas} onPress={handleNavigateToFamily}>
-              <Text style={styles.btnGerenciarTarefasText}>Gerenciar na Family</Text>
-              <Ionicons name="chevron-forward" size={14} color="#2563EB" />
-            </TouchableOpacity>
-          </View>
-
-          {tarefasDoPet.length === 0 ? (
-            <View style={styles.emptyTasksBox}>
-              <MaterialCommunityIcons name="clipboard-check-outline" size={32} color="#CBD5E1" />
-              <Text style={styles.emptyTasksTitle}>Tudo em dia para hoje!</Text>
-              <Text style={styles.emptyTasksDesc}>Crie novas tarefas para seu pet na aba Family Pet.</Text>
-            </View>
-          ) : (
-            tarefasDoPet.map((tarefa) => (
-              <RoutineCard
-                key={tarefa.id}
-                tarefa={tarefa}
-                onToggle={alternarStatusTarefa}
-                onEdit={setTarefaEmEdicao}
-                onDelete={excluirTarefaComConfirmacao}
-              />
-            ))
-          )}
-        </View>
+        {/* Seção de Tarefas da Rotina Reutilizável */}
+        <TasksRoutineSection
+          title={routine.filter === 'HOJE' ? 'Rotina de Hoje' : 'Todas as Tarefas'}
+          subtitle={`${routine.current.concluidas} de ${routine.current.ativas} concluídas ${routine.filter === 'HOJE' ? 'hoje' : 'no total'}${routine.current.expiradas > 0 ? ` • ${routine.current.expiradas} expirada${routine.current.expiradas > 1 ? 's' : ''}` : ''}`}
+          filter={routine.filter}
+          onFilterChange={routine.setFilter}
+          countHoje={routine.todayTasks.length}
+          countTodas={routine.allPetTasks.length}
+          tasks={routine.current.tarefas}
+          headerButton={{
+            label: 'Gerenciar na Family',
+            icon: 'chevron-forward',
+            variant: 'link',
+            onPress: nav.toFamily,
+          }}
+          emptyTitle={routine.filter === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada'}
+          emptyDesc={
+            routine.filter === 'HOJE'
+              ? 'Nenhuma tarefa agendada para hoje. Crie novas tarefas para seu pet na aba Family Pet.'
+              : 'Crie novas tarefas para seu pet na aba Family Pet.'
+          }
+          onToggleTask={routine.toggleTask}
+          onEditTask={taskModal.openEdit}
+          onDeleteTask={taskModal.remove}
+        />
 
         {/* Atalho Rápido para a IA Assistente Preventiva */}
-        <TouchableOpacity style={styles.shortcutCard} onPress={handleNavigateToAi} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.shortcutCard} onPress={nav.toAi} activeOpacity={0.85}>
           <View style={[styles.shortcutIconBox, { backgroundColor: '#EFF6FF' }]}>
             <MaterialCommunityIcons name="robot-outline" size={22} color="#2563EB" />
           </View>
@@ -234,28 +195,13 @@ export default function Home({ navigation }: HomeScreenProps) {
 
       {/* Modal de Edição Rápida de Tarefa */}
       <TaskFormModal
-        visible={!!tarefaEmEdicao}
-        onClose={() => setTarefaEmEdicao(null)}
+        visible={!!taskModal.editingTask}
+        onClose={taskModal.close}
         mode="edit"
-        pets={pets}
-        isLoading={isUpdatingTask}
-        initialData={
-          tarefaEmEdicao
-            ? {
-                petId: tarefaEmEdicao.petId,
-                titulo: tarefaEmEdicao.titulo,
-                descricao: tarefaEmEdicao.descricao,
-                pontos: String(tarefaEmEdicao.pontosTarefa),
-              }
-            : null
-        }
-        onSubmit={(data) => {
-          if (tarefaEmEdicao) {
-            atualizarTarefa(tarefaEmEdicao.id, data, {
-              onSuccess: () => setTarefaEmEdicao(null),
-            });
-          }
-        }}
+        pets={pets.list}
+        isLoading={taskModal.isUpdating}
+        initialData={taskModal.initialData}
+        onSubmit={taskModal.submit}
       />
 
       <StatusBar style="dark" />
@@ -291,30 +237,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 10,
-    minWidth: 140,
-    ...shadows.xs,
-    elevation: 1,
+    ...shadows.sm,
   },
   petPillSelected: {
     backgroundColor: '#0F172A',
     borderColor: '#0F172A',
   },
   petAvatarWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   petAvatarWrapperSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#2563EB',
   },
   petPillName: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#1E293B',
+    fontWeight: '700',
+    color: '#0F172A',
   },
   petPillNameSelected: {
     color: '#FFFFFF',
@@ -322,86 +265,37 @@ const styles = StyleSheet.create({
   petPillBreed: {
     fontSize: 11,
     color: '#64748B',
+    fontWeight: '500',
   },
   petPillBreedSelected: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#94A3B8',
   },
   shortcutCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 22,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    gap: 12,
-    ...shadows.xs,
-    elevation: 1,
+    gap: 14,
+    ...shadows.sm,
   },
   shortcutIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   shortcutTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#0F172A',
   },
   shortcutSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  tasksSection: {
-    gap: 10,
-    marginTop: 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  sectionSubtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 1,
-  },
-  btnGerenciarTarefas: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  btnGerenciarTarefasText: {
-    color: '#2563EB',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  emptyTasksBox: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    gap: 6,
-  },
-  emptyTasksTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#334155',
-  },
-  emptyTasksDesc: {
-    fontSize: 12,
-    color: '#94A3B8',
-    textAlign: 'center',
+    marginTop: 2,
   },
 });

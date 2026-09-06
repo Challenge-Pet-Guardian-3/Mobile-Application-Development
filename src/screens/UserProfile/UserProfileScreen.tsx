@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import { StatCard } from '../../components/StatCard';
 import { FaqModal } from '../../components/FaqModal';
 import { TermsModal } from '../../components/TermsModal';
 import { shadows } from '../../utils/shadow';
-import { EditProfileModal, EditProfileFormData } from '../../components/EditProfileModal';
+import { EditProfileModal } from '../../components/EditProfileModal';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { RootStackParamList } from '../../routes/types';
@@ -24,35 +24,8 @@ interface UserProfileScreenProps {
 }
 
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
-  const {
-    user,
-    pontosTotais,
-    redeCuidado,
-    initialFormData,
-    salvarPerfil,
-    logoutComConfirmacao,
-    excluirContaComConfirmacao,
-    isUpdating,
-  } = useUserProfile();
-
-  // Modais
-  const [modalAtivo, setModalAtivo] = useState<'editar' | 'faq' | 'termos' | null>(null);
-
-  const handleAbrirEdicao = useCallback(() => {
-    setModalAtivo('editar');
-  }, []);
-
-  const handleSalvarPerfil = useCallback(
-    (formEdit: EditProfileFormData) => {
-      salvarPerfil(formEdit, {
-        onSuccess: () => setModalAtivo(null),
-      });
-    },
-    [salvarPerfil]
-  );
-
-  const initials = (user?.nome || 'TU').substring(0, 2).toUpperCase();
-  const enderecoPrincipal = user?.enderecos?.[0] ?? null;
+  const { profile, modals, actions } = useUserProfile();
+  const { user, initials, enderecoPrincipal, pontosTotais, redeCuidado } = profile;
 
   return (
     <View style={styles.container}>
@@ -91,7 +64,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             )}
           </View>
 
-          <TouchableOpacity style={styles.btnEditProfile} onPress={handleAbrirEdicao} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.btnEditProfile} onPress={() => modals.abrir('editar')} activeOpacity={0.8}>
             <Ionicons name="pencil" size={14} color="#2563EB" />
             <Text style={styles.btnEditProfileText}>Editar Dados Cadastrais</Text>
           </TouchableOpacity>
@@ -135,7 +108,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <View style={styles.familyItem}>
               <MaterialCommunityIcons name="paw" size={18} color="#2563EB" />
               <Text style={styles.familyItemText}>
-                {redeCuidado?.pets?.length || 0} {(redeCuidado?.pets?.length === 1 ? 'animal cadastrado' : 'animais cadastrados')}
+                {redeCuidado?.pets?.length || 0} {redeCuidado?.pets?.length === 1 ? 'animal cadastrado' : 'animais cadastrados'}
               </Text>
             </View>
             <View style={styles.familyItem}>
@@ -171,7 +144,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
         <View style={styles.menuBox}>
           <Text style={styles.menuSectionTitle}>Conta & Suporte</Text>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setModalAtivo('faq')} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => modals.abrir('faq')} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="help-circle-outline" size={20} color="#475569" />
             </View>
@@ -182,7 +155,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setModalAtivo('termos')} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => modals.abrir('termos')} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="document-text-outline" size={20} color="#475569" />
             </View>
@@ -193,7 +166,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={logoutComConfirmacao} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} onPress={actions.logout} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             </View>
@@ -205,7 +178,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
 
           <TouchableOpacity
             style={[styles.menuItem, { borderBottomWidth: 0 }]}
-            onPress={excluirContaComConfirmacao}
+            onPress={actions.excluirConta}
             activeOpacity={0.7}
           >
             <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
@@ -223,16 +196,16 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
 
       {/* Modal de Edição de Perfil Reutilizável */}
       <EditProfileModal
-        visible={modalAtivo === 'editar'}
-        onClose={() => setModalAtivo(null)}
-        initialData={initialFormData}
-        isLoading={isUpdating}
-        onSubmit={handleSalvarPerfil}
+        visible={modals.ativo === 'editar'}
+        onClose={modals.fechar}
+        initialData={modals.initialFormData}
+        isLoading={actions.isUpdating}
+        onSubmit={actions.salvarPerfil}
       />
 
-      <FaqModal visible={modalAtivo === 'faq'} onClose={() => setModalAtivo(null)} />
+      <FaqModal visible={modals.ativo === 'faq'} onClose={modals.fechar} />
 
-      <TermsModal visible={modalAtivo === 'termos'} onClose={() => setModalAtivo(null)} />
+      <TermsModal visible={modals.ativo === 'termos'} onClose={modals.fechar} />
     </View>
   );
 }
@@ -248,61 +221,75 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     ...shadows.sm,
-    elevation: 2,
   },
   avatarContainer: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#059669',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    ...shadows.lg,
-    elevation: 3,
+    borderWidth: 3,
+    borderColor: '#ECFDF5',
   },
-  avatarInitials: { fontSize: 24, fontWeight: '900', color: '#FFFFFF' },
-  userName: { fontSize: 20, fontWeight: '900', color: '#0F172A' },
-  userEmail: { fontSize: 13, color: '#64748B', marginTop: 2 },
-  roleBadgeBox: { marginTop: 8 },
-  infoPillsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 10 },
+  avatarInitials: { color: '#FFFFFF', fontSize: 24, fontWeight: '800' },
+  userName: { fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 2 },
+  userEmail: { fontSize: 13, color: '#64748B', fontWeight: '500', marginBottom: 10 },
+  roleBadgeBox: { marginBottom: 12 },
+  infoPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   infoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 12,
   },
-  infoPillText: { fontSize: 11, fontWeight: '600', color: '#475569' },
+  infoPillText: { fontSize: 12, color: '#475569', fontWeight: '600' },
   btnEditProfile: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 16,
-    paddingHorizontal: 16,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
   },
-  btnEditProfileText: { fontSize: 13, fontWeight: '800', color: '#2563EB' },
+  btnEditProfileText: { color: '#2563EB', fontSize: 12, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: 10 },
   menuBox: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     ...shadows.sm,
-    elevation: 2,
   },
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  menuSectionTitle: { fontSize: 13, fontWeight: '800', color: '#64748B', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  linkHeader: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
-  familySummary: { flexDirection: 'row', gap: 16, paddingVertical: 4 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  menuSectionTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A', marginBottom: 12 },
+  linkHeader: { fontSize: 13, color: '#2563EB', fontWeight: '600', marginBottom: 12 },
+  familySummary: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    justifyContent: 'space-around',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
   familyItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   familyItemText: { fontSize: 13, fontWeight: '600', color: '#334155' },
   menuItem: {
@@ -311,15 +298,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+    gap: 12,
   },
   menuIconWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  menuText: { fontSize: 14, color: '#0F172A', fontWeight: '700' },
-  menuSubText: { fontSize: 11, color: '#64748B', marginTop: 1 },
+  menuText: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+  menuSubText: { fontSize: 11, color: '#94A3B8', marginTop: 1 },
 });

@@ -8,6 +8,7 @@ export interface TarefaRequest {
   usuarioId: number;
   petId: number;
   status: EnumStatus;
+  conclusao?: string | null;
 }
 
 export interface TarefaConclusaoRequest {

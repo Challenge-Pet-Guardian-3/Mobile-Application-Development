@@ -133,6 +133,9 @@ export const TaskSchema = z.object({
   titulo: NonEmptyString('O título da tarefa é obrigatório.'),
   descricao: NonEmptyString('A descrição da tarefa é obrigatória.'),
   pontos: z.coerce.number().int().positive('A pontuação deve ser um número maior que zero.'),
+  prazo: z.string().optional(),
+  status: z.enum(['PENDENTE', 'CONCLUIDO', 'EXPIRADO']).optional(),
+  conclusao: z.string().optional().nullable(),
 });
 
 // Schema de Convite de Cuidador

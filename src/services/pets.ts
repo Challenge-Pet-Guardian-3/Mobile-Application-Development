@@ -3,8 +3,19 @@ import { Page } from '../types/api';
 import { CoCuidadorResponse, PetHistoryResponse, PetPontuacaoResponse, PetRequest, PetResponse, TransferirResponsabilidadeRequest } from '../types/pet';
 
 export const PetService = {
-  // Lista todos os pets paginados
-  async getPets(page = 0, size = 20): Promise<Page<PetResponse>> {
+  // Lista pets vinculados a um usuário logado (como tutor principal ou co-cuidador)
+  async getPetsPorUsuario(usuarioId: number, page = 0, size = 20): Promise<Page<PetResponse>> {
+    const response = await http.get<Page<PetResponse>>('/pets/by-usuario', {
+      params: { usuarioId, page, size, sort: 'nome,asc' },
+    });
+    return response.data;
+  },
+
+  // Lista pets: se usuarioId for informado, busca apenas os pets do usuário; caso contrário, busca todos
+  async getPets(usuarioId?: number | null, page = 0, size = 20): Promise<Page<PetResponse>> {
+    if (usuarioId) {
+      return this.getPetsPorUsuario(usuarioId, page, size);
+    }
     const response = await http.get<Page<PetResponse>>('/pets', {
       params: { page, size, sort: 'nome,asc' },
     });
@@ -49,9 +60,11 @@ export const PetService = {
     return response.data;
   },
 
-  // Exclui um pet do sistema
-  async deletePet(id: number): Promise<void> {
-    await http.delete(`/pets/${id}`);
+  // Exclui um pet do sistema (somente responsável principal)
+  async deletePet(id: number, usuarioId?: number): Promise<void> {
+    await http.delete(`/pets/${id}`, {
+      params: usuarioId ? { usuarioId } : undefined,
+    });
   },
 
   // Care Circle: Lista cuidadores vinculados ao pet (GET /pets/{id}/cuidadores)

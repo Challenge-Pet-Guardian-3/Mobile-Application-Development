@@ -2,11 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PetService } from '../services/pets';
 import { queryKeys } from '../lib/queryKeys';
 import { PetRequest } from '../types/pet';
+import { useSession } from './useSession';
 
-export function usePets(page = 0, size = 20) {
+export function usePets(usuarioId?: number | null, page = 0, size = 20) {
+  const { user } = useSession();
+  const effectiveUserId = usuarioId !== undefined ? usuarioId : user?.id;
+
   return useQuery({
-    queryKey: queryKeys.pets.list(page, size),
-    queryFn: () => PetService.getPets(page, size),
+    queryKey: effectiveUserId
+      ? queryKeys.pets.byUser(effectiveUserId, page, size)
+      : queryKeys.pets.list(page, size),
+    queryFn: () => PetService.getPets(effectiveUserId, page, size),
   });
 }
 
@@ -63,7 +69,11 @@ export function useDeletePet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => PetService.deletePet(id),
+    mutationFn: (args: number | { id: number; usuarioId?: number }) => {
+      const id = typeof args === 'number' ? args : args.id;
+      const usuarioId = typeof args === 'number' ? undefined : args.usuarioId;
+      return PetService.deletePet(id, usuarioId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });

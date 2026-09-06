@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,58 +10,28 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useLoginMutation, getAuthErrorMessage } from '../../hooks/useAuthMutations';
 import { CustomInput } from '../../components/CustomInput';
 import { CustomButton } from '../../components/CustomButton';
 import { shadows } from '../../utils/shadow';
 import { PasswordInput } from '../../components/PasswordInput';
 import { AuthHeader } from '../../components/AuthHeader';
 import { AuthFooter } from '../../components/AuthFooter';
-import { LoginSchema, formatZodError, LoginFormData } from '../../utils/schemas';
-
-const INITIAL_LOGIN_FORM: LoginFormData = {
-  email: '',
-  senha: '',
-};
+import { useLoginForm } from '../../hooks/useLoginForm';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 };
 
 export default function LoginScreen({ navigation }: Props) {
-  const { mutate: login, isPending, error, reset } = useLoginMutation();
-
-  const [form, setForm] = useState<LoginFormData>(INITIAL_LOGIN_FORM);
-  const [validacaoErro, setValidacaoErro] = useState<string | null>(null);
-
-  const updateField = <K extends keyof LoginFormData>(key: K, value: LoginFormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    if (validacaoErro) setValidacaoErro(null);
-    if (error) reset();
-  };
-
-  const handleLogin = useCallback(() => {
-    if (validacaoErro) setValidacaoErro(null);
-    if (error) reset();
-
-    const validacao = LoginSchema.safeParse(form);
-    if (!validacao.success) {
-      setValidacaoErro(formatZodError(validacao.error));
-      return;
-    }
-
-    login({ email: validacao.data.email, senha: validacao.data.senha });
-  }, [form, login, validacaoErro, error, reset]);
-
-  const handleNavigateToRegister = useCallback(() => {
-    navigation.navigate('Register');
-  }, [navigation]);
-
-  const handleGoBack = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
-  const mensagemErro = validacaoErro || (error ? getAuthErrorMessage(error) : null);
+  const {
+    form,
+    updateField,
+    handleLogin,
+    handleNavigateToRegister,
+    handleGoBack,
+    mensagemErro,
+    isPending,
+  } = useLoginForm(navigation);
 
   return (
     <KeyboardAvoidingView

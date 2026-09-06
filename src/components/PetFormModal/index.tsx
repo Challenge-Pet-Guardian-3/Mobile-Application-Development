@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
+import { CustomDateInput } from '../CustomDateInput';
 import { CustomButton } from '../CustomButton';
 import { PetPorte } from '../../types/pet';
 import { PetSchema, formatZodError } from '../../utils/schemas';
@@ -36,28 +37,30 @@ const INITIAL_PET_FORM: PetFormData = {
   castrado: false,
 };
 
-export function PetFormModal({
-  visible,
+const PetFormBody = memo(function PetFormBody({
   onClose,
-  title,
-  subtitle,
-  mode = 'create',
   initialData,
   onSubmit,
   isLoading = false,
-  submitButtonTitle,
-}: PetFormModalProps) {
-  const [form, setForm] = useState<PetFormData>(INITIAL_PET_FORM);
+  buttonTitle,
+}: {
+  onClose: () => void;
+  initialData?: Partial<PetFormData> | null;
+  onSubmit: (data: PetFormData) => Promise<void> | void;
+  isLoading?: boolean;
+  buttonTitle: string;
+}) {
+  const [form, setForm] = useState<PetFormData>(() => ({
+    ...INITIAL_PET_FORM,
+    ...initialData,
+  }));
 
-  useEffect(() => {
-    if (visible) {
-      setForm({ ...INITIAL_PET_FORM, ...initialData });
-    }
-  }, [visible, initialData]);
-
-  const updateField = <K extends keyof PetFormData>(key: K, value: PetFormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const updateField = useCallback(
+    <K extends keyof PetFormData>(key: K, value: PetFormData[K]) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
 
   const handleSubmit = () => {
     const validacao = PetSchema.safeParse(form);
@@ -70,17 +73,8 @@ export function PetFormModal({
     onSubmit(validacao.data);
   };
 
-  const modalTitle = title || (mode === 'create' ? 'Cadastrar Novo Pet' : 'Editar Ficha do Pet');
-  const modalSubtitle =
-    subtitle ||
-    (mode === 'create'
-      ? 'Adicione seu animal à família PetGuardian'
-      : 'Atualize os dados cadastrais do animal');
-  const buttonTitle =
-    submitButtonTitle || (mode === 'create' ? 'Cadastrar Pet' : 'Salvar Alterações');
-
   return (
-    <BaseModal visible={visible} onClose={onClose} title={modalTitle} subtitle={modalSubtitle}>
+    <>
       <CustomInput
         label="Nome do Pet"
         placeholder="Ex: Luna, Thor, Bob..."
@@ -97,22 +91,11 @@ export function PetFormModal({
         onChangeText={(t) => updateField('raca', t)}
       />
 
-      <CustomInput
+      <CustomDateInput
         label="Data de Nascimento"
         placeholder="DD/MM/AAAA (ex: 15/05/2023)"
-        keyboardType="numeric"
-        maxLength={10}
         value={form.dataNasc}
-        onChangeText={(t) => {
-          const digits = t.replace(/\D/g, '').slice(0, 8);
-          let formatted = digits;
-          if (digits.length > 4) {
-            formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-          } else if (digits.length > 2) {
-            formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-          }
-          updateField('dataNasc', formatted);
-        }}
+        onChangeDate={(d) => updateField('dataNasc', d)}
       />
 
       {/* Porte */}
@@ -204,6 +187,46 @@ export function PetFormModal({
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
+});
+
+export function PetFormModal({
+  visible,
+  onClose,
+  title,
+  subtitle,
+  mode = 'create',
+  initialData,
+  onSubmit,
+  isLoading = false,
+  submitButtonTitle,
+}: PetFormModalProps) {
+  const modalTitle = title || (mode === 'create' ? 'Cadastrar Novo Pet' : 'Editar Ficha do Pet');
+  const modalSubtitle =
+    subtitle ||
+    (mode === 'create'
+      ? 'Adicione seu animal à família PetGuardian'
+      : 'Atualize os dados cadastrais do animal');
+  const buttonTitle =
+    submitButtonTitle || (mode === 'create' ? 'Cadastrar Pet' : 'Salvar Alterações');
+
+  const formKey = visible
+    ? (mode === 'edit' && initialData?.nome ? `edit_${initialData.nome}` : 'create')
+    : 'closed';
+
+  return (
+    <BaseModal visible={visible} onClose={onClose} title={modalTitle} subtitle={modalSubtitle}>
+      {visible ? (
+        <PetFormBody
+          key={formKey}
+          onClose={onClose}
+          initialData={initialData}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+          buttonTitle={buttonTitle}
+        />
+      ) : null}
     </BaseModal>
   );
 }

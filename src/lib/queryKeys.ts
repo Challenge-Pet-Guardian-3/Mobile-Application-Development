@@ -15,6 +15,7 @@ export const queryKeys = {
   pets: {
     all: ['pets'] as const,
     list: (page = 0, size = 20) => ['pets', 'list', { page, size }] as const,
+    byUser: (userId?: number, page = 0, size = 20) => ['pets', 'byUser', userId ?? 0, { page, size }] as const,
     detail: (id?: number) => ['pets', 'detail', id ?? 0] as const,
     history: (id?: number) => ['pets', 'history', id ?? 0] as const,
     pontos: (id?: number) => ['pets', 'pontos', id ?? 0] as const,

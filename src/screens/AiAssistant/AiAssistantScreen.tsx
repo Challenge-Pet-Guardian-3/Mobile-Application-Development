@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -24,25 +24,9 @@ import { AppTabParamList } from '../../routes/types';
 export default function AiAssistantScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList>>();
   const insets = useSafeAreaInsets();
-  const {
-    user,
-    pets,
-    selectedPetId,
-    setSelectedPetId,
-    activePet,
-    insights,
-    isLoadingInsights,
-    messages,
-    isChatSending,
-    inputText,
-    setInputText,
-    isKeyboardVisible,
-    scrollViewRef,
-    handleSend,
-    sugestoesRapidas,
-  } = useAiAssistantScreen();
+  const { user, isUserComum, pet, insights, chat } = useAiAssistantScreen();
 
-  if (user?.role === 'COMUM') {
+  if (isUserComum) {
     return (
       <View style={styles.container}>
         <View style={styles.headerPad}>
@@ -89,26 +73,26 @@ export default function AiAssistantScreen() {
       </View>
 
       <ScrollView
-        ref={scrollViewRef}
+        ref={chat.scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Seletor do Pet para Contexto */}
-        {pets.length > 0 && (
+        {pet.pets.length > 0 && (
           <View style={styles.petContextBar}>
             <Text style={styles.petContextLabel}>Contexto:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {pets.map((pet) => {
-                const isSelected = activePet?.id === pet.id;
+              {pet.pets.map((p) => {
+                const isSelected = pet.activePet?.id === p.id;
                 return (
                   <TouchableOpacity
-                    key={pet.id}
+                    key={p.id}
                     style={[
                       styles.petContextChip,
                       isSelected && styles.petContextChipSelected,
                     ]}
-                    onPress={() => setSelectedPetId(pet.id)}
+                    onPress={() => pet.setSelectedPetId(p.id)}
                     activeOpacity={0.8}
                   >
                     <Text
@@ -117,7 +101,7 @@ export default function AiAssistantScreen() {
                         isSelected && styles.petContextChipTextSelected,
                       ]}
                     >
-                      🐾 {pet.nome}
+                      🐾 {p.nome}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -133,10 +117,10 @@ export default function AiAssistantScreen() {
             <Text style={styles.insightsTitle}>Recomendações Preventivas</Text>
           </View>
 
-          {isLoadingInsights ? (
+          {insights.isLoading ? (
             <LoadingSpinner message="Analisando histórico..." size="small" />
           ) : (
-            (insights || []).map((ins, idx) => (
+            insights.data.map((ins, idx) => (
               <View key={idx} style={styles.insightCard}>
                 <Text style={styles.insightCardTitle}>{ins.titulo}</Text>
                 <Text style={styles.insightCardDesc}>{ins.descricao}</Text>
@@ -148,7 +132,7 @@ export default function AiAssistantScreen() {
         {/* Histórico do Chat */}
         <View style={styles.chatSection}>
           <Text style={styles.chatSectionTitle}>Conversa com a IA</Text>
-          {messages.map((msg) => {
+          {chat.messages.map((msg) => {
             const isUser = msg.sender === 'user';
             return (
               <View
@@ -171,7 +155,7 @@ export default function AiAssistantScreen() {
               </View>
             );
           })}
-          {isChatSending && (
+          {chat.isSending && (
             <View style={[styles.msgWrapper, styles.msgAiWrapper]}>
               <View style={styles.aiAvatar}>
                 <MaterialCommunityIcons name="robot" size={16} color="#2563EB" />
@@ -191,7 +175,7 @@ export default function AiAssistantScreen() {
         style={[
           styles.fixedBottomContainer,
           {
-            paddingBottom: isKeyboardVisible
+            paddingBottom: chat.isKeyboardVisible
               ? (Platform.OS === 'ios' ? 20 : 36)
               : Math.max(insets.bottom + 14, Platform.OS === 'ios' ? 32 : 24),
           },
@@ -205,11 +189,11 @@ export default function AiAssistantScreen() {
             contentContainerStyle={styles.suggestionsScroll}
             keyboardShouldPersistTaps="handled"
           >
-            {sugestoesRapidas.map((sug: string, i: number) => (
+            {chat.sugestoesRapidas.map((sug: string, i: number) => (
               <TouchableOpacity
                 key={i}
                 style={styles.suggestionChip}
-                onPress={() => handleSend(sug)}
+                onPress={() => chat.handleSend(sug)}
                 activeOpacity={0.75}
               >
                 <Ionicons name="sparkles" size={12} color="#2563EB" />
@@ -225,15 +209,15 @@ export default function AiAssistantScreen() {
             style={styles.chatInput}
             placeholder="Escreva sua dúvida para a IA..."
             placeholderTextColor="#94A3B8"
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={() => handleSend()}
+            value={chat.inputText}
+            onChangeText={chat.setInputText}
+            onSubmitEditing={() => chat.handleSend()}
             returnKeyType="send"
           />
           <TouchableOpacity
-            style={[styles.btnSend, !inputText.trim() && { opacity: 0.35 }]}
-            onPress={() => handleSend()}
-            disabled={!inputText.trim() || isChatSending}
+            style={[styles.btnSend, !chat.inputText.trim() && { opacity: 0.35 }]}
+            onPress={() => chat.handleSend()}
+            disabled={!chat.inputText.trim() || chat.isSending}
             activeOpacity={0.8}
           >
             <Ionicons name="arrow-up" size={18} color="#FFFFFF" />

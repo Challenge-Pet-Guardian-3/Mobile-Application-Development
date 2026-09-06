@@ -11,14 +11,6 @@ export function usePetHistoricos(petId?: number) {
   });
 }
 
-export function useHistoricoDetail(id?: number) {
-  return useQuery({
-    queryKey: queryKeys.historicos.detail(id),
-    queryFn: () => (id ? HistoricoService.getHistoricoById(id) : Promise.reject(new Error('ID não fornecido'))),
-    enabled: !!id,
-  });
-}
-
 export function useCreateHistorico() {
   const queryClient = useQueryClient();
 

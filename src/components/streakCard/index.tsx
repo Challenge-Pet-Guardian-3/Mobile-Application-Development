@@ -4,12 +4,16 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { DiaOfensiva } from '../../types/models';
 
+import { TarefaResponse } from '../../types/task';
+import { calcularDiasSemanaAtual, calcularTotalOfensiva } from '../../utils/streakUtils';
+
 interface StreakCardProps {
   streakDays?: DiaOfensiva[];
   totalStreak?: number;
+  tasks?: TarefaResponse[];
 }
 
-function getDiasDaSemanaAtual(totalStreak: number): DiaOfensiva[] {
+function getDiasDaSemanaVazios(): DiaOfensiva[] {
   const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
   const hoje = new Date();
   const diaSemanaIndex = (hoje.getDay() + 6) % 7;
@@ -22,25 +26,31 @@ function getDiasDaSemanaAtual(totalStreak: number): DiaOfensiva[] {
     dataDia.setDate(segunda.getDate() + idx);
     const dayNumber = String(dataDia.getDate());
     const isToday = idx === diaSemanaIndex;
-    const done = (idx < diaSemanaIndex && diaSemanaIndex - idx < totalStreak) || (isToday && totalStreak > 0);
 
     return {
       id: `dia_${idx}_${dayNumber}`,
       dayLabel: label,
       dayNumber,
-      done,
+      done: false,
       isToday,
     };
   });
 }
 
-export function StreakCard({ streakDays, totalStreak = 0 }: StreakCardProps) {
-  const diasExibidos = useMemo(() => {
-    if (streakDays && streakDays.length > 0) {
-      return streakDays;
+export function StreakCard({ streakDays, totalStreak, tasks }: StreakCardProps) {
+  const { diasExibidos, streakExibido } = useMemo(() => {
+    if (tasks) {
+      return {
+        diasExibidos: calcularDiasSemanaAtual(tasks),
+        streakExibido: totalStreak !== undefined ? totalStreak : calcularTotalOfensiva(tasks),
+      };
     }
-    return getDiasDaSemanaAtual(totalStreak);
-  }, [streakDays, totalStreak]);
+
+    return {
+      diasExibidos: streakDays && streakDays.length > 0 ? streakDays : getDiasDaSemanaVazios(),
+      streakExibido: totalStreak ?? 0,
+    };
+  }, [tasks, streakDays, totalStreak]);
 
   return (
     <View style={styles.streakCard}>
@@ -53,7 +63,7 @@ export function StreakCard({ streakDays, totalStreak = 0 }: StreakCardProps) {
         <View style={styles.totalStreakBadge}>
           <MaterialCommunityIcons name="fire" size={18} color="#EA580C" />
           <Text style={styles.totalStreakText}>
-            {totalStreak} {totalStreak === 1 ? 'dia' : 'dias'}
+            {streakExibido} {streakExibido === 1 ? 'dia' : 'dias'}
           </Text>
         </View>
       </View>

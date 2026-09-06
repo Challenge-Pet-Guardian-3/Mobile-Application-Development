@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { TarefaResponse } from '../../types/task';
+import { formatarPrazoAmigavel } from '../../utils/petUtils';
 
-interface RoutineCardProps {
+export interface RoutineCardProps {
   tarefa: TarefaResponse;
-  onToggle: (id: number) => void;
+  onToggle?: (id: number) => void;
   onEdit?: (tarefa: TarefaResponse) => void;
   onDelete?: (id: number) => void;
+  petNome?: string;
 }
 
 export const RoutineCard = memo(function RoutineCard({
@@ -16,15 +18,23 @@ export const RoutineCard = memo(function RoutineCard({
   onToggle,
   onEdit,
   onDelete,
+  petNome,
 }: RoutineCardProps) {
   const isDone = tarefa.status === 'CONCLUIDO';
   const isExpired = tarefa.status === 'EXPIRADO';
+
+  const handlePressCard = () => {
+    if (onToggle) {
+      onToggle(tarefa.id);
+    }
+  };
 
   return (
     <View style={[styles.card, isDone && styles.cardDone, isExpired && styles.cardExpired]}>
       <TouchableOpacity
         style={styles.contentLeft}
-        onPress={() => onToggle(tarefa.id)}
+        onPress={handlePressCard}
+        disabled={!onToggle}
         activeOpacity={0.7}
       >
         <View
@@ -59,6 +69,24 @@ export const RoutineCard = memo(function RoutineCard({
               {tarefa.descricao}
             </Text>
           ) : null}
+          <View style={styles.metaRow}>
+            {petNome ? (
+              <View style={styles.petBadge}>
+                <Ionicons name="paw" size={10} color="#2563EB" />
+                <Text style={styles.petBadgeText} numberOfLines={1}>
+                  {petNome}
+                </Text>
+              </View>
+            ) : null}
+            {tarefa.prazo ? (
+              <View style={styles.prazoRow}>
+                <Ionicons name="time-outline" size={12} color={isDone ? '#94A3B8' : '#0284C7'} />
+                <Text style={[styles.prazoText, isDone && styles.prazoTextDone]}>
+                  {formatarPrazoAmigavel(tarefa.prazo)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </TouchableOpacity>
 
@@ -201,5 +229,39 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    flexWrap: 'wrap',
+  },
+  petBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  petBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  prazoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  prazoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0284C7',
+  },
+  prazoTextDone: {
+    color: '#94A3B8',
   },
 });

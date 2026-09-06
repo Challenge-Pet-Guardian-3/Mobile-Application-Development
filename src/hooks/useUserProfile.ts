@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { useUserPoints } from './useTasks';
@@ -8,6 +8,8 @@ import { EditProfileFormData } from '../components/EditProfileModal';
 import { ProfileEditSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
 
+export type UserProfileModal = 'editar' | 'faq' | 'termos' | null;
+
 export function useUserProfile() {
   const { user, logout } = useSession();
   const { data: pontosTotais } = useUserPoints(user?.id);
@@ -15,6 +17,24 @@ export function useUserProfile() {
 
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+
+  const [modalAtivo, setModalAtivo] = useState<UserProfileModal>(null);
+
+  const abrirModal = useCallback((tipo: 'editar' | 'faq' | 'termos') => {
+    setModalAtivo(tipo);
+  }, []);
+
+  const fecharModal = useCallback(() => {
+    setModalAtivo(null);
+  }, []);
+
+  const initials = useMemo(() => {
+    return (user?.nome || 'TU').substring(0, 2).toUpperCase();
+  }, [user?.nome]);
+
+  const enderecoPrincipal = useMemo(() => {
+    return user?.enderecos?.[0] ?? null;
+  }, [user?.enderecos]);
 
   const initialFormData: EditProfileFormData = useMemo(
     () => ({
@@ -65,7 +85,7 @@ export function useUserProfile() {
         {
           onSuccess: () => {
             callbacks?.onSuccess?.();
-            Alert.alert('Sucesso!', 'Dados do perfil atualizados com sucesso.');
+            fecharModal();
           },
           onError: (err) => {
             Alert.alert('Erro ao Atualizar Perfil', getApiErrorMessage(err, 'Não foi possível atualizar seus dados na API.'));
@@ -73,7 +93,7 @@ export function useUserProfile() {
         }
       );
     },
-    [user, updateUserMutation]
+    [user, updateUserMutation, fecharModal]
   );
 
   const logoutComConfirmacao = useCallback(() => {
@@ -112,14 +132,24 @@ export function useUserProfile() {
   }, [user, deleteUserMutation]);
 
   return {
-    user,
-    pontosTotais,
-    redeCuidado,
-    initialFormData,
-    salvarPerfil,
-    logoutComConfirmacao,
-    excluirContaComConfirmacao,
-    isUpdating: updateUserMutation.isPending,
-    isDeleting: deleteUserMutation.isPending,
+    profile: {
+      user,
+      initials,
+      enderecoPrincipal,
+      pontosTotais,
+      redeCuidado,
+    },
+    modals: {
+      ativo: modalAtivo,
+      abrir: abrirModal,
+      fechar: fecharModal,
+      initialFormData,
+    },
+    actions: {
+      salvarPerfil,
+      logout: logoutComConfirmacao,
+      excluirConta: excluirContaComConfirmacao,
+      isUpdating: updateUserMutation.isPending,
+    },
   };
 }

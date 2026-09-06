@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../routes/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useRegisterMutation, getAuthErrorMessage } from '../../hooks/useAuthMutations';
 import { CustomInput } from '../../components/CustomInput';
 import { CustomButton } from '../../components/CustomButton';
 import { shadows } from '../../utils/shadow';
@@ -18,77 +17,24 @@ import { PasswordInput } from '../../components/PasswordInput';
 import { AuthHeader } from '../../components/AuthHeader';
 import { AuthFooter } from '../../components/AuthFooter';
 import { RoleSelector } from '../../components/RoleSelector';
-import { UsuarioRole } from '../../types/user';
-import { RegisterSchema, formatZodError, RegisterFormData } from '../../utils/schemas';
-
-const INITIAL_REGISTER_FORM: RegisterFormData = {
-  nome: '',
-  email: '',
-  senha: '',
-  confirmarSenha: '',
-  ddd: '',
-  numeroTelefone: '',
-  role: 'PREMIUM',
-  cep: '',
-  numero: '',
-};
+import { useRegisterForm } from '../../hooks/useRegisterForm';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 };
 
 export default function RegisterScreen({ navigation }: Props) {
-  const { mutate: register, isPending, error: mutationError, reset: resetMutation } = useRegisterMutation();
-
-  const [form, setForm] = useState<RegisterFormData>(INITIAL_REGISTER_FORM);
-  const [validacaoErro, setValidacaoErro] = useState<string | null>(null);
-
-  const limparErros = useCallback(() => {
-    if (validacaoErro) setValidacaoErro(null);
-    if (mutationError) resetMutation();
-  }, [validacaoErro, mutationError, resetMutation]);
-
-  const updateField = <K extends keyof RegisterFormData>(key: K, value: RegisterFormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    limparErros();
-  };
-
-  const handleRegister = useCallback(() => {
-    limparErros();
-
-    const dddLimpo = form.ddd.replace(/\D/g, '');
-    const telLimpo = form.numeroTelefone.replace(/\D/g, '');
-    const cepLimpo = form.cep.replace(/\D/g, '');
-
-    const validacao = RegisterSchema.safeParse({
-      ...form,
-      ddd: dddLimpo,
-      numeroTelefone: telLimpo,
-      cep: cepLimpo,
-    });
-
-    if (!validacao.success) {
-      setValidacaoErro(formatZodError(validacao.error));
-      return;
-    }
-
-    register({
-      nome: validacao.data.nome,
-      email: validacao.data.email,
-      senha: validacao.data.senha,
-      ddd: validacao.data.ddd,
-      numeroTelefone: validacao.data.numeroTelefone,
-      role: validacao.data.role,
-      cep: validacao.data.cep,
-      numero: validacao.data.numero,
-    });
-  }, [form, register, limparErros]);
-
-  const handleGoBack = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
-  const erroExibido = validacaoErro || (mutationError ? getAuthErrorMessage(mutationError) : null);
+  const {
+    form,
+    updateField,
+    updateDdd,
+    updateTelefone,
+    updateCep,
+    handleRegister,
+    handleGoBack,
+    erroExibido,
+    isPending,
+  } = useRegisterForm(navigation);
 
   return (
     <KeyboardAvoidingView
@@ -105,7 +51,6 @@ export default function RegisterScreen({ navigation }: Props) {
           />
 
           <View style={styles.formContainer}>
-            {/* Seletor de Perfil Reutilizável (COMUM ou PREMIUM) */}
             <RoleSelector
               value={form.role}
               onChange={(newRole) => updateField('role', newRole)}
@@ -141,7 +86,7 @@ export default function RegisterScreen({ navigation }: Props) {
                   keyboardType="numeric"
                   maxLength={2}
                   value={form.ddd}
-                  onChangeText={(t) => updateField('ddd', t.replace(/\D/g, '').slice(0, 2))}
+                  onChangeText={updateDdd}
                 />
               </View>
               <View style={{ flex: 3 }}>
@@ -151,7 +96,7 @@ export default function RegisterScreen({ navigation }: Props) {
                   keyboardType="numeric"
                   maxLength={9}
                   value={form.numeroTelefone}
-                  onChangeText={(t) => updateField('numeroTelefone', t.replace(/\D/g, '').slice(0, 9))}
+                  onChangeText={updateTelefone}
                 />
               </View>
             </View>
@@ -164,11 +109,7 @@ export default function RegisterScreen({ navigation }: Props) {
                   keyboardType="numeric"
                   maxLength={9}
                   value={form.cep}
-                  onChangeText={(t) => {
-                    const digits = t.replace(/\D/g, '').slice(0, 8);
-                    const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
-                    updateField('cep', formatted);
-                  }}
+                  onChangeText={updateCep}
                 />
               </View>
               <View style={{ flex: 1 }}>
