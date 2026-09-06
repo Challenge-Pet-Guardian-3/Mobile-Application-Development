@@ -90,11 +90,10 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
               onDelete={actions.excluirPet}
             />
 
-            {/* Card Gamificado de Pontos e Nível do Pet */}
+            {/* Card de Pontuação do Pet */}
             <PetPointsCard
               pontos={pet.pontos}
               isLoading={status.isLoadingPontos}
-              petName={pet.active.nome}
             />
 
             {/* Rede de Cuidado / Cuidadores do Pet */}

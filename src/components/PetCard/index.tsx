@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
@@ -12,28 +12,13 @@ export interface PetCardProps {
   onPress?: () => void;
 }
 
-export const PetCard = memo(function PetCard({
-  pet,
-  isResponsavelPrincipal,
-  tarefasCount,
-  pontosTotais,
-  onPress,
-}: PetCardProps) {
-  const accessibilityLabel = `${pet.nome}, ${pet.raca || 'Pet'}, Porte ${pet.porte}${
-    isResponsavelPrincipal ? ', você é tutor principal' : ''
-  }${tarefasCount ? `, ${tarefasCount} tarefas` : ''}${
-    pontosTotais !== undefined ? `, ${pontosTotais} pontos acumulados` : ''
-  }`;
-
+export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, pontosTotais, onPress }: PetCardProps) {
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.85}
       disabled={!onPress}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
     >
       {isResponsavelPrincipal && (
         <View style={styles.principalBadge}>
@@ -66,15 +51,16 @@ export const PetCard = memo(function PetCard({
           </View>
         ) : null}
         {pontosTotais !== undefined ? (
-          <View style={[styles.badge, styles.xpBadge]}>
-            <MaterialCommunityIcons name="star" size={10} color={colors.warning[600]} />
-            <Text style={[styles.badgeText, styles.xpBadgeText]}>{pontosTotais} XP</Text>
+          <View style={[styles.badge, { backgroundColor: colors.warning[50] }]}>
+            <Text style={[styles.badgeText, { color: colors.warning[600] }]}>
+              {pontosTotais} XP
+            </Text>
           </View>
         ) : null}
       </View>
     </TouchableOpacity>
   );
-});
+}
 
 const styles = StyleSheet.create({
   card: {
@@ -143,18 +129,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.neutral[600],
   },
-  xpBadge: {
-    backgroundColor: colors.warning[50],
-    borderWidth: 1,
-    borderColor: colors.warning[200],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 6,
-  },
-  xpBadgeText: {
-    color: colors.warning[700],
-    fontWeight: '800',
-  },
 });
-
