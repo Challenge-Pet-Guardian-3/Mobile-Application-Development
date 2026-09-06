@@ -11,30 +11,6 @@ export interface PetPointsCardProps {
   petName?: string;
 }
 
-interface LevelInfo {
-  nivel: number;
-  titulo: string;
-  icone: keyof typeof MaterialCommunityIcons.glyphMap;
-  proximoNivelXp: number;
-  xpBase: number;
-}
-
-function calcularNivelPet(pontosTotais: number): LevelInfo {
-  if (pontosTotais >= 500) {
-    return { nivel: 5, titulo: 'Mestre Lendário', icone: 'crown', proximoNivelXp: 1000, xpBase: 500 };
-  }
-  if (pontosTotais >= 300) {
-    return { nivel: 4, titulo: 'Super Guardião', icone: 'shield-star', proximoNivelXp: 500, xpBase: 300 };
-  }
-  if (pontosTotais >= 150) {
-    return { nivel: 3, titulo: 'Pet Dedicado', icone: 'medal', proximoNivelXp: 300, xpBase: 150 };
-  }
-  if (pontosTotais >= 50) {
-    return { nivel: 2, titulo: 'Aprendiz Ativo', icone: 'star', proximoNivelXp: 150, xpBase: 50 };
-  }
-  return { nivel: 1, titulo: 'Filhote Iniciante', icone: 'paw', proximoNivelXp: 50, xpBase: 0 };
-}
-
 export const PetPointsCard = memo(function PetPointsCard({
   pontos,
   isLoading = false,
@@ -55,45 +31,23 @@ export const PetPointsCard = memo(function PetPointsCard({
   const pontosTarefas = pontos?.pontosTarefas ?? 0;
   const pontosAulas = pontos?.pontosAulas ?? 0;
 
-  const levelInfo = calcularNivelPet(pontosTotais);
-  const progressoNivel = Math.min(
-    100,
-    Math.max(
-      0,
-      Math.round(((pontosTotais - levelInfo.xpBase) / (levelInfo.proximoNivelXp - levelInfo.xpBase)) * 100)
-    )
-  );
-
   return (
     <View style={styles.card}>
-      {/* Topo: Nível e XP Total */}
+      {/* Topo: Título e Pontos Totais */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <View style={styles.levelIconBadge}>
-            <MaterialCommunityIcons name={levelInfo.icone} size={22} color={colors.warning[600]} />
+          <View style={styles.iconBadge}>
+            <MaterialCommunityIcons name="star-circle-outline" size={24} color={colors.warning[600]} />
           </View>
           <View>
-            <Text style={styles.title}>Nível {levelInfo.nivel} • {levelInfo.titulo}</Text>
-            <Text style={styles.subtitle}>Conquistas e XP de {petName}</Text>
+            <Text style={styles.title}>Pontuação de {petName}</Text>
+            <Text style={styles.subtitle}>Pontos acumulados em rotina e treinos</Text>
           </View>
         </View>
 
-        <View style={styles.totalXpBadge}>
+        <View style={styles.totalPointsBadge}>
           <MaterialCommunityIcons name="star" size={14} color={colors.warning[600]} />
-          <Text style={styles.totalXpText}>{pontosTotais} XP</Text>
-        </View>
-      </View>
-
-      {/* Barra de Progresso até o próximo nível */}
-      <View style={styles.progressSection}>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarFill, { width: `${progressoNivel}%` }]} />
-        </View>
-        <View style={styles.progressLabelsRow}>
-          <Text style={styles.progressMetaText}>
-            {pontosTotais} / {levelInfo.proximoNivelXp} XP
-          </Text>
-          <Text style={styles.progressPercentageText}>{progressoNivel}% do nível</Text>
+          <Text style={styles.totalPointsText}>{pontosTotais} Pontos</Text>
         </View>
       </View>
 
@@ -105,7 +59,7 @@ export const PetPointsCard = memo(function PetPointsCard({
             <View style={[styles.breakdownIconWrapper, { backgroundColor: colors.primary[50] }]}>
               <MaterialCommunityIcons name="clipboard-check-outline" size={18} color={colors.primary[600]} />
             </View>
-            <Text style={[styles.breakdownXp, { color: colors.primary[700] }]}>+{pontosTarefas} XP</Text>
+            <Text style={[styles.breakdownPoints, { color: colors.primary[700] }]}>+{pontosTarefas} pts</Text>
           </View>
           <Text style={styles.breakdownTitle}>Tarefas da Rotina</Text>
           <Text style={styles.breakdownDesc}>Cuidados e saúde diária</Text>
@@ -117,7 +71,7 @@ export const PetPointsCard = memo(function PetPointsCard({
             <View style={[styles.breakdownIconWrapper, { backgroundColor: colors.success[50] }]}>
               <MaterialCommunityIcons name="school-outline" size={18} color={colors.success[600]} />
             </View>
-            <Text style={[styles.breakdownXp, { color: colors.success[700] }]}>+{pontosAulas} XP</Text>
+            <Text style={[styles.breakdownPoints, { color: colors.success[700] }]}>+{pontosAulas} pts</Text>
           </View>
           <Text style={styles.breakdownTitle}>Aulas e Treinos</Text>
           <Text style={styles.breakdownDesc}>Trilhas e adestramento</Text>
@@ -161,10 +115,10 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  levelIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  iconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.warning[50],
     borderWidth: 1,
     borderColor: colors.warning[200],
@@ -182,7 +136,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
-  totalXpBadge: {
+  totalPointsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -193,40 +147,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.warning[200],
   },
-  totalXpText: {
+  totalPointsText: {
     color: colors.warning[700],
     fontWeight: '900',
     fontSize: 13,
-  },
-  progressSection: {
-    marginBottom: spacing.md,
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: colors.neutral[100],
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.warning[500],
-    borderRadius: 4,
-  },
-  progressLabelsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  progressMetaText: {
-    fontSize: 11,
-    color: colors.neutral[500],
-    fontWeight: '600',
-  },
-  progressPercentageText: {
-    fontSize: 11,
-    color: colors.warning[700],
-    fontWeight: '700',
   },
   breakdownRow: {
     flexDirection: 'row',
@@ -253,7 +177,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  breakdownXp: {
+  breakdownPoints: {
     fontSize: 12,
     fontWeight: '800',
   },
