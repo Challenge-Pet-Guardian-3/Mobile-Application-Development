@@ -3,13 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { TrainingLesson } from '../../types/training';
+import { BaseModal } from '../BaseModal';
 
 interface LessonDetailModalProps {
   visible: boolean;
@@ -31,85 +30,65 @@ export function LessonDetailModal({
   if (!visible || !licao) return null;
 
   return (
-    <Modal
+    <BaseModal
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      onClose={onClose}
+      title={licao.titulo}
+      subtitle={licao.descricao}
+      size="md"
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalTopRow}>
-            <View style={styles.duoBadgeXP}>
-              <MaterialCommunityIcons name="star" size={16} color="#FF9600" />
-              <Text style={styles.duoBadgeXPText}>+{licao.pontos} PONTOS XP</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={{ padding: 4 }} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={28} color="#94A3B8" />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.modalTitle}>{licao.titulo}</Text>
-          <Text style={styles.modalDesc}>{licao.descricao}</Text>
-
-          <Text style={styles.passosHeader}>Passo a Passo Prático com o Pet:</Text>
-
-          <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
-            {licao.passos.map((passo, idx) => (
-              <View key={idx} style={styles.passoCard}>
-                <View style={[styles.passoCircle, { backgroundColor: corTrilha }]}>
-                  <Text style={styles.passoNumber}>{idx + 1}</Text>
-                </View>
-                <Text style={styles.passoText}>{passo}</Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={[
-              styles.btnCompletarDuo,
-              { backgroundColor: corTrilha, opacity: isConcluindo ? 0.7 : 1 },
-            ]}
-            onPress={onConcluir}
-            disabled={isConcluindo}
-            activeOpacity={0.8}
-          >
-            {isConcluindo ? (
-              <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
-            ) : (
-              <Ionicons name="checkmark-done" size={22} color="#FFF" style={{ marginRight: 8 }} />
-            )}
-            <Text style={styles.btnCompletarDuoText}>
-              {isConcluindo ? 'Salvando...' : 'Concluir & Ganhar Pontos!'}
-            </Text>
-          </TouchableOpacity>
+      <View style={styles.duoBadgeRow}>
+        <View style={styles.duoBadgeXP}>
+          <MaterialCommunityIcons name="star" size={16} color="#FF9600" />
+          <Text style={styles.duoBadgeXPText}>+{licao.pontos} PONTOS XP</Text>
         </View>
       </View>
-    </Modal>
+
+      <Text style={styles.passosHeader}>Passo a Passo Prático com o Pet:</Text>
+
+      {licao.passos.map((passo, idx) => (
+        <View key={idx} style={styles.passoCard}>
+          <View style={[styles.passoCircle, { backgroundColor: corTrilha }]}>
+            <Text style={styles.passoNumber}>{idx + 1}</Text>
+          </View>
+          <Text style={styles.passoText}>{passo}</Text>
+        </View>
+      ))}
+
+      <TouchableOpacity
+        style={[
+          styles.btnCompletarDuo,
+          licao.concluido
+            ? { backgroundColor: '#EF4444', opacity: isConcluindo ? 0.7 : 1 }
+            : { backgroundColor: corTrilha, opacity: isConcluindo ? 0.7 : 1 },
+        ]}
+        onPress={onConcluir}
+        disabled={isConcluindo}
+        activeOpacity={0.8}
+      >
+        {isConcluindo ? (
+          <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
+        ) : licao.concluido ? (
+          <Ionicons name="close-circle-outline" size={22} color="#FFF" style={{ marginRight: 8 }} />
+        ) : (
+          <Ionicons name="checkmark-done" size={22} color="#FFF" style={{ marginRight: 8 }} />
+        )}
+        <Text style={styles.btnCompletarDuoText}>
+          {isConcluindo
+            ? 'Salvando...'
+            : licao.concluido
+            ? 'Desmarcar Aula Concluída'
+            : 'Concluir & Ganhar Pontos!'}
+        </Text>
+      </TouchableOpacity>
+    </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: '#FFF',
-    width: '100%',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  modalTopRow: {
+  duoBadgeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   duoBadgeXP: {
     flexDirection: 'row',
@@ -126,18 +105,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     color: '#D97706',
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#0F172A',
-    marginBottom: 8,
-  },
-  modalDesc: {
-    fontSize: 14,
-    color: '#64748B',
-    lineHeight: 20,
-    marginBottom: 16,
   },
   passosHeader: {
     fontSize: 14,

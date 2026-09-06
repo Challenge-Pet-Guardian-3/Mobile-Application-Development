@@ -95,7 +95,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                 <View style={styles.sectionTitleRow}>
                   <Ionicons name="people" size={18} color="#2563EB" />
                   <Text style={styles.sectionTitle}>
-                    Rede de Cuidado ({pet.caregivers.length || 1})
+                    Rede de Cuidado ({pet.caregiversCount})
                   </Text>
                 </View>
                 {pet.isPrincipal && (
@@ -121,28 +121,17 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
                   />
                 )
               ) : (
-                pet.caregivers.map((c) => {
-                  const isMe = c.usuarioId === user?.id;
-                  return (
-                    <CaregiverCard
-                      key={c.usuarioId}
-                      nome={c.nome}
-                      email={c.email}
-                      isPrincipal={c.responsavelPrincipal}
-                      isCurrentUser={isMe}
-                      onTransfer={
-                        pet.isPrincipal && !isMe
-                          ? () => actions.transferirResponsabilidade(c.usuarioId, c.nome)
-                          : undefined
-                      }
-                      onRemove={
-                        pet.isPrincipal || isMe
-                          ? () => actions.removerCuidador(c.usuarioId, c.nome)
-                          : undefined
-                      }
-                    />
-                  );
-                })
+                pet.caregivers.map((c) => (
+                  <CaregiverCard
+                    key={c.usuarioId}
+                    nome={c.nome}
+                    email={c.email}
+                    isPrincipal={c.responsavelPrincipal}
+                    isCurrentUser={c.isCurrentUser}
+                    onTransfer={c.onTransfer}
+                    onRemove={c.onRemove}
+                  />
+                ))
               )}
             </View>
 
@@ -169,7 +158,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
         visible={modals.edicaoVisivel}
         onClose={() => modals.setEdicaoVisivel(false)}
         mode="edit"
-        title={`Editar Ficha de ${pet.active?.nome || 'Pet'}`}
+        title={pet.editTitle}
         subtitle="Atualize os dados e informações cadastrais do animal"
         initialData={pet.initialData}
         isLoading={actions.isUpdatingPet}

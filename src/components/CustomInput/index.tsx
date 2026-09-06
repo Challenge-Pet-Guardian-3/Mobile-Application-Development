@@ -8,6 +8,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { shadows } from '../../utils/shadow';
+import { colors, borderRadius } from '../../constants/theme';
 
 interface CustomInputProps extends TextInputProps {
   label?: string;
@@ -35,7 +36,7 @@ export const CustomInput = memo(function CustomInput({
         {leftIcon && <View style={styles.leftIconWrapper}>{leftIcon}</View>}
         <TextInput
           style={[styles.input, style]}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.neutral[400]}
           {...rest}
         />
         {rightIcon && <View style={styles.rightIconWrapper}>{rightIcon}</View>}
@@ -53,30 +54,30 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.neutral[700],
     marginBottom: 6,
     marginLeft: 2,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.neutral.white,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.9)',
-    borderRadius: 16,
+    borderColor: colors.neutral[200],
+    borderRadius: borderRadius.lg,
     paddingHorizontal: 14,
     minHeight: 50,
     ...shadows.xs,
     elevation: 1,
   },
   inputError: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+    borderColor: colors.danger.default,
+    backgroundColor: colors.danger[50],
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#0F172A',
+    color: colors.neutral[900],
     paddingVertical: 10,
   },
   leftIconWrapper: {
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   errorText: {
-    color: '#EF4444',
+    color: colors.danger.default,
     fontSize: 11,
     marginTop: 4,
     marginLeft: 4,

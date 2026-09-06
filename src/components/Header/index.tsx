@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
 import { shadows } from '../../utils/shadow';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 export type HeaderProps = {
   title?: string;
@@ -19,7 +20,7 @@ export function Header({ title, subtitle, onRightPress }: HeaderProps) {
       <View style={styles.leftColumn}>
         <View style={styles.brandRow}>
           <View style={styles.brandIconWrapper}>
-            <FontAwesome5 name="paw" size={13} color="#2563EB" />
+            <FontAwesome5 name="paw" size={13} color={colors.primary[600]} />
           </View>
           <Text style={styles.brandText}>PetGuardian</Text>
         </View>
@@ -47,8 +48,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
   },
   leftColumn: {
     flex: 1,
@@ -63,25 +64,25 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 7,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary[600],
     letterSpacing: 0.3,
   },
   pageTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.neutral[900],
     letterSpacing: -0.5,
   },
   pageSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
   },
   profileBadge: {
@@ -91,14 +92,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.neutral[900],
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
     elevation: 3,
   },
   avatarText: {
-    color: '#FFFFFF',
+    color: colors.neutral.white,
     fontSize: 13,
     fontWeight: '800',
   },

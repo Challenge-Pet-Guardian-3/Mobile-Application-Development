@@ -255,6 +255,7 @@ export function TaskFormModal({
           ? 'Atualize instruções, prazo previsto ou altere o status'
           : 'Defina rotinas de alimentação, passeios ou medicação'
       }
+      size="md"
     >
       {visible ? (
         <TaskFormBody

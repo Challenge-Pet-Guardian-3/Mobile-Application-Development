@@ -22,6 +22,7 @@ import { shadows } from '../../utils/shadow';
 import { useHomeData } from '../../hooks/useHomeData';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../routes/types';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 interface HomeScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList>;
@@ -44,7 +45,7 @@ export default function Home({ navigation }: HomeScreenProps) {
             <RefreshControl
               refreshing={status.isFetching && !status.isLoading}
               onRefresh={status.refetch}
-              tintColor="#10B981"
+              tintColor={colors.success.default}
             />
           }
         >
@@ -70,18 +71,18 @@ export default function Home({ navigation }: HomeScreenProps) {
             <RefreshControl
               refreshing={status.isFetching && !status.isLoading}
               onRefresh={status.refetch}
-              tintColor="#10B981"
+              tintColor={colors.success.default}
             />
           }
         >
           <Header subtitle="Visão Geral do Cuidado" />
           <EmptyState
             iconName="dog"
-            iconColor="#10B981"
+            iconColor={colors.success.default}
             title="Nenhum Pet Cadastrado"
             description="Cadastre seu primeiro pet na aba Family Pet para desbloquear a rotina de cuidados e o score de bem-estar."
             buttonText="Cadastrar Pet na Family"
-            buttonColor="#10B981"
+            buttonColor={colors.success.default}
             onButtonPress={nav.toFamily}
           />
         </ScrollView>
@@ -99,7 +100,7 @@ export default function Home({ navigation }: HomeScreenProps) {
           <RefreshControl
             refreshing={status.isFetching && !status.isLoading}
             onRefresh={status.refetch}
-            tintColor="#10B981"
+            tintColor={colors.success.default}
           />
         }
       >
@@ -154,8 +155,8 @@ export default function Home({ navigation }: HomeScreenProps) {
 
         {/* Seção de Tarefas da Rotina Reutilizável */}
         <TasksRoutineSection
-          title={routine.filter === 'HOJE' ? 'Rotina de Hoje' : 'Todas as Tarefas'}
-          subtitle={`${routine.current.concluidas} de ${routine.current.ativas} concluídas ${routine.filter === 'HOJE' ? 'hoje' : 'no total'}${routine.current.expiradas > 0 ? ` • ${routine.current.expiradas} expirada${routine.current.expiradas > 1 ? 's' : ''}` : ''}`}
+          title={routine.current.title}
+          subtitle={routine.current.subtitle}
           filter={routine.filter}
           onFilterChange={routine.setFilter}
           countHoje={routine.todayTasks.length}
@@ -167,27 +168,23 @@ export default function Home({ navigation }: HomeScreenProps) {
             variant: 'link',
             onPress: nav.toFamily,
           }}
-          emptyTitle={routine.filter === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada'}
-          emptyDesc={
-            routine.filter === 'HOJE'
-              ? 'Nenhuma tarefa agendada para hoje. Crie novas tarefas para seu pet na aba Family Pet.'
-              : 'Crie novas tarefas para seu pet na aba Family Pet.'
-          }
+          emptyTitle={routine.current.emptyTitle}
+          emptyDesc={routine.current.emptyDesc}
           onToggleTask={routine.toggleTask}
           onEditTask={taskModal.openEdit}
           onDeleteTask={taskModal.remove}
         />
 
-        {/* Atalho Rápido para a IA Assistente Preventiva */}
+        {/* Atalho Rápido para a IA Assistente Preve        {/* Atalho Rápido para a IA Assistente Preventiva */}
         <TouchableOpacity style={styles.shortcutCard} onPress={nav.toAi} activeOpacity={0.85}>
-          <View style={[styles.shortcutIconBox, { backgroundColor: '#EFF6FF' }]}>
-            <MaterialCommunityIcons name="robot-outline" size={22} color="#2563EB" />
+          <View style={[styles.shortcutIconBox, { backgroundColor: colors.primary[50] }]}>
+            <MaterialCommunityIcons name="robot-outline" size={22} color={colors.primary[600]} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.shortcutTitle}>IA Assistente Preventiva</Text>
             <Text style={styles.shortcutSub}>Orientações contextuais de saúde, nutrição e rotina do pet</Text>
           </View>
-          <Ionicons name="arrow-forward" size={16} color="#2563EB" />
+          <Ionicons name="arrow-forward" size={16} color={colors.primary[600]} />
         </TouchableOpacity>
 
         <View style={{ height: 110 }} />
@@ -212,13 +209,13 @@ export default function Home({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.neutral[50],
     paddingTop: Platform.OS === 'ios' ? 50 : 25,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    gap: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
+    gap: spacing.md,
   },
   petSelectorContainer: {
     marginBottom: 4,
@@ -230,52 +227,52 @@ const styles = StyleSheet.create({
   petPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
+    backgroundColor: colors.neutral.white,
+    paddingVertical: spacing.xs,
     paddingHorizontal: 12,
-    borderRadius: 18,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 10,
     ...shadows.sm,
   },
   petPillSelected: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: colors.neutral[900],
+    borderColor: colors.neutral[900],
   },
   petAvatarWrapper: {
     width: 32,
     height: 32,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.neutral[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
   petAvatarWrapperSelected: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary[600],
   },
   petPillName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.neutral[900],
   },
   petPillNameSelected: {
-    color: '#FFFFFF',
+    color: colors.neutral.white,
   },
   petPillBreed: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.neutral[500],
     fontWeight: '500',
   },
   petPillBreedSelected: {
-    color: '#94A3B8',
+    color: colors.neutral[400],
   },
   shortcutCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 14,
@@ -284,18 +281,18 @@ const styles = StyleSheet.create({
   shortcutIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   shortcutTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.neutral[900],
   },
   shortcutSub: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
   },
 });

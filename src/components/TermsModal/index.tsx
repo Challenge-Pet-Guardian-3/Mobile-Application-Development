@@ -14,6 +14,7 @@ export function TermsModal({ visible, onClose }: TermsModalProps) {
       onClose={onClose}
       title="Termos & Privacidade"
       subtitle="Diretrizes do ecossistema Clyvo"
+      size="sm"
     >
       <Text style={styles.termsText}>
         O PetGuardian respeita a privacidade dos dados de sua família e de seus animais de estimação. Todos os registros de saúde e rotina são sincronizados com segurança em nosso backend em nuvem.

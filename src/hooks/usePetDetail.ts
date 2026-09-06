@@ -17,11 +17,9 @@ import {
   useUpdateHistorico,
   useDeleteHistorico,
 } from './useHistoricos';
+import { usePetDetailModals } from './usePetDetailModals';
 import { PetFormData } from '../components/PetFormModal';
-import { InviteCaregiverData } from '../components/InviteCaregiverModal';
-import { HistoricoFormSubmitData } from '../components/HistoricoFormModal';
 import { CoCuidadorResponse, PetResponse } from '../types/pet';
-import { HistoricoResponse } from '../types/historico';
 import { normalizarDataNascParaIso, formatarIsoParaBr } from '../utils/petUtils';
 import { PetSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
@@ -388,77 +386,32 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
     [activePet, deleteHistoricoMutation]
   );
 
-  // Estados de Modais da tela de Detalhes do Pet
-  const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
-  const [modalConviteVisivel, setModalConviteVisivel] = useState(false);
-  const [modalHistoricoVisivel, setModalHistoricoVisivel] = useState(false);
-  const [itemEdicaoHistorico, setItemEdicaoHistorico] = useState<HistoricoResponse | null>(null);
+  // Gestão Unificada de Modais da Tela de Detalhes do Pet via usePetDetailModals
+  const modals = usePetDetailModals({
+    activePet,
+    isResponsavelPrincipal,
+    salvarEdicaoPet,
+    excluirPet,
+    convidarCuidador,
+    criarHistorico,
+    atualizarHistorico,
+    excluirHistorico,
+    onGoBack,
+  });
 
-  const abrirEdicao = useCallback(() => {
-    if (!activePet) return;
-    if (!isResponsavelPrincipal) {
-      Alert.alert('Acesso Negado', 'Somente o tutor principal pode editar as informações deste pet.');
-      return;
-    }
-    setModalEdicaoVisivel(true);
-  }, [activePet, isResponsavelPrincipal]);
+  const editTitle = activePet ? `Editar Ficha de ${activePet.nome}` : 'Editar Ficha do Pet';
 
-  const handleSalvarEdicao = useCallback(
-    (formData: PetFormData) => {
-      salvarEdicaoPet(formData, {
-        onSuccess: () => setModalEdicaoVisivel(false),
-      });
-    },
-    [salvarEdicaoPet]
-  );
-
-  const handleExcluirPet = useCallback(() => {
-    excluirPet({
-      onSuccess: () => {
-        onGoBack?.();
-      },
-    });
-  }, [excluirPet, onGoBack]);
-
-  const handleConvidarCuidador = useCallback(
-    (data: InviteCaregiverData) => {
-      convidarCuidador(data.email, {
-        onSuccess: () => setModalConviteVisivel(false),
-      });
-    },
-    [convidarCuidador]
-  );
-
-  const handleAbrirNovoHistorico = useCallback(() => {
-    setItemEdicaoHistorico(null);
-    setModalHistoricoVisivel(true);
-  }, []);
-
-  const handleAbrirEdicaoHistorico = useCallback((item: HistoricoResponse) => {
-    setItemEdicaoHistorico(item);
-    setModalHistoricoVisivel(true);
-  }, []);
-
-  const handleSalvarHistorico = useCallback(
-    (data: HistoricoFormSubmitData) => {
-      if (itemEdicaoHistorico) {
-        atualizarHistorico(itemEdicaoHistorico.id, data, {
-          onSuccess: () => setModalHistoricoVisivel(false),
-        });
-      } else {
-        criarHistorico(data, {
-          onSuccess: () => setModalHistoricoVisivel(false),
-        });
-      }
-    },
-    [itemEdicaoHistorico, atualizarHistorico, criarHistorico]
-  );
-
-  const handleExcluirHistorico = useCallback(
-    (item: HistoricoResponse) => {
-      excluirHistorico(item.id, item.tipoHist);
-    },
-    [excluirHistorico]
+  const caregiversWithActions = useMemo(
+    () => caregivers.map((c: CoCuidadorResponse) => {
+      const isMe = c.usuarioId === user?.id;
+      return {
+        ...c,
+        isCurrentUser: isMe,
+        onTransfer: isResponsavelPrincipal && !isMe ? () => transferirResponsabilidade(c.usuarioId, c.nome) : undefined,
+        onRemove: isResponsavelPrincipal || isMe ? () => removerCuidador(c.usuarioId, c.nome) : undefined,
+      };
+    }),
+    [caregivers, user?.id, isResponsavelPrincipal, transferirResponsabilidade, removerCuidador]
   );
 
   return {
@@ -481,28 +434,15 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
       select: setSelectedPetId,
       isPrincipal: isResponsavelPrincipal,
       initialData: initialPetData,
-      caregivers,
+      editTitle,
+      caregivers: caregiversWithActions,
+      caregiversCount: caregivers.length || 1,
       historicos,
       historyData,
     },
-    modals: {
-      edicaoVisivel: modalEdicaoVisivel,
-      setEdicaoVisivel: setModalEdicaoVisivel,
-      abrirEdicao,
-      salvarEdicao: handleSalvarEdicao,
-      conviteVisivel: modalConviteVisivel,
-      setConviteVisivel: setModalConviteVisivel,
-      convidarCuidador: handleConvidarCuidador,
-      historicoVisivel: modalHistoricoVisivel,
-      setHistoricoVisivel: setModalHistoricoVisivel,
-      itemEdicaoHistorico,
-      abrirNovoHistorico: handleAbrirNovoHistorico,
-      abrirEdicaoHistorico: handleAbrirEdicaoHistorico,
-      salvarHistorico: handleSalvarHistorico,
-      excluirHistorico: handleExcluirHistorico,
-    },
+    modals,
     actions: {
-      excluirPet: handleExcluirPet,
+      excluirPet: modals.excluirPet,
       removerCuidador,
       transferirResponsabilidade,
       isUpdatingPet: updatePetMutation.isPending,

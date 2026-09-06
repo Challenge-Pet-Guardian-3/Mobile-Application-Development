@@ -49,6 +49,7 @@ export interface CuidadorResumo {
   email: string;
   responsavelPrincipal: boolean;
   petIds: number[];
+  petNomes?: string[];
 }
 
 export interface RedeCuidadoResponse {

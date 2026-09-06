@@ -22,6 +22,7 @@ import { shadows } from '../../utils/shadow';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
 import { useFamilyCare } from '../../hooks/useFamilyCare';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 interface FamilyPetScreenProps {
   navigation: NativeStackNavigationProp<FamilyStackParamList>;
@@ -39,68 +40,55 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={status.isFetching && !status.isLoading}
             onRefresh={status.refetchAll}
-            tintColor="#10B981"
+            tintColor={colors.success.default}
           />
         }
       >
         <Header subtitle="Cuidado Familiar & Pets" />
 
         {/* Resumo da Rede de Cuidado */}
-        <FamilySummaryCard
-          tutorNome={family.user?.nome}
-          petsCount={family.pets.length}
-          tarefasPendentes={
-            family.redeCuidado?.totalTarefasPendentes ??
-            family.allTasks.filter((t) => t.status === 'PENDENTE').length
-          }
-          tarefasConcluidas={family.redeCuidado?.totalTarefasConcluidas ?? 0}
-          pontosAcumulados={family.redeCuidado?.pontosAcumulados || 0}
-        />
+        <FamilySummaryCard {...family.summary} />
 
         {/* Seção de Animais da Família */}
         <View style={styles.sectionBox}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Animais da Família</Text>
             <TouchableOpacity style={styles.btnAddPet} onPress={() => modals.abrir('novoPet')}>
-              <Ionicons name="add" size={16} color="#FFFFFF" />
+              <Ionicons name="add" size={16} color={colors.neutral.white} />
               <Text style={styles.btnAddPetText}>Adicionar Pet</Text>
             </TouchableOpacity>
           </View>
 
           {family.pets.length === 0 ? (
             <View style={styles.emptyBox}>
-              <MaterialCommunityIcons name="paw-off" size={28} color="#CBD5E1" />
+              <MaterialCommunityIcons name="paw-off" size={28} color={colors.neutral[300]} />
               <Text style={styles.emptyTitle}>Nenhum pet cadastrado</Text>
               <Text style={styles.emptySub}>Clique no botão acima para adicionar o primeiro pet!</Text>
             </View>
           ) : (
             <View style={styles.petsGrid}>
-              {family.pets.map((pet) => {
-                const petResumo = family.redeCuidado?.pets?.find((p) => p.id === pet.id);
-                const isRespPrincipal = petResumo ? petResumo.responsavelPrincipal : true;
-
-                return (
-                  <PetCard
-                    key={pet.id}
-                    pet={pet}
-                    isResponsavelPrincipal={isRespPrincipal}
-                    tarefasCount={petResumo?.tarefaIds?.length}
-                    onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
-                  />
-                );
-              })}
+              {family.petsComMetadados.map((pet) => (
+                <PetCard
+                  key={pet.id}
+                  pet={pet}
+                  isResponsavelPrincipal={pet.isResponsavelPrincipal}
+                  tarefasCount={pet.tarefasCount}
+                  onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
+                />
+              ))}
             </View>
           )}
         </View>
 
         {/* Seção Reutilizável de Tarefas da Rotina */}
         <TasksRoutineSection
-          title={family.filtroRotina === 'HOJE' ? 'Rotina de Hoje' : 'Rotina & Tarefas'}
-          subtitle={`${family.tasks.length} ${family.tasks.length === 1 ? 'tarefa' : 'tarefas'} ${family.filtroRotina === 'HOJE' ? 'hoje' : 'no total'}`}
+          title={family.routineTexts.title}
+          subtitle={family.routineTexts.subtitle}
           filter={family.filtroRotina}
           onFilterChange={family.setFiltroRotina}
           countHoje={family.totalTarefasHoje}
@@ -113,12 +101,9 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
             variant: 'primary',
             onPress: () => modals.abrir('novaTarefa'),
           }}
-          emptyTitle={family.filtroRotina === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa ativa'}
-          emptyDesc={
-            family.filtroRotina === 'HOJE'
-              ? 'Nenhuma tarefa agendada para hoje na família.'
-              : 'Crie rotinas diárias para seu pet acumular pontos XP!'
-          }
+          emptyTitle={family.routineTexts.emptyTitle}
+          emptyDesc={family.routineTexts.emptyDesc}
+          onToggleTask={actions.alternarStatusTarefa}
           onEditTask={modals.abrirEdicaoTarefa}
           onDeleteTask={actions.removerTarefa}
         />
@@ -149,27 +134,20 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
           )}
 
           {/* Co-cuidadores */}
-          {family.coCuidadores.map((c) => {
-            const petsDoCuidador = c.petIds
-              ?.map((pId) => family.pets.find((p) => p.id === pId)?.nome)
-              .filter(Boolean)
-              .join(', ');
-
-            return (
-              <CaregiverCard
-                key={c.id}
-                nome={c.nome}
-                email={c.email}
-                roleText={petsDoCuidador ? `Ajuda com: ${petsDoCuidador}` : 'Co-cuidador'}
-                isPrincipal={c.responsavelPrincipal}
-                onPress={
-                  family.petsOndeSouPrincipal.length > 0
-                    ? () => modals.abrirGerenciamento(c)
-                    : undefined
-                }
-              />
-            );
-          })}
+          {family.coCuidadores.map((c) => (
+            <CaregiverCard
+              key={c.id}
+              nome={c.nome}
+              email={c.email}
+              roleText={c.roleText}
+              isPrincipal={c.responsavelPrincipal}
+              onPress={
+                family.petsOndeSouPrincipal.length > 0
+                  ? () => modals.abrirGerenciamento(c)
+                  : undefined
+              }
+            />
+          ))}
         </View>
 
         <View style={{ height: 110 }} />
@@ -181,7 +159,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         onClose={modals.fechar}
         mode="create"
         isLoading={actions.isCreatingPet}
-        onSubmit={(data) => actions.cadastrarPet(data, { onSuccess: modals.fechar })}
+        onSubmit={actions.cadastrarPet}
       />
 
       {/* Modal de Criação / Edição de Tarefa Reutilizável */}
@@ -201,7 +179,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
         onClose={modals.fechar}
         pets={family.petsOndeSouPrincipal}
         isLoading={actions.isInvitingCaregiver}
-        onSubmit={(data) => actions.convidarCuidador(data, { onSuccess: modals.fechar })}
+        onSubmit={actions.convidarCuidador}
       />
 
       {/* Modal de Gestão / Remoção / Transferência de Co-Cuidador */}
@@ -220,25 +198,81 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 10, gap: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.neutral[50],
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
+    gap: spacing.md,
+  },
   sectionBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     ...shadows.sm,
     elevation: 2,
   },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
-  btnAddPet: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
-  btnAddPetText: { color: '#FFFFFF', fontWeight: '800', fontSize: 12 },
-  btnInvite: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, gap: 4 },
-  btnInviteText: { color: '#2563EB', fontWeight: '800', fontSize: 12 },
-  emptyBox: { alignItems: 'center', padding: 20, gap: 4 },
-  emptyTitle: { fontSize: 14, fontWeight: '700', color: '#475569' },
-  emptySub: { fontSize: 12, color: '#94A3B8', textAlign: 'center' },
-  petsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.neutral[900],
+  },
+  btnAddPet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.success.default,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: 4,
+  },
+  btnAddPetText: {
+    color: colors.neutral.white,
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  btnInvite: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[50],
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: 4,
+  },
+  btnInviteText: {
+    color: colors.primary[600],
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  emptyBox: {
+    alignItems: 'center',
+    padding: spacing.lg,
+    gap: 4,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.neutral[600],
+  },
+  emptySub: {
+    fontSize: 12,
+    color: colors.neutral[400],
+    textAlign: 'center',
+  },
+  petsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
 });

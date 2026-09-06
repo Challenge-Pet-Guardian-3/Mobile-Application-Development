@@ -22,8 +22,8 @@ export interface TarefaResponse {
   descricao: string;
   criacao: string;
   prazo: string;
-  conclusao?: string | null;
+  conclusao: string | null;
   status: EnumStatus;
-  usuarioId?: number | null;
+  usuarioId: number;
   petId: number;
 }

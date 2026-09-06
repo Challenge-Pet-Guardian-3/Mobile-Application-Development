@@ -202,6 +202,7 @@ export function EditProfileModal({
       onClose={onClose}
       title="Editar Meu Perfil"
       subtitle="Atualize suas informações cadastrais na API Java"
+      size="md"
     >
       {visible ? (
         <EditProfileBody

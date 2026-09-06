@@ -5,6 +5,7 @@ import { shadows } from '../../utils/shadow';
 import { TarefaResponse } from '../../types/task';
 import { PetResponse } from '../../types/pet';
 import { RoutineCard } from '../RoutineCard';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 export interface HeaderActionButton {
   label: string;
@@ -77,7 +78,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
             onPress={headerButton.onPress}
             activeOpacity={0.7}
           >
-            {headerButton.icon === 'add' && <Ionicons name="add" size={16} color="#FFFFFF" />}
+            {headerButton.icon === 'add' && <Ionicons name="add" size={16} color={colors.neutral.white} />}
             <Text
               style={
                 headerButton.variant === 'link'
@@ -88,7 +89,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
               {headerButton.label}
             </Text>
             {headerButton.icon === 'chevron-forward' && (
-              <Ionicons name="chevron-forward" size={14} color="#2563EB" />
+              <Ionicons name="chevron-forward" size={14} color={colors.primary[600]} />
             )}
           </TouchableOpacity>
         )}
@@ -104,7 +105,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
           <MaterialCommunityIcons
             name="calendar-today"
             size={14}
-            color={filter === 'HOJE' ? '#2563EB' : '#64748B'}
+            color={filter === 'HOJE' ? colors.primary[600] : colors.neutral[500]}
           />
           <Text style={[styles.filterTabText, filter === 'HOJE' && styles.filterTabTextActive]}>
             Hoje ({countHoje})
@@ -119,7 +120,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
           <MaterialCommunityIcons
             name="format-list-bulleted"
             size={14}
-            color={filter === 'TODAS' ? '#2563EB' : '#64748B'}
+            color={filter === 'TODAS' ? colors.primary[600] : colors.neutral[500]}
           />
           <Text style={[styles.filterTabText, filter === 'TODAS' && styles.filterTabTextActive]}>
             Todas ({countTodas})
@@ -130,7 +131,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
       {/* Conteúdo / Lista de Tarefas */}
       {tasks.length === 0 ? (
         <View style={styles.emptyBox}>
-          <MaterialCommunityIcons name="clipboard-check-outline" size={32} color="#CBD5E1" />
+          <MaterialCommunityIcons name="clipboard-check-outline" size={32} color={colors.neutral[300]} />
           <Text style={styles.emptyTitle}>{emptyTitle || defaultEmptyTitle}</Text>
           <Text style={styles.emptyDesc}>{emptyDesc || defaultEmptyDesc}</Text>
         </View>
@@ -154,9 +155,9 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
 
 const styles = StyleSheet.create({
   sectionBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 18,
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     ...shadows.sm,
@@ -166,30 +167,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.neutral[900],
   },
   sectionSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
     fontWeight: '500',
   },
   headerButtonPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B981',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    backgroundColor: colors.success.default,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
     gap: 4,
   },
   headerButtonPrimaryText: {
-    color: '#FFFFFF',
+    color: colors.neutral.white,
     fontWeight: '800',
     fontSize: 12,
   },
@@ -197,68 +198,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 6,
+    backgroundColor: colors.primary[50],
+    paddingVertical: spacing.xs,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
   },
   headerButtonLinkText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary[600],
   },
   filterTabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.md,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 6,
+    borderColor: colors.neutral[200],
+    gap: spacing.xs,
   },
   filterTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
   },
   filterTabActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.neutral.white,
     ...shadows.sm,
   },
   filterTabText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: colors.neutral[500],
   },
   filterTabTextActive: {
-    color: '#2563EB',
+    color: colors.primary[600],
     fontWeight: '700',
   },
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 26,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.neutral[200],
     borderStyle: 'dashed',
   },
   emptyTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
-    marginTop: 8,
+    color: colors.neutral[700],
+    marginTop: spacing.sm,
   },
   emptyDesc: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: colors.neutral[400],
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 18,

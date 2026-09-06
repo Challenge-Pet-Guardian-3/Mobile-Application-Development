@@ -107,15 +107,11 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           <View style={styles.familySummary}>
             <View style={styles.familyItem}>
               <MaterialCommunityIcons name="paw" size={18} color="#2563EB" />
-              <Text style={styles.familyItemText}>
-                {redeCuidado?.pets?.length || 0} {redeCuidado?.pets?.length === 1 ? 'animal cadastrado' : 'animais cadastrados'}
-              </Text>
+              <Text style={styles.familyItemText}>{profile.familySummary.petsTexto}</Text>
             </View>
             <View style={styles.familyItem}>
               <MaterialCommunityIcons name="account-multiple-outline" size={18} color="#059669" />
-              <Text style={styles.familyItemText}>
-                {(redeCuidado?.coCuidadores?.length || 0) + 1} cuidadores ativos
-              </Text>
+              <Text style={styles.familyItemText}>{profile.familySummary.cuidadoresTexto}</Text>
             </View>
           </View>
         </View>

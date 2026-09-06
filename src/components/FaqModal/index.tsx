@@ -32,6 +32,7 @@ export function FaqModal({ visible, onClose }: FaqModalProps) {
       onClose={onClose}
       title="Perguntas Frequentes"
       subtitle="Dúvidas comuns sobre o PetGuardian"
+      size="sm"
     >
       {FAQ_ITEMS.map((item, idx) => (
         <View key={idx} style={styles.faqItem}>

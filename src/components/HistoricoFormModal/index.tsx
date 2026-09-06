@@ -170,6 +170,7 @@ export function HistoricoFormModal({
       onClose={onClose}
       title={mode === 'edit' ? 'Editar Registro de Saúde' : 'Novo Registro de Saúde'}
       subtitle="Cadastre vacinas, consultas médicas, exames e procedimentos veterinários."
+      size="md"
     >
       {visible ? (
         <HistoricoFormBody

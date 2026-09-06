@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 interface CaregiverCardProps {
   nome: string;
@@ -39,13 +40,13 @@ export function CaregiverCard({
       <View
         style={[
           styles.avatar,
-          !isPrincipal && { backgroundColor: '#F1F5F9' },
+          !isPrincipal && { backgroundColor: colors.neutral[100] },
         ]}
       >
         <Text
           style={[
             styles.initials,
-            !isPrincipal && { color: '#475569' },
+            !isPrincipal && { color: colors.neutral[600] },
           ]}
         >
           {initials}
@@ -60,13 +61,13 @@ export function CaregiverCard({
           <View
             style={[
               styles.roleBadge,
-              !isPrincipal && { backgroundColor: '#F1F5F9' },
+              !isPrincipal && { backgroundColor: colors.neutral[100] },
             ]}
           >
             <Text
               style={[
                 styles.roleBadgeText,
-                !isPrincipal && { color: '#64748B' },
+                !isPrincipal && { color: colors.neutral[500] },
               ]}
             >
               {badgeLabel}
@@ -88,7 +89,7 @@ export function CaregiverCard({
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <MaterialCommunityIcons name="crown-outline" size={16} color="#D97706" />
+              <MaterialCommunityIcons name="crown-outline" size={16} color={colors.warning[600]} />
             </TouchableOpacity>
           )}
 
@@ -102,7 +103,7 @@ export function CaregiverCard({
               <Ionicons
                 name={isCurrentUser ? 'exit-outline' : 'trash-outline'}
                 size={15}
-                color="#EF4444"
+                color={colors.danger[500]}
               />
             </TouchableOpacity>
           )}
@@ -110,7 +111,7 @@ export function CaregiverCard({
       )}
 
       {onPress && !onTransfer && !onRemove && (
-        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+        <Ionicons name="chevron-forward" size={18} color={colors.neutral[400]} />
       )}
     </CardWrapper>
   );
@@ -120,23 +121,23 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 12,
+    borderBottomColor: colors.neutral[100],
+    gap: spacing.md,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
   initials: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#2563EB',
+    color: colors.primary[600],
   },
   infoWrapper: {
     flex: 1,
@@ -150,24 +151,24 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.neutral[800],
     flexShrink: 1,
   },
   role: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
   },
   roleBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     paddingVertical: 2,
     paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: borderRadius.xs,
   },
   roleBadgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary[600],
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.warning[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.danger[100],
     justifyContent: 'center',
     alignItems: 'center',
   },

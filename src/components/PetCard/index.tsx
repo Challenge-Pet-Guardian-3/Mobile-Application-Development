@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PetResponse } from '../../types/pet';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 interface PetCardProps {
   pet: PetResponse;
@@ -20,13 +21,13 @@ export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: 
     >
       {isResponsavelPrincipal && (
         <View style={styles.principalBadge}>
-          <Ionicons name="shield-checkmark" size={10} color="#FFFFFF" />
+          <Ionicons name="shield-checkmark" size={10} color={colors.neutral.white} />
           <Text style={styles.principalBadgeText}>Tutor Princ.</Text>
         </View>
       )}
 
       <View style={styles.avatarWrapper}>
-        <MaterialCommunityIcons name="paw" size={24} color="#2563EB" />
+        <MaterialCommunityIcons name="paw" size={24} color={colors.primary[600]} />
       </View>
 
       <Text style={styles.name} numberOfLines={1}>
@@ -42,8 +43,8 @@ export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: 
           <Text style={styles.badgeText}>Porte {pet.porte}</Text>
         </View>
         {tarefasCount !== undefined && tarefasCount > 0 ? (
-          <View style={[styles.badge, { backgroundColor: '#EFF6FF' }]}>
-            <Text style={[styles.badgeText, { color: '#2563EB' }]}>
+          <View style={[styles.badge, { backgroundColor: colors.primary[50] }]}>
+            <Text style={[styles.badgeText, { color: colors.primary[600] }]}>
               {tarefasCount} {tarefasCount === 1 ? 'tarefa' : 'tarefas'}
             </Text>
           </View>
@@ -57,51 +58,51 @@ const styles = StyleSheet.create({
   card: {
     position: 'relative',
     width: '48%',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.neutral[50],
     padding: 14,
-    borderRadius: 18,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.neutral[200],
   },
   principalBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: spacing.xs,
+    right: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#059669',
+    backgroundColor: colors.success[600],
     paddingVertical: 2,
     paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: borderRadius.xs,
     zIndex: 2,
   },
   principalBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: colors.neutral.white,
   },
   avatarWrapper: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   name: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.neutral[800],
   },
   breed: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -110,15 +111,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   badge: {
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.neutral[200],
     paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.neutral[600],
   },
 });
 

@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 interface PetScoreBarProps {
   score: number;
@@ -22,17 +23,17 @@ export const PetScoreBar = memo(function PetScoreBar({
 
   // Status de bem-estar baseado na rotina diária
   let statusTexto = 'Tarefas Pendentes 📋';
-  let statusCor = '#EF4444';
-  let statusBg = '#FEF2F2';
+  let statusCor: string = colors.danger[500];
+  let statusBg: string = colors.danger[50];
 
   if (percentage === 100) {
     statusTexto = 'Tudo em Dia ✨';
-    statusCor = '#10B981';
-    statusBg = '#ECFDF5';
+    statusCor = colors.success.default;
+    statusBg = colors.success[50];
   } else if (percentage >= 50) {
     statusTexto = 'Em Andamento 👍';
-    statusCor = '#F59E0B';
-    statusBg = '#FFFBEB';
+    statusCor = colors.warning[500];
+    statusBg = colors.warning[50];
   }
 
   return (
@@ -40,7 +41,7 @@ export const PetScoreBar = memo(function PetScoreBar({
       <View style={styles.headerRow}>
         <View style={styles.infoLeft}>
           <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="heart-pulse" size={22} color="#2563EB" />
+            <MaterialCommunityIcons name="heart-pulse" size={22} color={colors.primary[600]} />
           </View>
           <View>
             <Text style={styles.petTitle}>Bem-estar de {petName}</Text>
@@ -51,7 +52,7 @@ export const PetScoreBar = memo(function PetScoreBar({
         </View>
 
         <View style={styles.pointsBadge}>
-          <MaterialCommunityIcons name="star" size={14} color="#D97706" />
+          <MaterialCommunityIcons name="star" size={14} color={colors.warning[600]} />
           <Text style={styles.pointsBadgeText}>{score} XP</Text>
         </View>
       </View>
@@ -76,9 +77,9 @@ export const PetScoreBar = memo(function PetScoreBar({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     ...shadows.sm,
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   infoLeft: {
     flexDirection: 'row',
@@ -100,20 +101,20 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
   petTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.neutral[900],
   },
   statusPill: {
     alignSelf: 'flex-start',
     paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.sm,
     marginTop: 4,
   },
   statusText: {
@@ -124,15 +125,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FFFBEB',
-    paddingVertical: 6,
+    backgroundColor: colors.warning[50],
+    paddingVertical: spacing.xs,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: colors.warning[200],
   },
   pointsBadgeText: {
-    color: '#D97706',
+    color: colors.warning[600],
     fontWeight: '900',
     fontSize: 13,
   },
@@ -141,13 +142,13 @@ const styles = StyleSheet.create({
   },
   progressBarBackground: {
     height: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.neutral[100],
     borderRadius: 5,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary[600],
     borderRadius: 5,
   },
   footerRow: {
@@ -157,16 +158,16 @@ const styles = StyleSheet.create({
   },
   pointsLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.neutral[500],
     fontWeight: '600',
   },
   pointsValue: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.neutral[500],
     fontWeight: '600',
   },
   currentPoints: {
-    color: '#2563EB',
+    color: colors.primary[600],
     fontWeight: '800',
     fontSize: 15,
   },

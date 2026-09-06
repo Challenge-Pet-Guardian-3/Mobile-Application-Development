@@ -113,7 +113,7 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
     if (pontosPetData?.pontosTotais !== undefined) {
       return pontosPetData.pontosTotais;
     }
-    return metricasPet.concluidas.reduce((acc, t) => acc + (t.pontosTarefa ?? 0), 0);
+    return metricasPet.concluidas.reduce((acc, t) => acc + t.pontosTarefa, 0);
   }, [pontosPetData, metricasPet.concluidas]);
 
   const ofensivaFamiliar = useMemo(() => {
@@ -284,23 +284,22 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
 
   const rotinaAtual = useMemo(() => {
     const isHoje = filtroRotina === 'HOJE';
+    const m = isHoje ? metricasPetHoje : metricasPet;
+    const [c, a, e] = [m.concluidas.length, m.ativas.length, m.expiradas.length];
+
     return {
       tarefas: isHoje ? tarefasDoPetHoje : tarefasDoPet,
-      concluidas: isHoje ? metricasPetHoje.concluidas.length : metricasPet.concluidas.length,
-      ativas: isHoje ? metricasPetHoje.ativas.length : metricasPet.ativas.length,
-      expiradas: isHoje ? metricasPetHoje.expiradas.length : metricasPet.expiradas.length,
+      concluidas: c,
+      ativas: a,
+      expiradas: e,
+      title: isHoje ? 'Rotina de Hoje' : 'Todas as Tarefas',
+      subtitle: `${c} de ${a} concluídas ${isHoje ? 'hoje' : 'no total'}${e > 0 ? ` • ${e} expirada${e > 1 ? 's' : ''}` : ''}`,
+      emptyTitle: isHoje ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada',
+      emptyDesc: isHoje
+        ? 'Nenhuma tarefa agendada para hoje. Crie novas tarefas para seu pet na aba Family Pet.'
+        : 'Crie novas tarefas para seu pet na aba Family Pet.',
     };
-  }, [
-    filtroRotina,
-    tarefasDoPetHoje,
-    tarefasDoPet,
-    metricasPetHoje.concluidas.length,
-    metricasPet.concluidas.length,
-    metricasPetHoje.ativas.length,
-    metricasPet.ativas.length,
-    metricasPetHoje.expiradas.length,
-    metricasPet.expiradas.length,
-  ]);
+  }, [filtroRotina, tarefasDoPetHoje, tarefasDoPet, metricasPetHoje, metricasPet]);
 
   const handleCloseEditModal = useCallback(() => {
     setTarefaEmEdicao(null);

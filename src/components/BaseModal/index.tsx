@@ -15,6 +15,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
+import { colors, layout, borderRadius } from '../../constants/theme';
+
+export type ModalSize = 'sm' | 'md' | 'lg';
 
 interface BaseModalProps {
   visible: boolean;
@@ -23,6 +26,7 @@ interface BaseModalProps {
   subtitle?: string;
   children: ReactNode;
   showCloseButton?: boolean;
+  size?: ModalSize;
   maxHeight?: DimensionValue;
 }
 
@@ -33,9 +37,10 @@ export function BaseModal({
   subtitle,
   children,
   showCloseButton = true,
-  maxHeight = 450,
+  size = 'md',
+  maxHeight,
 }: BaseModalProps) {
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -56,15 +61,19 @@ export function BaseModal({
 
   const isKeyboardVisible = keyboardHeight > 0;
 
-  // Altura dinâmica para que o conteúdo do modal JAMAIS ultrapasse o topo ou vaze a tela
+  // Largura máxima e altura calculadas proporcionalmente de acordo com a variante (SOLID & Clean Code)
+  const computedMaxWidth = Math.min(layout.modal.width[size], windowWidth - 32);
+
   const dynamicBodyMaxHeight = useMemo(() => {
-    if (isKeyboardVisible) {
-      const available = windowHeight - keyboardHeight - (Platform.OS === 'ios' ? 200 : 170);
-      const target = typeof maxHeight === 'number' ? maxHeight : 450;
-      return Math.max(140, Math.min(target, available));
+    if (typeof maxHeight === 'number') {
+      return maxHeight;
     }
-    const target = typeof maxHeight === 'number' ? maxHeight : 450;
-    return Math.min(target, windowHeight * 0.7);
+    if (isKeyboardVisible) {
+      const available = windowHeight - keyboardHeight - (Platform.OS === 'ios' ? 160 : 130);
+      return Math.max(160, Math.min(available, windowHeight * 0.45));
+    }
+    // Proporção ergonômica padrão: 70% da altura da tela para evitar cortes ou overflow
+    return Math.min(layout.modal.maxHeightMaxPx, windowHeight * layout.modal.maxHeightRatio);
   }, [isKeyboardVisible, keyboardHeight, windowHeight, maxHeight]);
 
   if (!visible) return null;
@@ -77,52 +86,50 @@ export function BaseModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          style={[
-            styles.overlay,
-            isKeyboardVisible && {
-              justifyContent: 'flex-start',
-              paddingTop: Platform.OS === 'ios' ? 56 : 38,
-              paddingBottom: 10,
-            },
-          ]}
+      <View
+        style={[
+          styles.overlay,
+          isKeyboardVisible && {
+            justifyContent: 'flex-start',
+            paddingTop: Platform.OS === 'ios' ? 56 : 38,
+            paddingBottom: 10,
+          },
+        ]}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoid}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.keyboardAvoid}
-          >
-            <TouchableWithoutFeedback>
-              <View style={styles.card}>
-                <View style={styles.header}>
-                  <View style={styles.titleWrapper}>
-                    <Text style={styles.title}>{title}</Text>
-                    {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-                  </View>
-                  {showCloseButton ? (
-                    <TouchableOpacity
-                      style={styles.closeBtn}
-                      onPress={onClose}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="close" size={20} color="#64748B" />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  style={{ maxHeight: dynamicBodyMaxHeight }}
-                  contentContainerStyle={styles.body}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {children}
-                </ScrollView>
+          <View style={[styles.card, { maxWidth: computedMaxWidth }]}>
+            <View style={styles.header}>
+              <View style={styles.titleWrapper}>
+                <Text style={styles.title}>{title}</Text>
+                {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
               </View>
-            </TouchableWithoutFeedback>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+              {showCloseButton ? (
+                <TouchableOpacity
+                  style={styles.closeBtn}
+                  onPress={onClose}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={20} color={colors.neutral[500]} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              style={{ maxHeight: dynamicBodyMaxHeight }}
+              contentContainerStyle={styles.body}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {children}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -130,7 +137,7 @@ export function BaseModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: colors.overlay.dark,
     justifyContent: 'center',
     padding: 20,
   },
@@ -139,11 +146,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xxl,
+    padding: layout.modal.cardPadding,
     width: '100%',
-    maxWidth: 420,
     elevation: 10,
     ...shadows.xl,
   },

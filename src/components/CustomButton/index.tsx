@@ -9,6 +9,7 @@ import {
   TouchableOpacityProps,
 } from 'react-native';
 import { shadows } from '../../utils/shadow';
+import { colors, borderRadius } from '../../constants/theme';
 
 interface CustomButtonProps extends TouchableOpacityProps {
   title: string;
@@ -60,15 +61,15 @@ export const CustomButton = memo(function CustomButton({
       style={[
         styles.btnBase,
         getButtonStyle(),
-        disabled && styles.btnDisabled,
+        (disabled || isLoading) && styles.btnDisabled,
         style,
       ]}
+      activeOpacity={0.8}
       disabled={disabled || isLoading}
-      activeOpacity={0.85}
       {...rest}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === 'outline' ? '#0F172A' : '#FFFFFF'} size="small" />
+        <ActivityIndicator color={variant === 'outline' ? colors.neutral[900] : colors.neutral.white} size="small" />
       ) : (
         <>
           {icon}
@@ -86,29 +87,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
-    borderRadius: 18,
+    borderRadius: borderRadius.lg,
     gap: 8,
   },
   btnPrimary: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.neutral[900],
     ...shadows.xl,
     elevation: 3,
   },
   btnSuccess: {
-    backgroundColor: '#10B981',
-    ...shadows.colored('#10B981', 0.25),
+    backgroundColor: colors.success.default,
+    ...shadows.colored(colors.success.default, 0.25),
     elevation: 3,
   },
   btnSecondary: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
   },
   btnOutline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.neutral[200],
   },
   btnDanger: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.danger.default,
   },
   btnDisabled: {
     opacity: 0.45,
@@ -120,12 +121,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   textPrimary: {
-    color: '#FFFFFF',
+    color: colors.neutral.white,
   },
   textSecondary: {
-    color: '#2563EB',
+    color: colors.primary.default,
   },
   textOutline: {
-    color: '#0F172A',
+    color: colors.neutral[900],
   },
 });

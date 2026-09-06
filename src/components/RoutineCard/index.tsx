@@ -4,6 +4,7 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { TarefaResponse } from '../../types/task';
 import { formatarPrazoAmigavel } from '../../utils/petUtils';
+import { colors, spacing, borderRadius } from '../../constants/theme';
 
 export interface RoutineCardProps {
   tarefa: TarefaResponse;
@@ -45,9 +46,9 @@ export const RoutineCard = memo(function RoutineCard({
           ]}
         >
           {isDone ? (
-            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={16} color={colors.neutral.white} />
           ) : isExpired ? (
-            <Ionicons name="alert" size={14} color="#EF4444" />
+            <Ionicons name="alert" size={14} color={colors.danger.default} />
           ) : (
             <View style={styles.checkboxInner} />
           )}
@@ -72,7 +73,7 @@ export const RoutineCard = memo(function RoutineCard({
           <View style={styles.metaRow}>
             {petNome ? (
               <View style={styles.petBadge}>
-                <Ionicons name="paw" size={10} color="#2563EB" />
+                <Ionicons name="paw" size={10} color={colors.primary.default} />
                 <Text style={styles.petBadgeText} numberOfLines={1}>
                   {petNome}
                 </Text>
@@ -80,7 +81,7 @@ export const RoutineCard = memo(function RoutineCard({
             ) : null}
             {tarefa.prazo ? (
               <View style={styles.prazoRow}>
-                <Ionicons name="time-outline" size={12} color={isDone ? '#94A3B8' : '#0284C7'} />
+                <Ionicons name="time-outline" size={12} color={isDone ? colors.neutral[400] : colors.primary.default} />
                 <Text style={[styles.prazoText, isDone && styles.prazoTextDone]}>
                   {formatarPrazoAmigavel(tarefa.prazo)}
                 </Text>
@@ -92,7 +93,7 @@ export const RoutineCard = memo(function RoutineCard({
 
       <View style={styles.rightContainer}>
         <View style={[styles.xpBadge, isDone && styles.xpBadgeDone]}>
-          <Text style={[styles.xpText, isDone && styles.xpTextDone]}>+{tarefa.pontosTarefa || 15} XP</Text>
+          <Text style={[styles.xpText, isDone && styles.xpTextDone]}>+{tarefa.pontosTarefa} XP</Text>
         </View>
 
         {onEdit && (
@@ -101,17 +102,17 @@ export const RoutineCard = memo(function RoutineCard({
             onPress={() => onEdit(tarefa)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="pencil-outline" size={16} color="#94A3B8" />
+            <Ionicons name="pencil-outline" size={16} color={colors.neutral[400]} />
           </TouchableOpacity>
         )}
 
         {onDelete && (
           <TouchableOpacity
-            style={styles.actionButton}
+            style={styles.deleteButton}
             onPress={() => onDelete(tarefa.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="close-circle" size={18} color="#CBD5E1" />
+            <Ionicons name="trash-outline" size={16} color={colors.danger.default} />
           </TouchableOpacity>
         )}
       </View>
@@ -124,52 +125,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    backgroundColor: colors.neutral.white,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    marginBottom: 8,
+    borderColor: colors.neutral[200],
     ...shadows.xs,
     elevation: 1,
   },
   cardDone: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
+    backgroundColor: colors.neutral[50],
+    borderColor: colors.neutral[200],
     opacity: 0.85,
   },
   cardExpired: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
+    backgroundColor: colors.warning[50],
+    borderColor: colors.warning[200],
   },
   contentLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 12,
+    gap: spacing.md,
   },
   checkbox: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
+    borderColor: colors.neutral[300],
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.neutral.white,
   },
   checkboxInner: {
     width: 0,
     height: 0,
   },
   checkboxDone: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: colors.success.default,
+    borderColor: colors.success.default,
   },
   checkboxExpired: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#EF4444',
+    backgroundColor: colors.danger[50],
+    borderColor: colors.danger.default,
   },
   textContainer: {
     flex: 1,
@@ -177,30 +178,30 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.neutral[800],
   },
   titleDone: {
     textDecorationLine: 'line-through',
-    color: '#94A3B8',
+    color: colors.neutral[400],
   },
   expiredBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.danger[100],
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: borderRadius.xs,
   },
   expiredBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#EF4444',
+    color: colors.danger.default,
   },
   description: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.neutral[500],
     marginTop: 2,
   },
   descriptionDone: {
-    color: '#CBD5E1',
+    color: colors.neutral[300],
   },
   rightContainer: {
     flexDirection: 'row',
@@ -208,21 +209,21 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   xpBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 10,
   },
   xpBadgeDone: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.success[50],
   },
   xpText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#2563EB',
+    color: colors.primary.default,
   },
   xpTextDone: {
-    color: '#059669',
+    color: colors.success[600],
   },
   actionButton: {
     padding: 4,
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     marginTop: 4,
     flexWrap: 'wrap',
   },
@@ -241,15 +242,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primary[50],
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: borderRadius.xs,
   },
   petBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary.default,
   },
   prazoRow: {
     flexDirection: 'row',
@@ -259,9 +260,9 @@ const styles = StyleSheet.create({
   prazoText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#0284C7',
+    color: colors.primary[600],
   },
   prazoTextDone: {
-    color: '#94A3B8',
+    color: colors.neutral[400],
   },
 });

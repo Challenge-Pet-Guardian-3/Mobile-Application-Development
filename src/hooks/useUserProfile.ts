@@ -131,6 +131,15 @@ export function useUserProfile() {
     );
   }, [user, deleteUserMutation]);
 
+  const familySummary = useMemo(() => {
+    const petsCount = redeCuidado?.pets?.length || 0;
+    const cuidadoresCount = (redeCuidado?.coCuidadores?.length || 0) + 1;
+    return {
+      petsTexto: `${petsCount} ${petsCount === 1 ? 'animal cadastrado' : 'animais cadastrados'}`,
+      cuidadoresTexto: `${cuidadoresCount} ${cuidadoresCount === 1 ? 'cuidador ativo' : 'cuidadores ativos'}`,
+    };
+  }, [redeCuidado]);
+
   return {
     profile: {
       user,
@@ -138,6 +147,7 @@ export function useUserProfile() {
       enderecoPrincipal,
       pontosTotais,
       redeCuidado,
+      familySummary,
     },
     modals: {
       ativo: modalAtivo,

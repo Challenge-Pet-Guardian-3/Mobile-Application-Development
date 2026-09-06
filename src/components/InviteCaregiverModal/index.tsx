@@ -104,6 +104,7 @@ export function InviteCaregiverModal({
       onClose={onClose}
       title="Convidar Familiar"
       subtitle="Vincule um membro da família para compartilhar a rotina do animal."
+      size="sm"
     >
       {visible ? (
         <InviteCaregiverBody

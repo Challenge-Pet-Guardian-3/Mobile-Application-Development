@@ -216,7 +216,13 @@ export function PetFormModal({
     : 'closed';
 
   return (
-    <BaseModal visible={visible} onClose={onClose} title={modalTitle} subtitle={modalSubtitle}>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title={modalTitle}
+      subtitle={modalSubtitle}
+      size="md"
+    >
       {visible ? (
         <PetFormBody
           key={formKey}

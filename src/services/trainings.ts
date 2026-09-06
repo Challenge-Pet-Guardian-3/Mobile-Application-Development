@@ -1,31 +1,5 @@
 import { http } from './http';
-import { TrainingLesson, TrainingTrack } from '../types/training';
-
-interface TrilhaApiResponse {
-  id: number;
-  nome: string;
-  descricao: string;
-  petId: number;
-}
-
-interface ModuloApiResponse {
-  id: number;
-  nome: string;
-  tempoConclusao: string;
-  descricao: string;
-  trilhaId: number;
-}
-
-interface AulaApiResponse {
-  id: number;
-  nome: string;
-  descricao: string;
-  pontosAula: number;
-  dificuldade: string;
-  conteudo: string;
-  concluida: boolean;
-  moduloId: number;
-}
+import { TrainingLesson, TrainingTrack, TrilhaApiResponse, ModuloApiResponse, AulaApiResponse } from '../types/training';
 
 export const TrainingService = {
   // Busca trilhas reais associadas a um pet na API Java de forma concorrente com Promise.all
@@ -109,8 +83,16 @@ export const TrainingService = {
     const numId = Number(licaoId);
     if (!isNaN(numId) && numId > 0) {
       const response = await http.patch<AulaApiResponse>(`/aulas/${numId}/concluir`);
-      return { pontosGanhos: response.data?.pontosAula || 25 };
+      return { pontosGanhos: response.data.pontosAula };
     }
     return { pontosGanhos: 25 };
+  },
+
+  // Desmarca aula chamando o endpoint dedicado PATCH /aulas/{id}/desmarcar
+  async desmarcarLicao(_trilhaId: string, licaoId: string): Promise<void> {
+    const numId = Number(licaoId);
+    if (!isNaN(numId) && numId > 0) {
+      await http.patch<AulaApiResponse>(`/aulas/${numId}/desmarcar`);
+    }
   },
 };
