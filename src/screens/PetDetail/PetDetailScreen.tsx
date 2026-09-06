@@ -11,6 +11,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
 import { PetAvatarCarousel } from '../../components/PetAvatarCarousel';
 import { PetHeaderCard } from '../../components/PetHeaderCard';
+import { PetPointsCard } from '../../components/PetPointsCard';
 import { CaregiverCard } from '../../components/CaregiverCard';
 import { PetHistoryList } from '../../components/PetHistoryList';
 import { PetHealthHistoryList } from '../../components/PetHealthHistoryList';
@@ -87,6 +88,13 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
               isResponsavelPrincipal={pet.isPrincipal}
               onEdit={modals.abrirEdicao}
               onDelete={actions.excluirPet}
+            />
+
+            {/* Card Gamificado de Pontos e Nível do Pet */}
+            <PetPointsCard
+              pontos={pet.pontos}
+              isLoading={status.isLoadingPontos}
+              petName={pet.active.nome}
             />
 
             {/* Rede de Cuidado / Cuidadores do Pet */}

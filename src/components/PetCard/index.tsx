@@ -8,10 +8,11 @@ interface PetCardProps {
   pet: PetResponse;
   isResponsavelPrincipal?: boolean;
   tarefasCount?: number;
+  pontosTotais?: number;
   onPress?: () => void;
 }
 
-export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: PetCardProps) {
+export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, pontosTotais, onPress }: PetCardProps) {
   return (
     <TouchableOpacity
       style={styles.card}
@@ -47,6 +48,12 @@ export function PetCard({ pet, isResponsavelPrincipal, tarefasCount, onPress }: 
             <Text style={[styles.badgeText, { color: colors.primary[600] }]}>
               {tarefasCount} {tarefasCount === 1 ? 'tarefa' : 'tarefas'}
             </Text>
+          </View>
+        ) : null}
+        {pontosTotais !== undefined ? (
+          <View style={[styles.badge, styles.xpBadge]}>
+            <MaterialCommunityIcons name="star" size={10} color={colors.warning[600]} />
+            <Text style={[styles.badgeText, styles.xpBadgeText]}>{pontosTotais} XP</Text>
           </View>
         ) : null}
       </View>
@@ -120,6 +127,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.neutral[600],
+  },
+  xpBadge: {
+    backgroundColor: colors.warning[50],
+    borderWidth: 1,
+    borderColor: colors.warning[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+  },
+  xpBadgeText: {
+    color: colors.warning[700],
+    fontWeight: '800',
   },
 });
 

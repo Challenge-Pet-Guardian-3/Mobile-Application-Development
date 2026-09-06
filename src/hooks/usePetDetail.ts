@@ -4,6 +4,7 @@ import { useSession } from './useSession';
 import {
   usePets,
   usePetHistory,
+  usePetPontos,
   useUpdatePet,
   useDeletePet,
   usePetCaregivers,
@@ -56,6 +57,9 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
 
   // Histórico consolidado de rotina do pet na API Java (GET /pets/{id}/historico)
   const { data: historyData, isLoading: isLoadingHistory, refetch: refetchHistory } = usePetHistory(activePet?.id);
+
+  // Pontuação e XP acumulado do pet (GET /pets/{id}/pontos)
+  const { data: pontosData, isLoading: isLoadingPontos, refetch: refetchPontos } = usePetPontos(activePet?.id);
 
   // Prontuário de Saúde e Eventos Clínicos do pet (GET /historicos/pet/{petId})
   const {
@@ -420,11 +424,13 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
       isLoadingHistory,
       isLoadingHistoricos,
       isLoadingCaregivers,
+      isLoadingPontos,
       refetchAll: () => {
         refetchPets();
         refetchHistory();
         refetchHistoricos();
         refetchCaregivers();
+        refetchPontos();
       },
     },
     pet: {
@@ -439,6 +445,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
       caregiversCount: caregivers.length || 1,
       historicos,
       historyData,
+      pontos: pontosData,
     },
     modals,
     actions: {

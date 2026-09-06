@@ -1,7 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
+import { useQueries } from '@tanstack/react-query';
 import { useSession } from './useSession';
 import { usePets, useCreatePet, useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
+import { PetService } from '../services/pets';
+import { queryKeys } from '../lib/queryKeys';
 import {
   useUserTasks,
   useTasks,
@@ -55,6 +58,27 @@ export function useFamilyCare() {
   const { data: globalTasksData } = useTasks(0, 100);
   const { data: redeCuidadoData, isLoading: isLoadingRede, isFetching: isFetchingRede, refetch: refetchRede } = useRedeCuidado(user?.id);
 
+  const pets: PetResponse[] = petsData?.content || [];
+
+  // Busca pontuação individual de cada pet da família em paralelo
+  const pontosQueries = useQueries({
+    queries: pets.map((p) => ({
+      queryKey: queryKeys.pets.pontos(p.id),
+      queryFn: () => PetService.getPetPontos(p.id),
+      enabled: !!p.id,
+    })),
+  });
+
+  const pontosMap = useMemo(() => {
+    const map = new Map<number, number>();
+    pontosQueries.forEach((q) => {
+      if (q.data) {
+        map.set(q.data.petId, q.data.pontosTotais);
+      }
+    });
+    return map;
+  }, [pontosQueries]);
+
   // Mutations
   const createPetMutation = useCreatePet();
   const createTaskMutation = useCreateTask();
@@ -66,7 +90,6 @@ export function useFamilyCare() {
   const removeCaregiverMutation = useRemoveCaregiver();
   const transferResponsibilityMutation = useTransferResponsibility();
 
-  const pets: PetResponse[] = petsData?.content || [];
   const allTasks: TarefaResponse[] = user?.id
     ? userTasksData?.content || []
     : globalTasksData?.content || [];
@@ -259,9 +282,10 @@ export function useFamilyCare() {
         ...p,
         isResponsavelPrincipal: resumo?.responsavelPrincipal ?? true,
         tarefasCount: resumo?.tarefaIds.length,
+        pontosTotais: pontosMap.get(p.id),
       };
     }),
-    [pets, petsResumoMap]
+    [pets, petsResumoMap, pontosMap]
   );
 
   const coCuidadoresFormatados = useMemo(
@@ -308,6 +332,7 @@ export function useFamilyCare() {
         refetchPets();
         refetchTasks();
         refetchRede();
+        pontosQueries.forEach((q) => q.refetch());
       },
     },
     family: {

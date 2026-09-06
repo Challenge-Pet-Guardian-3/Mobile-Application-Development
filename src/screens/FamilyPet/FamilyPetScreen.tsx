@@ -78,6 +78,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
                   pet={pet}
                   isResponsavelPrincipal={pet.isResponsavelPrincipal}
                   tarefasCount={pet.tarefasCount}
+                  pontosTotais={pet.pontosTotais}
                   onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
                 />
               ))}
