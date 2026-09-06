@@ -110,42 +110,74 @@ export default function AiAssistantScreen() {
           </View>
         )}
 
-        {/* Insights Preventivos Automáticos */}
-        <View style={styles.insightsSection}>
-          <View style={styles.insightsHeader}>
-            <MaterialCommunityIcons name="lightbulb-on-outline" size={18} color="#2563EB" />
-            <Text style={styles.insightsTitle}>Recomendações Preventivas</Text>
-          </View>
+        {/* Insights Preventivos Automáticos (Renderizados se disponíveis) */}
+        {(insights.isLoading || insights.data.length > 0) && (
+          <View style={styles.insightsSection}>
+            <View style={styles.insightsHeader}>
+              <MaterialCommunityIcons name="lightbulb-on-outline" size={18} color="#2563EB" />
+              <Text style={styles.insightsTitle}>Recomendações Preventivas</Text>
+            </View>
 
-          {insights.isLoading ? (
-            <LoadingSpinner message="Analisando histórico..." size="small" />
-          ) : (
-            insights.data.map((ins, idx) => (
-              <View key={idx} style={styles.insightCard}>
-                <Text style={styles.insightCardTitle}>{ins.titulo}</Text>
-                <Text style={styles.insightCardDesc}>{ins.descricao}</Text>
-              </View>
-            ))
-          )}
-        </View>
+            {insights.isLoading ? (
+              <LoadingSpinner message="Analisando histórico..." size="small" />
+            ) : (
+              insights.data.map((ins, idx) => (
+                <View key={idx} style={styles.insightCard}>
+                  <Text style={styles.insightCardTitle}>{ins.titulo}</Text>
+                  <Text style={styles.insightCardDesc}>{ins.descricao}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
 
         {/* Histórico do Chat */}
         <View style={styles.chatSection}>
           <Text style={styles.chatSectionTitle}>Conversa com a IA</Text>
+
+          {chat.messages.length === 0 && !chat.isSending && (
+            <View style={styles.emptyChatWrapper}>
+              <View style={styles.emptyChatIconBg}>
+                <MaterialCommunityIcons name="chat-processing-outline" size={28} color="#2563EB" />
+              </View>
+              <Text style={styles.emptyChatTitle}>Como a Guardian AI pode ajudar hoje?</Text>
+              <Text style={styles.emptyChatDesc}>
+                Envie perguntas sobre alimentação, vacinas, primeiros socorros ou rotina de cuidados do seu pet.
+              </Text>
+            </View>
+          )}
+
           {chat.messages.map((msg) => {
             const isUser = msg.sender === 'user';
+            const isError = msg.id.startsWith('err_') || msg.id.startsWith('ai_err_');
             return (
               <View
                 key={msg.id}
                 style={[styles.msgWrapper, isUser ? styles.msgUserWrapper : styles.msgAiWrapper]}
               >
                 {!isUser && (
-                  <View style={styles.aiAvatar}>
-                    <MaterialCommunityIcons name="robot" size={16} color="#2563EB" />
+                  <View style={[styles.aiAvatar, isError && styles.aiAvatarError]}>
+                    <MaterialCommunityIcons
+                      name={isError ? 'alert-circle-outline' : 'robot'}
+                      size={16}
+                      color={isError ? '#DC2626' : '#2563EB'}
+                    />
                   </View>
                 )}
-                <View style={[styles.msgBubble, isUser ? styles.msgBubbleUser : styles.msgBubbleAi]}>
-                  <Text style={[styles.msgText, isUser ? styles.msgTextUser : styles.msgTextAi]}>
+                <View
+                  style={[
+                    styles.msgBubble,
+                    isUser ? styles.msgBubbleUser : styles.msgBubbleAi,
+                    isError && styles.msgBubbleError,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.msgText,
+                      isUser ? styles.msgTextUser : styles.msgTextAi,
+                      isError && styles.msgTextError,
+                    ]}
+                  >
                     {msg.text}
                   </Text>
                   <Text style={[styles.msgTime, isUser ? styles.msgTimeUser : styles.msgTimeAi]}>
@@ -455,5 +487,49 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyChatWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    gap: 8,
+    marginVertical: 8,
+  },
+  emptyChatIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  emptyChatTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  emptyChatDesc: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
+  },
+  aiAvatarError: {
+    backgroundColor: '#FEF2F2',
+  },
+  msgBubbleError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  msgTextError: {
+    color: '#991B1B',
   },
 });

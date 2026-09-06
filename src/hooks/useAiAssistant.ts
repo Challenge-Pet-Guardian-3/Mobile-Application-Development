@@ -16,16 +16,10 @@ export function useAiInsights(pet?: PetResponse | null) {
 export function useAiChat(pet?: PetResponse | null) {
   const [messages, setMessages] = useState<AiMessage[]>([]);
 
+  // Inicia o chat limpo sem mensagens mock ou fictícias
   useEffect(() => {
-    setMessages([
-      {
-        id: `welcome_${pet?.id || 'generic'}`,
-        sender: 'assistant',
-        text: `Olá! Sou a Guardian AI. Como posso ajudar com os cuidados de ${pet ? pet.nome : 'seu pet'} hoje?`,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
-  }, [pet?.id, pet?.nome]);
+    setMessages([]);
+  }, [pet?.id]);
 
   const sendMutation = useMutation({
     mutationFn: (variables: { text: string; historico: AiMessage[] }) =>
@@ -39,7 +33,7 @@ export function useAiChat(pet?: PetResponse | null) {
         {
           id: `err_${Date.now()}`,
           sender: 'assistant',
-          text: 'Não foi possível se comunicar com o assistente de IA. Verifique se o microserviço Python da IA está em execução e tente novamente.',
+          text: '⚠️ Não foi possível se comunicar com os servidores da Guardian AI no momento. Isso pode ocorrer por oscilações temporárias de conexão ou inicialização do serviço em nuvem. Por favor, tente enviar sua mensagem novamente em instantes.',
           timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);

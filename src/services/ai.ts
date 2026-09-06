@@ -35,16 +35,7 @@ function formatPetContext(pet?: PetResponse | null): AiPetContextPayload | null 
 export const AiService = {
   // Consulta o microserviço Python para obter insights preventivos gerados por IA
   async getInsightsDoPet(pet?: PetResponse | null): Promise<AiPetInsight[]> {
-    if (!pet) {
-      return [
-        {
-          categoria: 'saude',
-          titulo: 'Selecione ou cadastre um pet',
-          descricao: 'Selecione um animal de estimação para receber orientações preventivas personalizadas por inteligência artificial.',
-          urgencia: 'baixa',
-        },
-      ];
-    }
+    if (!pet) return [];
 
     const petContext = formatPetContext(pet);
 
@@ -54,17 +45,11 @@ export const AiService = {
         return response.data.insights;
       }
     } catch {
-      // Caso ocorra falha de conexão com a API de IA
+      // Retorna array vazio em caso de instabilidade para não injetar dados mockados
+      return [];
     }
 
-    return [
-      {
-        categoria: 'saude',
-        titulo: 'Insights de IA em processamento',
-        descricao: `As recomendações inteligentes para ${pet.nome} serão atualizadas assim que houver conexão com o assistente de IA.`,
-        urgencia: 'baixa',
-      },
-    ];
+    return [];
   },
 
   // Envia a mensagem do tutor diretamente para a IA Generativa (Google Gemini 3.5 Flash Lite com histórico)
@@ -106,11 +91,11 @@ export const AiService = {
       // Exceção de rede ou indisponibilidade da IA
     }
 
-    // Retorna mensagem de erro de conexão com a IA quando o microserviço não responder
+    // Retorna mensagem de contingência profissional e amigável ao tutor
     return {
       id: `ai_err_${Date.now()}`,
       sender: 'assistant',
-      text: `Não foi possível se comunicar com o assistente de IA no momento. Verifique se o microserviço Python da IA está em execução (porta 8000) e tente novamente.`,
+      text: '⚠️ Não foi possível se comunicar com os servidores da Guardian AI no momento. Isso pode ocorrer por oscilações temporárias de conexão ou inicialização do serviço em nuvem. Por favor, tente enviar sua mensagem novamente em instantes.',
       timestamp: horaAtual,
       urgencia: 'BAIXA',
     };
