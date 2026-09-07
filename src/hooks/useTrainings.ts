@@ -1,50 +1,10 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TrainingService } from '../services/trainings';
-import { queryKeys } from '../lib/queryKeys';
 import { TrainingLesson, TrainingTrack } from '../types/training';
 import { usePets, usePetPontos } from './usePets';
 import { useSession } from './useSession';
 import { PetResponse } from '../types/pet';
-
-function useTrilhas(petId?: number, enabled = true) {
-  return useQuery({
-    queryKey: queryKeys.training.byPet(petId),
-    queryFn: () => (petId ? TrainingService.getTrilhas(petId) : Promise.resolve([])),
-    enabled: enabled && !!petId,
-  });
-}
-
-function useConcluirLicao() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ trilhaId, licaoId }: { trilhaId: string; licaoId: string }) =>
-      TrainingService.concluirLicao(trilhaId, licaoId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.training.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-    },
-  });
-}
-
-function useDesmarcarLicao() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ trilhaId, licaoId }: { trilhaId: string; licaoId: string }) =>
-      TrainingService.desmarcarLicao(trilhaId, licaoId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.training.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-    },
-  });
-}
+import { useTrilhas, useConcluirLicao, useDesmarcarLicao } from './useTrainingQueries';
 
 export function useTrainings() {
   const { user } = useSession();
@@ -79,7 +39,7 @@ export function useTrainings() {
   const [licaoSelecionada, setLicaoSelecionada] = useState<{
     trilhaId: string;
     licao: TrainingLesson;
-  } | null>(null);
+  } | undefined>(undefined);
 
   const concluirLicaoMutation = useConcluirLicao();
   const desmarcarLicaoMutation = useDesmarcarLicao();
@@ -97,7 +57,7 @@ export function useTrainings() {
         },
         {
           onSuccess: () => {
-            setLicaoSelecionada(null);
+            setLicaoSelecionada(undefined);
           },
           onError: () => {
             Alert.alert('Erro', 'Não foi possível desmarcar a lição na API.');
@@ -112,7 +72,7 @@ export function useTrainings() {
         },
         {
           onSuccess: () => {
-            setLicaoSelecionada(null);
+            setLicaoSelecionada(undefined);
           },
           onError: () => {
             Alert.alert('Erro', 'Não foi possível registrar a lição na API.');

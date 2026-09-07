@@ -296,13 +296,6 @@ export interface PetResponse {
   porte: PetPorte;
   sexo: string;
   castrado: boolean;
-  avatarId?: string;
-  peso?: string;
-  veterinario?: string;
-  alergias?: string;
-  medicamentos?: string;
-  ultimaVacina?: string;
-  ultimaConsulta?: string;
 }
 ```
 

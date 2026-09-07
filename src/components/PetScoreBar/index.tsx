@@ -43,8 +43,10 @@ export const PetScoreBar = memo(function PetScoreBar({
           <View style={styles.iconCircle}>
             <MaterialCommunityIcons name="heart-pulse" size={22} color={colors.primary[600]} />
           </View>
-          <View>
-            <Text style={styles.petTitle}>Bem-estar de {petName}</Text>
+          <View style={styles.titleWrapper}>
+            <Text style={styles.petTitle} numberOfLines={1} ellipsizeMode="tail">
+              Bem-estar de {petName}
+            </Text>
             <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
               <Text style={[styles.statusText, { color: statusCor }]}>{statusTexto}</Text>
             </View>
@@ -96,6 +98,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    marginRight: spacing.sm,
+  },
+  titleWrapper: {
+    flex: 1,
   },
   iconCircle: {
     width: 44,
@@ -104,6 +110,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   petTitle: {
     fontSize: 16,
@@ -131,6 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.warning[200],
+    flexShrink: 0,
   },
   pointsBadgeText: {
     color: colors.warning[600],

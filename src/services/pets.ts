@@ -12,7 +12,7 @@ export const PetService = {
   },
 
   // Lista pets: se usuarioId for informado, busca apenas os pets do usuário; caso contrário, busca todos
-  async getPets(usuarioId?: number | null, page = 0, size = 20): Promise<Page<PetResponse>> {
+  async getPets(usuarioId?: number, page = 0, size = 20): Promise<Page<PetResponse>> {
     if (usuarioId) {
       return this.getPetsPorUsuario(usuarioId, page, size);
     }

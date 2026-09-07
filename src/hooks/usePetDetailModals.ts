@@ -33,7 +33,7 @@ export function usePetDetailModals({
   const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
   const [modalConviteVisivel, setModalConviteVisivel] = useState(false);
   const [modalHistoricoVisivel, setModalHistoricoVisivel] = useState(false);
-  const [itemEdicaoHistorico, setItemEdicaoHistorico] = useState<HistoricoResponse | null>(null);
+  const [itemEdicaoHistorico, setItemEdicaoHistorico] = useState<HistoricoResponse | undefined>(undefined);
 
   const abrirEdicao = useCallback(() => {
     if (!activePet) return;
@@ -71,7 +71,7 @@ export function usePetDetailModals({
   );
 
   const handleAbrirNovoHistorico = useCallback(() => {
-    setItemEdicaoHistorico(null);
+    setItemEdicaoHistorico(undefined);
     setModalHistoricoVisivel(true);
   }, []);
 

@@ -5,7 +5,13 @@ import { queryKeys } from '../lib/queryKeys';
 import { AiMessage } from '../types/ai';
 import { PetResponse } from '../types/pet';
 
-export function useAiInsights(pet?: PetResponse | null) {
+export function useAiWarmup() {
+  useEffect(() => {
+    AiService.ping();
+  }, []);
+}
+
+export function useAiInsights(pet?: PetResponse) {
   return useQuery({
     queryKey: queryKeys.ai.insights(pet?.id),
     queryFn: () => AiService.getInsightsDoPet(pet),
@@ -13,10 +19,10 @@ export function useAiInsights(pet?: PetResponse | null) {
   });
 }
 
-export function useAiChat(pet?: PetResponse | null) {
+export function useAiChat(pet?: PetResponse) {
   const [messages, setMessages] = useState<AiMessage[]>([]);
 
-  // Inicia o chat limpo sem mensagens mock ou fictícias
+  // Inicia o chat limpo
   useEffect(() => {
     setMessages([]);
   }, [pet?.id]);

@@ -22,7 +22,7 @@ interface PetFormModalProps {
   title?: string;
   subtitle?: string;
   mode?: 'create' | 'edit';
-  initialData?: Partial<PetFormData> | null;
+  initialData?: Partial<PetFormData>;
   onSubmit: (data: PetFormData) => Promise<void> | void;
   isLoading?: boolean;
   submitButtonTitle?: string;
@@ -45,7 +45,7 @@ const PetFormBody = memo(function PetFormBody({
   buttonTitle,
 }: {
   onClose: () => void;
-  initialData?: Partial<PetFormData> | null;
+  initialData?: Partial<PetFormData>;
   onSubmit: (data: PetFormData) => Promise<void> | void;
   isLoading?: boolean;
   buttonTitle: string;

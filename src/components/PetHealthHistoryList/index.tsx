@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { HistoricoResponse } from '../../types/historico';
 import { formatarIsoParaBr } from '../../utils/petUtils';
+import { PaginationControls } from '../PaginationControls';
 
 export interface PetHealthHistoryListProps {
   historicos: HistoricoResponse[];
@@ -12,6 +13,7 @@ export interface PetHealthHistoryListProps {
   onAdd: () => void;
   onEdit: (item: HistoricoResponse) => void;
   onDelete: (item: HistoricoResponse) => void;
+  pageSize?: number;
 }
 
 export function PetHealthHistoryList({
@@ -20,7 +22,12 @@ export function PetHealthHistoryList({
   onAdd,
   onEdit,
   onDelete,
+  pageSize = 10,
 }: PetHealthHistoryListProps) {
+  const [currentPage, setCurrentPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(historicos.length / pageSize));
+  const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+  const displayedHistoricos = historicos.slice(safePage * pageSize, (safePage + 1) * pageSize);
   const getEventIcon = (tipo: string) => {
     const lower = tipo.toLowerCase();
     if (lower.includes('vacina')) return 'needle';
@@ -57,7 +64,7 @@ export function PetHealthHistoryList({
         </View>
       ) : (
         <View style={{ gap: 8 }}>
-          {historicos.map((item) => {
+          {displayedHistoricos.map((item) => {
             const iconName = getEventIcon(item.tipoHist);
             return (
               <View key={item.id} style={styles.item}>
@@ -99,6 +106,14 @@ export function PetHealthHistoryList({
           })}
         </View>
       )}
+
+      <PaginationControls
+        currentPage={safePage}
+        totalPages={totalPages}
+        totalElements={historicos.length}
+        onPageChange={setCurrentPage}
+        isLoading={isLoading}
+      />
     </View>
   );
 }

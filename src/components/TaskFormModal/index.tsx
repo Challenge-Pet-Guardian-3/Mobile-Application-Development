@@ -28,15 +28,15 @@ interface TaskFormModalProps {
   visible: boolean;
   onClose: () => void;
   pets: Array<{ id: number; nome: string }>;
-  initialPetId?: number | null;
+  initialPetId?: number;
   mode?: 'create' | 'edit';
-  initialData?: TaskFormData | null;
+  initialData?: TaskFormData;
   onSubmit: (data: TaskFormData) => Promise<void> | void;
   isLoading?: boolean;
 }
 
 interface TaskFormState {
-  petId: number | null;
+  petId?: number;
   titulo: string;
   descricao: string;
   pontos: string;
@@ -45,7 +45,7 @@ interface TaskFormState {
 }
 
 const INITIAL_TASK_FORM: TaskFormState = {
-  petId: null,
+  petId: undefined,
   titulo: '',
   descricao: '',
   pontos: '',
@@ -55,8 +55,8 @@ const INITIAL_TASK_FORM: TaskFormState = {
 
 function getInitialForm(
   mode: 'create' | 'edit',
-  initialData?: TaskFormData | null,
-  initialPetId?: number | null,
+  initialData?: TaskFormData,
+  initialPetId?: number,
   pets?: Array<{ id: number; nome: string }>
 ): TaskFormState {
   if (mode === 'edit' && initialData) {
@@ -78,7 +78,7 @@ function getInitialForm(
 
   return {
     ...INITIAL_TASK_FORM,
-    petId: initialPetId || (pets && pets.length > 0 ? pets[0].id : null),
+    petId: initialPetId ?? (pets && pets.length > 0 ? pets[0].id : undefined),
     prazo: obterPrazoFuturoPadraoBr(),
     status: 'PENDENTE',
   };

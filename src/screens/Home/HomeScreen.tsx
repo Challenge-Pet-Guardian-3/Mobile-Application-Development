@@ -126,7 +126,7 @@ export default function Home({ navigation }: HomeScreenProps) {
                       {pet.nome}
                     </Text>
                     <Text style={[styles.petPillBreed, isSelected && styles.petPillBreedSelected]} numberOfLines={1}>
-                      {pet.raca || 'Pet'}
+                      {pet.raca}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -162,6 +162,7 @@ export default function Home({ navigation }: HomeScreenProps) {
           countHoje={routine.todayTasks.length}
           countTodas={routine.allPetTasks.length}
           tasks={routine.current.tarefas}
+          pageSize={5}
           headerButton={{
             label: 'Gerenciar na Family',
             icon: 'chevron-forward',
@@ -175,7 +176,7 @@ export default function Home({ navigation }: HomeScreenProps) {
           onDeleteTask={taskModal.remove}
         />
 
-        {/* Atalho Rápido para a IA Assistente Preve        {/* Atalho Rápido para a IA Assistente Preventiva */}
+        {/* Atalho Rápido para a IA Assistente Preventiva */}
         <TouchableOpacity style={styles.shortcutCard} onPress={nav.toAi} activeOpacity={0.85}>
           <View style={[styles.shortcutIconBox, { backgroundColor: colors.primary[50] }]}>
             <MaterialCommunityIcons name="robot-outline" size={22} color={colors.primary[600]} />

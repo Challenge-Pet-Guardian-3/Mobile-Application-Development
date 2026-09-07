@@ -1,10 +1,14 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useSession } from './useSession';
-import { usePets, useCreatePet, useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
-import { PetService } from '../services/pets';
-import { queryKeys } from '../lib/queryKeys';
+import {
+  usePets,
+  usePetsPontosMap,
+  useCreatePet,
+  useInviteCaregiver,
+  useRemoveCaregiver,
+  useTransferResponsibility,
+} from './usePets';
 import {
   useUserTasks,
   useTasks,
@@ -44,7 +48,6 @@ function mutationCallbacks(title: string, defaultMsg: string, callbacks?: Action
 
 export function useFamilyCare() {
   const { user } = useSession();
-  const queryClient = useQueryClient();
 
   // Queries de dados da família e dos pets
   const { data: petsData, isLoading: isLoadingPets, isFetching: isFetchingPets, refetch: refetchPets } = usePets();
@@ -55,30 +58,14 @@ export function useFamilyCare() {
     refetch: refetchTasks,
   } = useUserTasks(user?.id, 0, 100, 'ALL');
 
-  // Fallback global de tarefas caso não haja usuário logado
-  const { data: globalTasksData } = useTasks(0, 100);
+  // Fallback global de tarefas apenas caso não haja usuário logado
+  const { data: globalTasksData } = useTasks(0, 100, !user?.id);
   const { data: redeCuidadoData, isLoading: isLoadingRede, isFetching: isFetchingRede, refetch: refetchRede } = useRedeCuidado(user?.id);
 
   const pets: PetResponse[] = petsData?.content || [];
 
-  // Busca pontuação individual de cada pet da família em paralelo com memoização nativa via combine
-  const pontosMap = useQueries({
-    queries: pets.map((p) => ({
-      queryKey: queryKeys.pets.pontos(p.id),
-      queryFn: () => PetService.getPetPontos(p.id),
-      enabled: !!p.id,
-      staleTime: 1000 * 60 * 2,
-    })),
-    combine: (results) => {
-      const map = new Map<number, number>();
-      results.forEach((q) => {
-        if (q.data) {
-          map.set(q.data.petId, q.data.pontosTotais);
-        }
-      });
-      return map;
-    },
-  });
+  // Busca pontuação individual de cada pet da família via hook dedicado do TanStack (usePetsPontosMap)
+  const pontosMap = usePetsPontosMap(pets);
 
   // Mutations
   const createPetMutation = useCreatePet();
@@ -289,6 +276,16 @@ export function useFamilyCare() {
     [pets, petsResumoMap, pontosMap]
   );
 
+  // Paginação dos animais da família (4 pets por página)
+  const PETS_PAGE_SIZE = 4;
+  const [petsPage, setPetsPage] = useState(0);
+  const petsTotalPages = Math.max(1, Math.ceil(petsComMetadados.length / PETS_PAGE_SIZE));
+  const safePetsPage = Math.min(petsPage, Math.max(0, petsTotalPages - 1));
+
+  const petsExibidos = useMemo(() => {
+    return petsComMetadados.slice(safePetsPage * PETS_PAGE_SIZE, (safePetsPage + 1) * PETS_PAGE_SIZE);
+  }, [petsComMetadados, safePetsPage]);
+
   const coCuidadoresFormatados = useMemo(
     () => coCuidadores.map((c) => ({
       ...c,
@@ -333,13 +330,19 @@ export function useFamilyCare() {
         refetchPets();
         refetchTasks();
         refetchRede();
-        queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
       },
     },
     family: {
       user,
       pets,
       petsComMetadados,
+      petsExibidos,
+      petsPagination: {
+        currentPage: safePetsPage,
+        totalPages: petsTotalPages,
+        totalElements: petsComMetadados.length,
+        onPageChange: setPetsPage,
+      },
       summary: familySummary,
       tasks: tasksExibidas,
       allTasks,

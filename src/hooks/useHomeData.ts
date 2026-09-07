@@ -33,7 +33,7 @@ function categorizarTarefas(lista: TarefaResponse[]) {
 export function useHomeData(navigation?: NativeStackNavigationProp<RootStackParamList>) {
   const { user } = useSession();
 
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
 
   const {
     data: petsData,
@@ -54,13 +54,13 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
     refetch: refetchUserTasks,
   } = useUserTasks(user?.id, 0, 100, 'ALL');
 
-  // Fallback para useTasks global caso user não esteja logado
+  // Fallback para useTasks global apenas caso user não esteja logado
   const {
     data: globalTasksData,
     isLoading: isLoadingGlobalTasks,
     isFetching: isFetchingGlobalTasks,
     refetch: refetchGlobalTasks,
-  } = useTasks(0, 100);
+  } = useTasks(0, 100, !user?.id);
 
   const isLoadingTasks = user?.id ? isLoadingUserTasks : isLoadingGlobalTasks;
   const isFetchingTasks = user?.id ? isFetchingUserTasks : isFetchingGlobalTasks;
@@ -245,7 +245,7 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
   const [filtroRotina, setFiltroRotina] = useState<'HOJE' | 'TODAS'>('HOJE');
 
   // Controle de Modal de Edição de Tarefas
-  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | undefined>(undefined);
 
   const handleToggleTarefa = useCallback(
     (taskId: number) => {
@@ -270,7 +270,7 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
   );
 
   const initialTaskData = useMemo(() => {
-    if (!tarefaEmEdicao) return null;
+    if (!tarefaEmEdicao) return undefined;
     return {
       petId: tarefaEmEdicao.petId,
       titulo: tarefaEmEdicao.titulo,
@@ -302,7 +302,7 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
   }, [filtroRotina, tarefasDoPetHoje, tarefasDoPet, metricasPetHoje, metricasPet]);
 
   const handleCloseEditModal = useCallback(() => {
-    setTarefaEmEdicao(null);
+    setTarefaEmEdicao(undefined);
   }, []);
 
   const handleSubmitEditModal = useCallback(

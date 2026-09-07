@@ -12,9 +12,9 @@ const pythonClient = axios.create({
   },
 });
 
-function formatPetContext(pet?: PetResponse | null): AiPetContextPayload | null {
-  if (!pet) return null;
-  const idadePet = calcularIdadePet(pet.dataNasc, pet.idade);
+function formatPetContext(pet?: PetResponse): AiPetContextPayload | undefined {
+  if (!pet) return undefined;
+  const idadePet = calcularIdadePet(pet.dataNasc);
   return {
     id: pet.id,
     nome: pet.nome,
@@ -24,11 +24,6 @@ function formatPetContext(pet?: PetResponse | null): AiPetContextPayload | null 
     idade: idadePet,
     sexo: pet.sexo,
     castrado: pet.castrado,
-    peso: pet.peso,
-    alergias: pet.alergias,
-    medicamentos: pet.medicamentos,
-    ultimaVacina: pet.ultimaVacina,
-    ultimaConsulta: pet.ultimaConsulta,
   };
 }
 
@@ -44,7 +39,7 @@ export const AiService = {
   },
 
   // Consulta o microserviço Python para obter insights preventivos gerados por IA
-  async getInsightsDoPet(pet?: PetResponse | null): Promise<AiPetInsight[]> {
+  async getInsightsDoPet(pet?: PetResponse): Promise<AiPetInsight[]> {
     if (!pet) return [];
 
     const petContext = formatPetContext(pet);
@@ -65,7 +60,7 @@ export const AiService = {
   // Envia a mensagem do tutor diretamente para a IA Generativa (Google Gemini 3.5 Flash Lite com histórico)
   async enviarMensagem(
     pergunta: string,
-    pet?: PetResponse | null,
+    pet?: PetResponse,
     historico?: AiMessage[]
   ): Promise<AiMessage> {
     const petContext = formatPetContext(pet);

@@ -9,5 +9,5 @@ export interface HistoricoResponse {
   tipoHist: string;
   dataHist: string; // ISO format
   petId: number;
-  nomePet?: string;
+  nomePet: string;
 }

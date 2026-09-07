@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
@@ -24,12 +25,22 @@ interface UserProfileScreenProps {
 }
 
 export default function UserProfileScreen({ navigation }: UserProfileScreenProps) {
-  const { profile, modals, actions } = useUserProfile();
+  const { status, profile, modals, actions } = useUserProfile();
   const { user, initials, enderecoPrincipal, pontosTotais, redeCuidado } = profile;
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={status.isFetching && !status.isLoading}
+            onRefresh={actions.refetch}
+            tintColor="#2563EB"
+          />
+        }
+      >
         <Header subtitle="Meu Perfil & Configurações" />
 
         {/* Card do Perfil do Usuário com Informações Detalhadas */}
@@ -37,7 +48,7 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
-          <Text style={styles.userName}>{user?.nome || 'Tutor Responsável'}</Text>
+          <Text style={styles.userName}>{user?.nome}</Text>
           {user?.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
 
           <View style={styles.roleBadgeBox}>
@@ -162,27 +173,13 @@ export default function UserProfileScreen({ navigation }: UserProfileScreenProps
             <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={actions.logout} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={actions.logout} activeOpacity={0.7}>
             <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuText, { color: '#EF4444' }]}>Encerrar Sessão (Logout)</Text>
               <Text style={styles.menuSubText}>Desconectar deste dispositivo</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.menuItem, { borderBottomWidth: 0 }]}
-            onPress={actions.excluirConta}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.menuIconWrapper, { backgroundColor: '#FEF2F2' }]}>
-              <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.menuText, { color: '#DC2626' }]}>Excluir Minha Conta</Text>
-              <Text style={styles.menuSubText}>Apagar todos os dados permanentemente</Text>
             </View>
           </TouchableOpacity>
         </View>

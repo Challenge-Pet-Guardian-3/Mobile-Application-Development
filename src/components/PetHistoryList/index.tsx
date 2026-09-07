@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { TarefaResponse } from '../../types/task';
+import { PaginationControls } from '../PaginationControls';
 
 export interface PetHistoryListProps {
   historico: TarefaResponse[];
   isLoading?: boolean;
+  pageSize?: number;
 }
 
-export function PetHistoryList({ historico, isLoading = false }: PetHistoryListProps) {
+export function PetHistoryList({
+  historico,
+  isLoading = false,
+  pageSize = 10,
+}: PetHistoryListProps) {
+  const [currentPage, setCurrentPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(historico.length / pageSize));
+  const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+  const displayedHistorico = historico.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
   const formatarDataConclusao = (dataStr?: string | null) => {
     if (!dataStr) return 'Concluído';
     try {
@@ -37,7 +48,7 @@ export function PetHistoryList({ historico, isLoading = false }: PetHistoryListP
           <Text style={styles.emptyHistorySub}>As rotinas concluídas na Home são sincronizadas aqui!</Text>
         </View>
       ) : (
-        historico.map((t) => (
+        displayedHistorico.map((t) => (
           <View key={t.id} style={styles.historyItem}>
             <View style={styles.historyItemIcon}>
               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
@@ -53,6 +64,14 @@ export function PetHistoryList({ historico, isLoading = false }: PetHistoryListP
           </View>
         ))
       )}
+
+      <PaginationControls
+        currentPage={safePage}
+        totalPages={totalPages}
+        totalElements={historico.length}
+        onPageChange={setCurrentPage}
+        isLoading={isLoading}
+      />
     </View>
   );
 }

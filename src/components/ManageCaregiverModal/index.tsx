@@ -16,7 +16,7 @@ import { BaseModal } from '../BaseModal';
 export interface ManageCaregiverModalProps {
   visible: boolean;
   onClose: () => void;
-  cuidador: CuidadorResumo | null;
+  cuidador?: CuidadorResumo;
   petsOndeSouPrincipal: PetResponse[];
   onTogglePetVinculo: (petId: number, isCurrentlyLinked: boolean) => void;
   onTransferirTitularidade: (petId: number, petNome: string) => void;

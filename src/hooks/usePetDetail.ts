@@ -37,7 +37,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
   const { data: petsData, isLoading: isLoadingPets, refetch: refetchPets } = usePets();
   const pets: PetResponse[] = petsData?.content || [];
 
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(routePetId || null);
+  const [selectedPetId, setSelectedPetId] = useState<number | undefined>(routePetId);
 
   useEffect(() => {
     if (routePetId) {
@@ -99,14 +99,14 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
 
   // Dados iniciais formatados para o modal de edição
   const initialPetData = useMemo(() => {
-    if (!activePet) return null;
+    if (!activePet) return undefined;
     return {
       nome: activePet.nome,
       raca: activePet.raca,
       dataNasc: formatarIsoParaBr(activePet.dataNasc),
-      porte: activePet.porte || 'MEDIO',
-      sexo: activePet.sexo || 'M',
-      castrado: activePet.castrado || false,
+      porte: activePet.porte,
+      sexo: activePet.sexo,
+      castrado: activePet.castrado,
     };
   }, [activePet]);
 
@@ -128,7 +128,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
         return;
       }
 
-      const dataNasc = normalizarDataNascParaIso(formData.dataNasc || activePet.dataNasc || '');
+      const dataNasc = normalizarDataNascParaIso(formData.dataNasc);
 
       updatePetMutation.mutate(
         {
@@ -179,7 +179,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
                 { id: activePet.id, usuarioId: user?.id },
                 {
                   onSuccess: () => {
-                    setSelectedPetId(null);
+                    setSelectedPetId(undefined);
                     callbacks?.onSuccess?.();
                   },
                   onError: (err) => {
@@ -442,7 +442,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
       initialData: initialPetData,
       editTitle,
       caregivers: caregiversWithActions,
-      caregiversCount: caregivers.length || 1,
+      caregiversCount: caregivers.length,
       historicos,
       historyData,
       pontos: pontosData,

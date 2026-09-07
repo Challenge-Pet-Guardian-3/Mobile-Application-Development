@@ -29,11 +29,6 @@ export interface AiPetContextPayload {
   idade?: number;
   sexo?: string;
   castrado?: boolean;
-  peso?: string;
-  alergias?: string;
-  medicamentos?: string;
-  ultimaVacina?: string;
-  ultimaConsulta?: string;
 }
 
 export interface AiMessageHistoricoItem {
@@ -43,7 +38,7 @@ export interface AiMessageHistoricoItem {
 
 export interface AiChatRequestPayload {
   pergunta: string;
-  petContext?: AiPetContextPayload | null;
+  petContext?: AiPetContextPayload;
   historico?: AiMessageHistoricoItem[];
   sessionId?: string;
 }

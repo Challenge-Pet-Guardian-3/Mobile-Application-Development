@@ -12,7 +12,7 @@ import { BaseModal } from '../BaseModal';
 
 interface LessonDetailModalProps {
   visible: boolean;
-  licao: TrainingLesson | null;
+  licao?: TrainingLesson;
   corTrilha?: string;
   isConcluindo: boolean;
   onClose: () => void;

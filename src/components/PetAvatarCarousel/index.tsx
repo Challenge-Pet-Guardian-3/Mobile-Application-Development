@@ -5,7 +5,7 @@ import { PetResponse } from '../../types/pet';
 
 export interface PetAvatarCarouselProps {
   pets: PetResponse[];
-  selectedPetId?: number | null;
+  selectedPetId?: number;
   onSelectPet: (petId: number) => void;
 }
 

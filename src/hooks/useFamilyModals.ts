@@ -17,7 +17,7 @@ export type FamilyModalType =
   | null;
 
 interface UseFamilyModalsProps {
-  user: UsuarioResponse | null;
+  user?: UsuarioResponse | null;
   petsOndeSouPrincipal: PetResponse[];
   cadastrarTarefa: (data: TaskFormData, callbacks?: ActionCallbacks) => void;
   atualizarTarefa: (taskId: number, data: TaskFormData, callbacks?: ActionCallbacks) => void;
@@ -36,8 +36,8 @@ export function useFamilyModals({
   transferResponsibilityMutation,
 }: UseFamilyModalsProps) {
   const [modalAtivo, setModalAtivo] = useState<FamilyModalType>(null);
-  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | null>(null);
-  const [cuidadorEmGestao, setCuidadorEmGestao] = useState<CuidadorResumo | null>(null);
+  const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | undefined>(undefined);
+  const [cuidadorEmGestao, setCuidadorEmGestao] = useState<CuidadorResumo | undefined>(undefined);
 
   const handleAbrirConvite = useCallback(() => {
     if (petsOndeSouPrincipal.length === 0) return;
@@ -55,7 +55,7 @@ export function useFamilyModals({
 
   const handleFecharGerenciamento = useCallback(() => {
     setModalAtivo(null);
-    setCuidadorEmGestao(null);
+    setCuidadorEmGestao(undefined);
   }, []);
 
   const handleTogglePetVinculo = useCallback(
@@ -68,7 +68,7 @@ export function useFamilyModals({
           {
             onSuccess: () => {
               setCuidadorEmGestao((prev) =>
-                prev ? { ...prev, petIds: prev.petIds.filter((id) => id !== petId) } : null
+                prev ? { ...prev, petIds: prev.petIds.filter((id) => id !== petId) } : undefined
               );
             },
             onError: (err) => {
@@ -82,7 +82,7 @@ export function useFamilyModals({
           {
             onSuccess: () => {
               setCuidadorEmGestao((prev) =>
-                prev ? { ...prev, petIds: [...prev.petIds, petId] } : null
+                prev ? { ...prev, petIds: [...prev.petIds, petId] } : undefined
               );
             },
             onError: (err) => {
@@ -149,7 +149,7 @@ export function useFamilyModals({
   }, []);
 
   const initialTaskData = useMemo(() => {
-    if (!tarefaEmEdicao) return null;
+    if (!tarefaEmEdicao) return undefined;
     return {
       petId: tarefaEmEdicao.petId,
       titulo: tarefaEmEdicao.titulo,
@@ -163,7 +163,7 @@ export function useFamilyModals({
 
   const handleCloseTaskModal = useCallback(() => {
     setModalAtivo(null);
-    setTarefaEmEdicao(null);
+    setTarefaEmEdicao(undefined);
   }, []);
 
   const handleSubmitTaskModal = useCallback(
@@ -187,7 +187,7 @@ export function useFamilyModals({
     fechar: () => setModalAtivo(null),
     abrirNovoPet: () => setModalAtivo('novoPet'),
     abrirNovaTarefa: () => {
-      setTarefaEmEdicao(null);
+      setTarefaEmEdicao(undefined);
       setModalAtivo('novaTarefa');
     },
     abrirEditarTarefa: handleEditTask,

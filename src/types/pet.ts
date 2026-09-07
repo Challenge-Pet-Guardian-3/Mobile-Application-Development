@@ -10,24 +10,16 @@ export interface PetRequest {
   sexo: string; // 'M' | 'F'
   castrado: boolean;
   usuarioId: number;
-  idade?: number;
 }
 
 export interface PetResponse {
   id: number;
   nome: string;
   dataNasc: string; // ISO format 'YYYY-MM-DD'
-  idade?: number;
   raca: string;
   porte: PetPorte;
   sexo: string;
   castrado: boolean;
-  peso?: string;
-  veterinario?: string;
-  alergias?: string;
-  medicamentos?: string;
-  ultimaVacina?: string;
-  ultimaConsulta?: string;
 }
 
 export interface PetHistoryResponse {

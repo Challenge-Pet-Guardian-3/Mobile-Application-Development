@@ -4,10 +4,11 @@ import { queryKeys } from '../lib/queryKeys';
 import { Page } from '../types/api';
 import { TarefaConclusaoRequest, TarefaRequest, TarefaResponse } from '../types/task';
 
-export function useTasks(page = 0, size = 50) {
+export function useTasks(page = 0, size = 50, enabled = true) {
   return useQuery({
     queryKey: queryKeys.tasks.list(page, size),
     queryFn: () => TaskService.getTarefas(page, size),
+    enabled,
   });
 }
 

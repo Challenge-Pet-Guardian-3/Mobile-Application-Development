@@ -27,7 +27,7 @@ export function PetHeaderCard({ pet, isResponsavelPrincipal = true, onEdit, onDe
           <Text style={styles.tagText}>Porte {pet.porte || 'MEDIO'}</Text>
         </View>
         <View style={styles.tagBadge}>
-          <Text style={styles.tagText}>{formatarIdadePet(pet.dataNasc, pet.idade)}</Text>
+          <Text style={styles.tagText}>{formatarIdadePet(pet.dataNasc)}</Text>
         </View>
         <View style={styles.tagBadge}>
           <Text style={styles.tagText}>{pet.sexo === 'M' ? 'Macho' : 'Fêmea'}</Text>

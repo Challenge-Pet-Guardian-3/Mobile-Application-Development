@@ -10,7 +10,7 @@ export interface PetOption {
 export interface PetSelectorProps {
   label?: string;
   pets: PetOption[];
-  selectedPetId: number | null;
+  selectedPetId?: number;
   onSelectPet: (petId: number) => void;
   containerStyle?: ViewStyle;
 }

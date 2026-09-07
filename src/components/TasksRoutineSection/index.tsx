@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
@@ -6,6 +6,7 @@ import { TarefaResponse } from '../../types/task';
 import { PetResponse } from '../../types/pet';
 import { RoutineCard } from '../RoutineCard';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { PaginationControls } from '../PaginationControls';
 
 export interface HeaderActionButton {
   label: string;
@@ -29,6 +30,14 @@ export interface TasksRoutineSectionProps {
   onToggleTask?: (taskId: number) => void;
   onEditTask?: (task: TarefaResponse) => void;
   onDeleteTask?: (taskId: number) => void;
+  pageSize?: number;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalElements?: number;
+    onPageChange: (newPage: number) => void;
+    isLoading?: boolean;
+  };
 }
 
 export const TasksRoutineSection = memo(function TasksRoutineSection({
@@ -46,7 +55,39 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
   onToggleTask,
   onEditTask,
   onDeleteTask,
+  pageSize,
+  pagination,
 }: TasksRoutineSectionProps) {
+  const [internalPage, setInternalPage] = useState(0);
+
+  // Reseta para a primeira página caso o filtro de visualização mude
+  useEffect(() => {
+    setInternalPage(0);
+  }, [filter]);
+
+  const effectivePageSize = pageSize;
+  const isInternalPagination = !!effectivePageSize && !pagination;
+
+  const totalPages = isInternalPagination
+    ? Math.max(1, Math.ceil(tasks.length / effectivePageSize))
+    : (pagination?.totalPages ?? 1);
+
+  const currentPage = isInternalPagination
+    ? Math.min(internalPage, Math.max(0, totalPages - 1))
+    : (pagination?.currentPage ?? 0);
+
+  const displayedTasks = isInternalPagination
+    ? tasks.slice(currentPage * effectivePageSize, (currentPage + 1) * effectivePageSize)
+    : tasks;
+
+  const paginationData = pagination ?? (isInternalPagination ? {
+    currentPage,
+    totalPages,
+    totalElements: tasks.length,
+    onPageChange: setInternalPage,
+    isLoading: false,
+  } : undefined);
+
   const getPetName = (petId: number): string | undefined => {
     if (!pets || pets.length === 0) return undefined;
     return pets.find((p) => p.id === petId)?.nome;
@@ -137,7 +178,7 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
         </View>
       ) : (
         <View style={styles.tasksList}>
-          {tasks.map((tarefa) => (
+          {displayedTasks.map((tarefa) => (
             <RoutineCard
               key={tarefa.id}
               tarefa={tarefa}
@@ -148,6 +189,16 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
             />
           ))}
         </View>
+      )}
+
+      {paginationData && (
+        <PaginationControls
+          currentPage={paginationData.currentPage}
+          totalPages={paginationData.totalPages}
+          totalElements={paginationData.totalElements}
+          onPageChange={paginationData.onPageChange}
+          isLoading={paginationData.isLoading}
+        />
       )}
     </View>
   );

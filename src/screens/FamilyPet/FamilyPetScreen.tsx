@@ -18,6 +18,7 @@ import { ManageCaregiverModal } from '../../components/ManageCaregiverModal';
 import { FamilySummaryCard } from '../../components/FamilySummaryCard';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { TasksRoutineSection } from '../../components/TasksRoutineSection';
+import { PaginationControls } from '../../components/PaginationControls';
 import { shadows } from '../../utils/shadow';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FamilyStackParamList } from '../../routes/types';
@@ -71,18 +72,27 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
               <Text style={styles.emptySub}>Clique no botão acima para adicionar o primeiro pet!</Text>
             </View>
           ) : (
-            <View style={styles.petsGrid}>
-              {family.petsComMetadados.map((pet) => (
-                <PetCard
-                  key={pet.id}
-                  pet={pet}
-                  isResponsavelPrincipal={pet.isResponsavelPrincipal}
-                  tarefasCount={pet.tarefasCount}
-                  pontosTotais={pet.pontosTotais}
-                  onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
-                />
-              ))}
-            </View>
+            <>
+              <View style={styles.petsGrid}>
+                {family.petsExibidos.map((pet) => (
+                  <PetCard
+                    key={pet.id}
+                    pet={pet}
+                    isResponsavelPrincipal={pet.isResponsavelPrincipal}
+                    tarefasCount={pet.tarefasCount}
+                    pontosTotais={pet.pontosTotais}
+                    onPress={() => navigation.navigate('PetDetail', { petId: pet.id })}
+                  />
+                ))}
+              </View>
+
+              <PaginationControls
+                currentPage={family.petsPagination.currentPage}
+                totalPages={family.petsPagination.totalPages}
+                totalElements={family.petsPagination.totalElements}
+                onPageChange={family.petsPagination.onPageChange}
+              />
+            </>
           )}
         </View>
 
@@ -96,6 +106,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
           countTodas={family.totalTarefasGeral}
           tasks={family.tasks}
           pets={family.pets}
+          pageSize={6}
           headerButton={{
             label: 'Nova Tarefa',
             icon: 'add',
@@ -141,7 +152,7 @@ export default function FamilyPetScreen({ navigation }: FamilyPetScreenProps) {
               nome={c.nome}
               email={c.email}
               roleText={c.roleText}
-              isPrincipal={c.responsavelPrincipal}
+              isPrincipal={false}
               onPress={
                 family.petsOndeSouPrincipal.length > 0
                   ? () => modals.abrirGerenciamento(c)

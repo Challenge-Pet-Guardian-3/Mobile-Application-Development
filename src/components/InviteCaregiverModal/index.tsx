@@ -15,7 +15,7 @@ interface InviteCaregiverModalProps {
   visible: boolean;
   onClose: () => void;
   pets: Array<{ id: number; nome: string }>;
-  initialPetId?: number | null;
+  initialPetId?: number;
   onSubmit: (data: InviteCaregiverData) => Promise<void> | void;
   isLoading?: boolean;
 }
@@ -29,7 +29,7 @@ const InviteCaregiverBody = memo(function InviteCaregiverBody({
 }: Omit<InviteCaregiverModalProps, 'visible'>) {
   const [form, setForm] = useState(() => ({
     email: '',
-    petId: initialPetId || (pets.length > 0 ? pets[0].id : null),
+    petId: initialPetId ?? (pets.length > 0 ? pets[0].id : 0),
   }));
 
   const handleEmailChange = useCallback((email: string) => {

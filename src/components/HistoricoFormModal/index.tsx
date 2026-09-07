@@ -22,7 +22,7 @@ interface HistoricoFormModalProps {
     id?: number;
     tipoHist?: string;
     dataHist?: string;
-  } | null;
+  };
   onSubmit: (data: HistoricoFormSubmitData) => Promise<void> | void;
   isLoading?: boolean;
 }

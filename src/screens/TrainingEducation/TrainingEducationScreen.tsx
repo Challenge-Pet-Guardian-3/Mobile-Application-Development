@@ -182,10 +182,10 @@ export default function TrainingEducationScreen() {
       {/* Modal de Lição Interativa Duolingo */}
       <LessonDetailModal
         visible={!!trail.licaoSelecionada}
-        licao={trail.licaoSelecionada?.licao ?? null}
+        licao={trail.licaoSelecionada?.licao}
         corTrilha={trilhaAtual?.cor}
         isConcluindo={status.isConcluindo}
-        onClose={() => trail.setLicaoSelecionada(null)}
+        onClose={() => trail.setLicaoSelecionada(undefined)}
         onConcluir={actions.concluirLicao}
       />
     </View>

@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PetService } from '../services/pets';
 import { queryKeys } from '../lib/queryKeys';
-import { PetRequest } from '../types/pet';
+import { PetRequest, PetResponse } from '../types/pet';
 import { useSession } from './useSession';
 
-export function usePets(usuarioId?: number | null, page = 0, size = 20) {
+export function usePets(usuarioId?: number, page = 0, size = 20) {
   const { user } = useSession();
   const effectiveUserId = usuarioId !== undefined ? usuarioId : user?.id;
 
@@ -37,6 +37,48 @@ export function usePetPontos(id?: number) {
     queryKey: queryKeys.pets.pontos(id),
     queryFn: () => (id ? PetService.getPetPontos(id) : Promise.reject(new Error('ID não fornecido'))),
     enabled: !!id,
+  });
+}
+
+export function usePetsPontosMap(pets: PetResponse[]) {
+  return useQueries({
+    queries: pets.map((p) => ({
+      queryKey: queryKeys.pets.pontos(p.id),
+      queryFn: () => PetService.getPetPontos(p.id),
+      enabled: !!p.id,
+      staleTime: 1000 * 60 * 2,
+    })),
+    combine: (results) => {
+      const map = new Map<number, number>();
+      results.forEach((q) => {
+        if (q.data) {
+          map.set(q.data.petId, q.data.pontosTotais);
+        }
+      });
+      return map;
+    },
+  });
+}
+
+export function usePetsPontosTotais(pets: PetResponse[]) {
+  return useQueries({
+    queries: pets.map((p) => ({
+      queryKey: queryKeys.pets.pontos(p.id),
+      queryFn: () => PetService.getPetPontos(p.id),
+      enabled: !!p.id,
+      staleTime: 1000 * 60 * 2,
+    })),
+    combine: (results) => {
+      let total = 0;
+      let hasData = false;
+      results.forEach((q) => {
+        if (q.data?.pontosTotais !== undefined) {
+          total += q.data.pontosTotais;
+          hasData = true;
+        }
+      });
+      return hasData ? total : undefined;
+    },
   });
 }
 

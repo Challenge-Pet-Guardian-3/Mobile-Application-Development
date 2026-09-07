@@ -32,7 +32,7 @@ export default function PetDetailScreen({ route, navigation }: PetDetailScreenPr
   const { user } = useSession();
 
   const handleGoBack = useCallback(() => {
-    navigation.goBack();
+    navigation.navigate('FamilyMain');
   }, [navigation]);
 
   const { status, pet, modals, actions } = usePetDetail(routePetId, handleGoBack);
