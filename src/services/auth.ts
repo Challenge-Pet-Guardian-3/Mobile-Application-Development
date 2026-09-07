@@ -1,12 +1,11 @@
 import { http } from './http';
 import { StorageService } from './storage';
-import { UsuarioRequest, UsuarioResponse } from '../types/user';
+import { UsuarioResponse } from '../types/user';
 import { LoginCredentials, LoginResponse, RegisterCredentials } from '../types/auth';
 
 export const AuthService = {
-  // Realiza o cadastro do tutor
   async register(data: RegisterCredentials): Promise<UsuarioResponse> {
-    const payload: UsuarioRequest = {
+    const { data: usuario } = await http.post<UsuarioResponse>('/usuarios', {
       nome: data.nome.trim(),
       email: data.email.trim().toLowerCase(),
       senha: data.senha,
@@ -17,50 +16,40 @@ export const AuthService = {
         cep: data.cep.replace(/\D/g, ''),
         numero: data.numero.trim(),
       },
-    };
-
-    const response = await http.post<UsuarioResponse>('/usuarios', payload);
-    return response.data;
+    });
+    return usuario;
   },
 
-  // Realiza login no Spring Security (POST /login)
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const emailFormatado = credentials.email.trim().toLowerCase();
-
-    const response = await http.post<LoginResponse>('/login', {
-      email: emailFormatado,
+    const email = credentials.email.trim().toLowerCase();
+    const { data } = await http.post<LoginResponse>('/login', {
+      email,
       senha: credentials.senha,
     });
 
-    const { user, token } = response.data;
-    await StorageService.saveToken(token);
-    await StorageService.saveUser(user);
-    return { user, token };
+    await StorageService.saveAuth(data.token, email);
+    return data;
   },
 
-  // Recupera a sessão atual (Token Seguro + Usuário)
   async getStoredSession(): Promise<{ user: UsuarioResponse | null; token: string | null }> {
-    try {
-      const [token, user] = await Promise.all([
-        StorageService.getToken(),
-        StorageService.getUser(),
-      ]);
+    const [token, email] = await Promise.all([
+      StorageService.getToken(),
+      StorageService.getEmail(),
+    ]);
 
-      if (token && user) {
-        return { user, token };
-      }
-    } catch (e) {
-      console.warn('[AuthService] Erro ao recuperar sessão do storage:', e);
+    if (!token || !email) return { user: null, token: null };
+
+    try {
+      const { data: user } = await http.get<UsuarioResponse>('/usuarios/by-email', {
+        params: { email },
+      });
+      return { user, token };
+    } catch {
+      return { user: null, token: null };
     }
-    return { user: null, token: null };
   },
 
-  // Finaliza a sessão limpando os tokens seguros e dados locais
   async logout(): Promise<void> {
-    try {
-      await StorageService.clearAuthSession();
-    } catch (e) {
-      console.warn('[AuthService] Erro no logout:', e);
-    }
+    await StorageService.clearAuthSession();
   },
 };
