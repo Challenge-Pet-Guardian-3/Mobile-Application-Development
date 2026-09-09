@@ -49,3 +49,12 @@ export interface PetPontuacaoResponse {
   pontosAulas: number;
   pontosTotais: number;
 }
+
+export interface PetFormData {
+  nome: string;
+  raca: string;
+  dataNasc: string;
+  porte: PetPorte;
+  sexo: string;
+  castrado: boolean;
+}

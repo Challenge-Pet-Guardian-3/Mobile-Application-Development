@@ -1,12 +1,14 @@
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { TarefaResponse } from '../../types/task';
 import { PetResponse } from '../../types/pet';
-import { RoutineCard } from '../RoutineCard';
+import { RoutineCard } from './RoutineCard';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { PaginationControls } from '../PaginationControls';
+
+export { RoutineCard } from './RoutineCard';
 
 export interface HeaderActionButton {
   label: string;
@@ -15,21 +17,25 @@ export interface HeaderActionButton {
   onPress: () => void;
 }
 
-export interface TasksRoutineSectionProps {
-  title: string;
+export interface TasksRoutineData {
+  title?: string;
   subtitle?: string;
   filter: 'HOJE' | 'TODAS';
   onFilterChange: (filter: 'HOJE' | 'TODAS') => void;
   countHoje: number;
   countTodas: number;
   tasks: TarefaResponse[];
+  onToggleTask?: (taskId: number) => void;
+  onEditTask?: (task: TarefaResponse) => void;
+  onDeleteTask?: (taskId: number) => void;
+}
+
+export interface TasksRoutineSectionProps extends Partial<TasksRoutineData> {
+  routineData?: TasksRoutineData;
   pets?: PetResponse[];
   headerButton?: HeaderActionButton;
   emptyTitle?: string;
   emptyDesc?: string;
-  onToggleTask?: (taskId: number) => void;
-  onEditTask?: (task: TarefaResponse) => void;
-  onDeleteTask?: (taskId: number) => void;
   pageSize?: number;
   pagination?: {
     currentPage: number;
@@ -40,36 +46,41 @@ export interface TasksRoutineSectionProps {
   };
 }
 
-export const TasksRoutineSection = memo(function TasksRoutineSection({
-  title,
-  subtitle,
-  filter,
-  onFilterChange,
-  countHoje,
-  countTodas,
-  tasks,
-  pets,
-  headerButton,
-  emptyTitle,
-  emptyDesc,
-  onToggleTask,
-  onEditTask,
-  onDeleteTask,
-  pageSize,
-  pagination,
-}: TasksRoutineSectionProps) {
+export const TasksRoutineSection = memo(function TasksRoutineSection(props: TasksRoutineSectionProps) {
+  const {
+    routineData,
+    pets,
+    headerButton,
+    emptyTitle,
+    emptyDesc,
+    pageSize = 5,
+    pagination,
+  } = props;
+
+  const data = routineData ?? props;
+  const effectiveFilter = data.filter ?? 'HOJE';
+  const effectiveOnFilterChange = data.onFilterChange ?? (() => {});
+  const effectiveTitle = data.title ?? (effectiveFilter === 'HOJE' ? 'Rotina de Hoje' : 'Todas as Tarefas');
+  const effectiveSubtitle = data.subtitle;
+  const effectiveCountHoje = data.countHoje ?? 0;
+  const effectiveCountTodas = data.countTodas ?? 0;
+  const effectiveTasks = data.tasks ?? [];
+  const effectiveOnToggle = data.onToggleTask;
+  const effectiveOnEdit = data.onEditTask;
+  const effectiveOnDelete = data.onDeleteTask;
+
   const [internalPage, setInternalPage] = useState(0);
 
   // Reseta para a primeira página caso o filtro de visualização mude
   useEffect(() => {
     setInternalPage(0);
-  }, [filter]);
+  }, [effectiveFilter]);
 
   const effectivePageSize = pageSize;
   const isInternalPagination = !!effectivePageSize && !pagination;
 
   const totalPages = isInternalPagination
-    ? Math.max(1, Math.ceil(tasks.length / effectivePageSize))
+    ? Math.max(1, Math.ceil(effectiveTasks.length / effectivePageSize))
     : (pagination?.totalPages ?? 1);
 
   const currentPage = isInternalPagination
@@ -77,56 +88,52 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
     : (pagination?.currentPage ?? 0);
 
   const displayedTasks = isInternalPagination
-    ? tasks.slice(currentPage * effectivePageSize, (currentPage + 1) * effectivePageSize)
-    : tasks;
+    ? effectiveTasks.slice(currentPage * effectivePageSize, (currentPage + 1) * effectivePageSize)
+    : effectiveTasks;
 
   const paginationData = pagination ?? (isInternalPagination ? {
     currentPage,
     totalPages,
-    totalElements: tasks.length,
+    totalElements: effectiveTasks.length,
     onPageChange: setInternalPage,
     isLoading: false,
   } : undefined);
 
+  const petNameMap = useMemo(() => {
+    if (!pets?.length) return null;
+    return new Map(pets.map((p) => [p.id, p.nome]));
+  }, [pets]);
+
   const getPetName = (petId: number): string | undefined => {
-    if (!pets || pets.length === 0) return undefined;
-    return pets.find((p) => p.id === petId)?.nome;
+    return petNameMap?.get(petId);
   };
 
   const defaultEmptyTitle =
-    filter === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada';
+    effectiveFilter === 'HOJE' ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada';
   const defaultEmptyDesc =
-    filter === 'HOJE'
+    effectiveFilter === 'HOJE'
       ? 'Nenhuma tarefa agendada para hoje.'
       : 'Crie rotinas diárias para seu pet acumular pontos XP!';
+
+  const isLinkButton = headerButton?.variant === 'link';
 
   return (
     <View style={styles.sectionBox}>
       {/* Cabeçalho da Seção */}
       <View style={styles.sectionHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+          <Text style={styles.sectionTitle}>{effectiveTitle}</Text>
+          {effectiveSubtitle ? <Text style={styles.sectionSubtitle}>{effectiveSubtitle}</Text> : null}
         </View>
 
         {headerButton && (
           <TouchableOpacity
-            style={
-              headerButton.variant === 'link'
-                ? styles.headerButtonLink
-                : styles.headerButtonPrimary
-            }
+            style={isLinkButton ? styles.headerButtonLink : styles.headerButtonPrimary}
             onPress={headerButton.onPress}
             activeOpacity={0.7}
           >
             {headerButton.icon === 'add' && <Ionicons name="add" size={16} color={colors.neutral.white} />}
-            <Text
-              style={
-                headerButton.variant === 'link'
-                  ? styles.headerButtonLinkText
-                  : styles.headerButtonPrimaryText
-              }
-            >
+            <Text style={isLinkButton ? styles.headerButtonLinkText : styles.headerButtonPrimaryText}>
               {headerButton.label}
             </Text>
             {headerButton.icon === 'chevron-forward' && (
@@ -139,38 +146,38 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
       {/* Abas de Filtro: Hoje vs Todas */}
       <View style={styles.filterTabsRow}>
         <TouchableOpacity
-          style={[styles.filterTab, filter === 'HOJE' && styles.filterTabActive]}
-          onPress={() => onFilterChange('HOJE')}
+          style={[styles.filterTab, effectiveFilter === 'HOJE' && styles.filterTabActive]}
+          onPress={() => effectiveOnFilterChange('HOJE')}
           activeOpacity={0.7}
         >
           <MaterialCommunityIcons
             name="calendar-today"
             size={14}
-            color={filter === 'HOJE' ? colors.primary[600] : colors.neutral[500]}
+            color={effectiveFilter === 'HOJE' ? colors.primary[600] : colors.neutral[500]}
           />
-          <Text style={[styles.filterTabText, filter === 'HOJE' && styles.filterTabTextActive]}>
-            Hoje ({countHoje})
+          <Text style={[styles.filterTabText, effectiveFilter === 'HOJE' && styles.filterTabTextActive]}>
+            Hoje ({effectiveCountHoje})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.filterTab, filter === 'TODAS' && styles.filterTabActive]}
-          onPress={() => onFilterChange('TODAS')}
+          style={[styles.filterTab, effectiveFilter === 'TODAS' && styles.filterTabActive]}
+          onPress={() => effectiveOnFilterChange('TODAS')}
           activeOpacity={0.7}
         >
           <MaterialCommunityIcons
             name="format-list-bulleted"
             size={14}
-            color={filter === 'TODAS' ? colors.primary[600] : colors.neutral[500]}
+            color={effectiveFilter === 'TODAS' ? colors.primary[600] : colors.neutral[500]}
           />
-          <Text style={[styles.filterTabText, filter === 'TODAS' && styles.filterTabTextActive]}>
-            Todas ({countTodas})
+          <Text style={[styles.filterTabText, effectiveFilter === 'TODAS' && styles.filterTabTextActive]}>
+            Todas ({effectiveCountTodas})
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Conteúdo / Lista de Tarefas */}
-      {tasks.length === 0 ? (
+      {effectiveTasks.length === 0 ? (
         <View style={styles.emptyBox}>
           <MaterialCommunityIcons name="clipboard-check-outline" size={32} color={colors.neutral[300]} />
           <Text style={styles.emptyTitle}>{emptyTitle || defaultEmptyTitle}</Text>
@@ -183,9 +190,9 @@ export const TasksRoutineSection = memo(function TasksRoutineSection({
               key={tarefa.id}
               tarefa={tarefa}
               petNome={getPetName(tarefa.petId)}
-              onToggle={onToggleTask}
-              onEdit={onEditTask}
-              onDelete={onDeleteTask}
+              onToggle={effectiveOnToggle}
+              onEdit={effectiveOnEdit}
+              onDelete={effectiveOnDelete}
             />
           ))}
         </View>

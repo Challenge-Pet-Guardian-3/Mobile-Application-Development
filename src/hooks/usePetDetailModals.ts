@@ -1,10 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { PetResponse } from '../types/pet';
-import { HistoricoResponse } from '../types/historico';
-import { PetFormData } from '../components/PetFormModal';
-import { InviteCaregiverData } from '../components/InviteCaregiverModal';
-import { HistoricoFormSubmitData } from '../components/HistoricoFormModal';
+import { PetResponse, PetFormData } from '../types/pet';
+import { HistoricoResponse, HistoricoFormSubmitData } from '../types/historico';
+import { InviteCaregiverData } from '../types/user';
 import { ActionCallbacks } from './usePetDetail';
 
 interface UsePetDetailModalsProps {

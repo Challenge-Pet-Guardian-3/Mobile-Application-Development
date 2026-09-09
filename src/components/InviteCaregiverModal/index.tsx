@@ -6,10 +6,8 @@ import { CustomButton } from '../CustomButton';
 import { PetSelector } from '../PetSelector';
 import { InviteCaregiverSchema, formatZodError } from '../../utils/schemas';
 
-export interface InviteCaregiverData {
-  email: string;
-  petId: number;
-}
+import { InviteCaregiverData } from '../../types/user';
+export type { InviteCaregiverData };
 
 interface InviteCaregiverModalProps {
   visible: boolean;

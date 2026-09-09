@@ -1,4 +1,4 @@
-import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient, skipToken } from '@tanstack/react-query';
 import { PetService } from '../services/pets';
 import { queryKeys } from '../lib/queryKeys';
 import { PetRequest, PetResponse } from '../types/pet';
@@ -19,24 +19,21 @@ export function usePets(usuarioId?: number, page = 0, size = 20) {
 export function usePet(id?: number) {
   return useQuery({
     queryKey: queryKeys.pets.detail(id),
-    queryFn: () => (id ? PetService.getPetById(id) : Promise.reject(new Error('ID não fornecido'))),
-    enabled: !!id,
+    queryFn: id ? () => PetService.getPetById(id) : skipToken,
   });
 }
 
 export function usePetHistory(id?: number) {
   return useQuery({
     queryKey: queryKeys.pets.history(id),
-    queryFn: () => (id ? PetService.getPetHistory(id) : Promise.reject(new Error('ID não fornecido'))),
-    enabled: !!id,
+    queryFn: id ? () => PetService.getPetHistory(id) : skipToken,
   });
 }
 
 export function usePetPontos(id?: number) {
   return useQuery({
     queryKey: queryKeys.pets.pontos(id),
-    queryFn: () => (id ? PetService.getPetPontos(id) : Promise.reject(new Error('ID não fornecido'))),
-    enabled: !!id,
+    queryFn: id ? () => PetService.getPetPontos(id) : skipToken,
   });
 }
 

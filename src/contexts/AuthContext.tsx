@@ -38,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setToken(session.token);
         }
       } catch (error) {
-        console.warn('[AuthProvider] Falha ao carregar sessão:', error);
+        console.log('[AuthProvider] Falha ao carregar sessão:', error);
       } finally {
         setIsLoading(false);
       }

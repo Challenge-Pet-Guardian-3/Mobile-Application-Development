@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { useUpdateUser, useUserProfileData } from './useUsers';
-import { EditProfileFormData } from '../components/EditProfileModal';
+import { EditProfileFormData } from '../types/user';
 import { ProfileEditSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
 

@@ -11,7 +11,6 @@ import { useRedeCuidado } from './useRedeCuidado';
 
 export function useUserProfileData() {
   const { user } = useSession();
-  const queryClient = useQueryClient();
 
   const { data: petsData, isLoading: isLoadingPets, isFetching: isFetchingPets, refetch: refetchPets } = usePets();
   const { data: pontosTarefas, refetch: refetchPoints } = useUserPoints(user?.id);
@@ -29,8 +28,6 @@ export function useUserProfileData() {
 
   const refetchAll = async () => {
     await Promise.all([refetchPets(), refetchPoints(), refetchRede()]);
-    queryClient.invalidateQueries({ queryKey: queryKeys.pets.all });
-    queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
   };
 
   return {

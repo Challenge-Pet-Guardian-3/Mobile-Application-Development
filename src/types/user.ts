@@ -61,3 +61,19 @@ export interface RedeCuidadoResponse {
   totalTarefasConcluidas: number;
   pontosAcumulados: number;
 }
+
+export interface InviteCaregiverData {
+  email: string;
+  petId: number;
+}
+
+export interface EditProfileFormData {
+  nome: string;
+  email: string;
+  role: UsuarioRole;
+  ddd: string;
+  numeroTelefone: string;
+  cep: string;
+  numero: string;
+  senha?: string;
+}

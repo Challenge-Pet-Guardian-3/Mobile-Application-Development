@@ -5,19 +5,9 @@ import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
 import { RoleSelector } from '../RoleSelector';
-import { UsuarioRole } from '../../types/user';
+import { UsuarioRole, EditProfileFormData } from '../../types/user';
 import { ProfileEditSchema, formatZodError } from '../../utils/schemas';
-
-export interface EditProfileFormData {
-  nome: string;
-  email: string;
-  role: UsuarioRole;
-  ddd: string;
-  numeroTelefone: string;
-  cep: string;
-  numero: string;
-  senha?: string;
-}
+export type { EditProfileFormData };
 
 const INITIAL_PROFILE_FORM: EditProfileFormData = {
   nome: '',

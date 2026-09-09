@@ -1,9 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { PetResponse } from '../types/pet';
-import { TarefaResponse } from '../types/task';
+import { TarefaResponse, TaskFormData } from '../types/task';
 import { CuidadorResumo, UsuarioResponse } from '../types/user';
-import { TaskFormData } from '../components/TaskFormModal';
 import { ActionCallbacks } from './useFamilyCare';
 import { getApiErrorMessage } from '../utils/apiError';
 import { useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
@@ -21,9 +20,9 @@ interface UseFamilyModalsProps {
   petsOndeSouPrincipal: PetResponse[];
   cadastrarTarefa: (data: TaskFormData, callbacks?: ActionCallbacks) => void;
   atualizarTarefa: (taskId: number, data: TaskFormData, callbacks?: ActionCallbacks) => void;
-  inviteMutation: ReturnType<typeof useInviteCaregiver>;
-  removeCaregiverMutation: ReturnType<typeof useRemoveCaregiver>;
-  transferResponsibilityMutation: ReturnType<typeof useTransferResponsibility>;
+  inviteMutation?: ReturnType<typeof useInviteCaregiver>;
+  removeCaregiverMutation?: ReturnType<typeof useRemoveCaregiver>;
+  transferResponsibilityMutation?: ReturnType<typeof useTransferResponsibility>;
 }
 
 export function useFamilyModals({
@@ -31,10 +30,18 @@ export function useFamilyModals({
   petsOndeSouPrincipal,
   cadastrarTarefa,
   atualizarTarefa,
-  inviteMutation,
-  removeCaregiverMutation,
-  transferResponsibilityMutation,
+  inviteMutation: providedInvite,
+  removeCaregiverMutation: providedRemove,
+  transferResponsibilityMutation: providedTransfer,
 }: UseFamilyModalsProps) {
+  const defaultInvite = useInviteCaregiver();
+  const defaultRemove = useRemoveCaregiver();
+  const defaultTransfer = useTransferResponsibility();
+
+  const inviteMutation = providedInvite ?? defaultInvite;
+  const removeCaregiverMutation = providedRemove ?? defaultRemove;
+  const transferResponsibilityMutation = providedTransfer ?? defaultTransfer;
+
   const [modalAtivo, setModalAtivo] = useState<FamilyModalType>(null);
   const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | undefined>(undefined);
   const [cuidadorEmGestao, setCuidadorEmGestao] = useState<CuidadorResumo | undefined>(undefined);

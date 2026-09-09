@@ -4,17 +4,9 @@ import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomDateInput } from '../CustomDateInput';
 import { CustomButton } from '../CustomButton';
-import { PetPorte } from '../../types/pet';
+import { PetPorte, PetFormData } from '../../types/pet';
 import { PetSchema, formatZodError } from '../../utils/schemas';
-
-export interface PetFormData {
-  nome: string;
-  raca: string;
-  dataNasc: string;
-  porte: PetPorte;
-  sexo: string;
-  castrado: boolean;
-}
+export type { PetFormData };
 
 interface PetFormModalProps {
   visible: boolean;

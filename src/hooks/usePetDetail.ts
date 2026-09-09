@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useSession } from './useSession';
+import { useActivePet } from './useActivePet';
 import {
   usePets,
   usePetHistory,
@@ -19,8 +20,7 @@ import {
   useDeleteHistorico,
 } from './useHistoricos';
 import { usePetDetailModals } from './usePetDetailModals';
-import { PetFormData } from '../components/PetFormModal';
-import { CoCuidadorResponse, PetResponse } from '../types/pet';
+import { CoCuidadorResponse, PetResponse, PetFormData } from '../types/pet';
 import { normalizarDataNascParaIso, formatarIsoParaBr } from '../utils/petUtils';
 import { PetSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
@@ -37,23 +37,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
   const { data: petsData, isLoading: isLoadingPets, refetch: refetchPets } = usePets();
   const pets: PetResponse[] = petsData?.content || [];
 
-  const [selectedPetId, setSelectedPetId] = useState<number | undefined>(routePetId);
-
-  useEffect(() => {
-    if (routePetId) {
-      setSelectedPetId(routePetId);
-    }
-  }, [routePetId]);
-
-  // Resolução do pet ativo
-  const activePet: PetResponse | undefined = useMemo(() => {
-    if (pets.length === 0) return undefined;
-    if (selectedPetId) {
-      const found = pets.find((p) => p.id === selectedPetId);
-      if (found) return found;
-    }
-    return pets[0];
-  }, [pets, selectedPetId]);
+  const { activePet, selectedPetId, selectPet, setSelectedPetId } = useActivePet(pets, routePetId);
 
   // Histórico consolidado de rotina do pet na API Java (GET /pets/{id}/historico)
   const { data: historyData, isLoading: isLoadingHistory, refetch: refetchHistory } = usePetHistory(activePet?.id);
@@ -437,7 +421,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
       list: pets,
       active: activePet,
       selectedId: selectedPetId,
-      select: setSelectedPetId,
+      select: selectPet,
       isPrincipal: isResponsavelPrincipal,
       initialData: initialPetData,
       editTitle,

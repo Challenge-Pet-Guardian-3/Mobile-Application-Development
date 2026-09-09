@@ -58,14 +58,11 @@ export function useAiChat(pet?: PetResponse) {
         timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages((prev) => {
-        const next = [...prev, userMsg];
-        // Envia as mensagens anteriores como contexto multi-turnos
-        sendMutation.mutate({ text: trimmed, historico: prev });
-        return next;
-      });
+      const historicoContexto = messages;
+      setMessages((prev) => [...prev, userMsg]);
+      sendMutation.mutate({ text: trimmed, historico: historicoContexto });
     },
-    [sendMutation]
+    [sendMutation, messages]
   );
 
   return {

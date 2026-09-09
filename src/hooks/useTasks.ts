@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, skipToken } from '@tanstack/react-query';
 import { TaskService } from '../services/tasks';
 import { queryKeys } from '../lib/queryKeys';
 import { Page } from '../types/api';
@@ -15,19 +15,16 @@ export function useTasks(page = 0, size = 50, enabled = true) {
 export function useUserTasks(userId?: number, page = 0, size = 50, status = 'ALL') {
   return useQuery({
     queryKey: [...queryKeys.tasks.byUser(userId), status, page, size],
-    queryFn: () =>
-      userId
-        ? TaskService.getTarefasPorUsuario(userId, page, size, status)
-        : Promise.reject(new Error('User ID nulo')),
-    enabled: !!userId,
+    queryFn: userId
+      ? () => TaskService.getTarefasPorUsuario(userId, page, size, status)
+      : skipToken,
   });
 }
 
 export function useUserPoints(userId?: number) {
   return useQuery({
     queryKey: queryKeys.tasks.userPoints(userId),
-    queryFn: () => (userId ? TaskService.getPontosUsuario(userId) : Promise.reject(new Error('User ID nulo'))),
-    enabled: !!userId,
+    queryFn: userId ? () => TaskService.getPontosUsuario(userId) : skipToken,
   });
 }
 

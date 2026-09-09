@@ -22,7 +22,7 @@ http.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.warn('[HTTP] Erro ao recuperar token seguro do storage:', error);
+      console.log('[HTTP] Erro ao recuperar token seguro do storage:', error);
     }
     return config;
   },
@@ -47,12 +47,12 @@ http.interceptors.response.use(
     const fullUrl = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
 
     if (!error.response) {
-      console.warn(`[HTTP] Sem resposta do servidor para ${fullUrl} (${error.code || error.message})`);
+      console.log(`[HTTP] Sem resposta do servidor para ${fullUrl} (${error.code || error.message})`);
     }
 
     // 401: Sessão expirada ou não autorizada
     if (status === 401) {
-      console.warn('[HTTP] Erro 401 - Sessão expirada ou não autorizada.');
+      console.log('[HTTP] Erro 401 - Sessão expirada ou não autorizada.');
       try {
         await StorageService.clearAuthSession();
       } catch {

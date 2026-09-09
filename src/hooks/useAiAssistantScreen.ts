@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Keyboard, Platform, ScrollView } from 'react-native';
 import { usePets } from './usePets';
 import { useSession } from './useSession';
+import { useActivePet } from './useActivePet';
 import { useAiChat, useAiInsights, useAiWarmup } from './useAiAssistant';
 import { PetResponse } from '../types/pet';
 import { AiMessageInputSchema } from '../utils/schemas';
@@ -20,22 +21,13 @@ export function useAiAssistantScreen() {
   const { data: petsData } = usePets();
   const pets: PetResponse[] = petsData?.content || [];
 
-  const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
+  const { activePet, selectedPetId, setSelectedPetId } = useActivePet(pets);
   const [inputText, setInputText] = useState('');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Executa warm-up silencioso em background via hook dedicado
   useAiWarmup();
-
-  const activePet: PetResponse | undefined = useMemo(() => {
-    if (pets.length === 0) return undefined;
-    if (selectedPetId) {
-      const found = pets.find((p) => p.id === selectedPetId);
-      if (found) return found;
-    }
-    return pets[0];
-  }, [pets, selectedPetId]);
 
   const { data: insights, isLoading: isLoadingInsights } = useAiInsights(activePet);
   const { messages, sendMessage, isLoading: isChatSending } = useAiChat(activePet);

@@ -27,3 +27,13 @@ export interface TarefaResponse {
   usuarioId: number;
   petId: number;
 }
+
+export interface TaskFormData {
+  petId: number;
+  titulo: string;
+  descricao: string;
+  pontos: string;
+  prazo?: string;
+  status?: EnumStatus;
+  conclusao?: string | null;
+}

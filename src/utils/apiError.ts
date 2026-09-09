@@ -57,3 +57,16 @@ export function getApiErrorMessage(
 
   return defaultMessage;
 }
+
+/**
+ * Extrai mensagens de erro específicas para fluxos de autenticação (Login / Registro).
+ */
+export function getAuthErrorMessage(
+  error: unknown,
+  defaultMessage = 'Falha na comunicação com o servidor.'
+): string {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    return 'E-mail ou senha incorretos.';
+  }
+  return getApiErrorMessage(error, defaultMessage);
+}

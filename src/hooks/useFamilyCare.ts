@@ -13,28 +13,20 @@ import {
   useUserTasks,
   useTasks,
   useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-  useCompleteTask,
-  useUncompleteTask,
 } from './useTasks';
+import { useTaskActions, ActionCallbacks } from './useTaskActions';
 import { useRedeCuidado } from './useRedeCuidado';
 import { useFamilyModals } from './useFamilyModals';
 import { normalizarDataNascParaIso, normalizarPrazoParaIso } from '../utils/petUtils';
-import { PetFormData } from '../components/PetFormModal';
-import { TaskFormData } from '../components/TaskFormModal';
-import { InviteCaregiverData } from '../components/InviteCaregiverModal';
-import { PetResponse } from '../types/pet';
-import { TarefaResponse } from '../types/task';
-import { RedeCuidadoResponse } from '../types/user';
+import { PetResponse, PetFormData } from '../types/pet';
+import { TarefaResponse, TaskFormData } from '../types/task';
+import { RedeCuidadoResponse, InviteCaregiverData } from '../types/user';
 import { PetSchema, TaskSchema, InviteCaregiverSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
 import { formatarDataIsoYmd } from '../utils/streakUtils';
+import { filtrarTarefasHoje } from '../utils/taskUtils';
 
-export interface ActionCallbacks {
-  onSuccess?: () => void;
-  onError?: (error: unknown) => void;
-}
+export type { ActionCallbacks } from './useTaskActions';
 
 function mutationCallbacks(title: string, defaultMsg: string, callbacks?: ActionCallbacks) {
   return {
@@ -70,13 +62,11 @@ export function useFamilyCare() {
   // Mutations
   const createPetMutation = useCreatePet();
   const createTaskMutation = useCreateTask();
-  const updateTaskMutation = useUpdateTask();
-  const deleteTaskMutation = useDeleteTask();
-  const completeTaskMutation = useCompleteTask();
-  const uncompleteTaskMutation = useUncompleteTask();
   const inviteMutation = useInviteCaregiver();
   const removeCaregiverMutation = useRemoveCaregiver();
   const transferResponsibilityMutation = useTransferResponsibility();
+
+  const taskActions = useTaskActions();
 
   const allTasks: TarefaResponse[] = user?.id
     ? userTasksData?.content || []
@@ -86,12 +76,7 @@ export function useFamilyCare() {
   const hojeYmd = useMemo(() => formatarDataIsoYmd(new Date()), []);
 
   const tasksHoje = useMemo(() => {
-    if (!hojeYmd) return [];
-    return allTasks.filter((t) => {
-      const dataPrazo = formatarDataIsoYmd(t.prazo);
-      const dataConclusao = formatarDataIsoYmd(t.conclusao);
-      return dataPrazo === hojeYmd || dataConclusao === hojeYmd;
-    });
+    return filtrarTarefasHoje(allTasks, hojeYmd);
   }, [allTasks, hojeYmd]);
 
   const [filtroRotina, setFiltroRotina] = useState<'HOJE' | 'TODAS'>('HOJE');
@@ -100,21 +85,21 @@ export function useFamilyCare() {
     return filtroRotina === 'HOJE' ? tasksHoje : allTasks;
   }, [filtroRotina, tasksHoje, allTasks]);
 
-  // Cadastrar novo pet na API Java (POST /pets)
+  // Cadastrar novo animal na família (POST /pets)
   const cadastrarPet = useCallback(
-    (formPet: PetFormData, callbacks?: ActionCallbacks) => {
+    (data: PetFormData, callbacks?: ActionCallbacks) => {
       if (!user) return Alert.alert('Sessão expirada', 'Faça login novamente para cadastrar um pet.');
-      const validacao = PetSchema.safeParse(formPet);
-      if (!validacao.success) return Alert.alert('Dados do Pet', formatZodError(validacao.error));
+      const validacao = PetSchema.safeParse(data);
+      if (!validacao.success) return Alert.alert('Dados Inválidos', formatZodError(validacao.error));
 
       createPetMutation.mutate(
         {
-          nome: formPet.nome.trim(),
-          dataNasc: normalizarDataNascParaIso(validacao.data.dataNasc),
-          raca: formPet.raca.trim(),
-          porte: formPet.porte,
-          sexo: formPet.sexo,
-          castrado: formPet.castrado,
+          nome: data.nome.trim(),
+          raca: data.raca.trim(),
+          dataNasc: normalizarDataNascParaIso(data.dataNasc),
+          porte: data.porte,
+          sexo: data.sexo,
+          castrado: data.castrado,
           usuarioId: user.id,
         },
         mutationCallbacks('Erro ao Cadastrar Pet', 'Não foi possível cadastrar o pet na API.', callbacks)
@@ -123,10 +108,10 @@ export function useFamilyCare() {
     [user, createPetMutation]
   );
 
-  // Cadastrar nova tarefa para o pet na API Java (POST /tarefas)
+  // Cadastrar nova rotina/tarefa para um pet (POST /tarefas)
   const cadastrarTarefa = useCallback(
     (data: TaskFormData, callbacks?: ActionCallbacks) => {
-      if (!user) return Alert.alert('Sessão expirada', 'Faça login novamente para cadastrar uma tarefa.');
+      if (!user) return Alert.alert('Sessão expirada', 'Faça login novamente para criar uma tarefa.');
       const validacao = TaskSchema.safeParse(data);
       if (!validacao.success) return Alert.alert('Dados da Tarefa', formatZodError(validacao.error));
 
@@ -165,88 +150,19 @@ export function useFamilyCare() {
     [user, inviteMutation]
   );
 
-  // Atualizar tarefa existente na API Java (PUT /tarefas/{id})
-  const atualizarTarefa = useCallback(
-    (taskId: number, data: TaskFormData, callbacks?: ActionCallbacks) => {
-      if (!user) return Alert.alert('Sessão expirada', 'Faça login novamente para atualizar uma tarefa.');
-      const validacao = TaskSchema.safeParse(data);
-      if (!validacao.success) return Alert.alert('Dados da Tarefa', formatZodError(validacao.error));
-
-      const statusFinal = data.status || 'PENDENTE';
-      const conclusaoIso =
-        statusFinal === 'CONCLUIDO'
-          ? (data.conclusao ? normalizarPrazoParaIso(data.conclusao, '12:00:00') : new Date().toISOString().slice(0, 19))
-          : null;
-
-      updateTaskMutation.mutate(
-        {
-          id: taskId,
-          data: {
-            titulo: data.titulo.trim(),
-            descricao: data.descricao.trim(),
-            pontosTarefa: Number(data.pontos),
-            prazo: normalizarPrazoParaIso(data.prazo),
-            usuarioId: user.id,
-            petId: data.petId,
-            status: statusFinal,
-            conclusao: conclusaoIso,
-          },
-        },
-        mutationCallbacks('Erro ao Atualizar Tarefa', 'Não foi possível atualizar a tarefa.', callbacks)
-      );
+  const alternarStatusTarefa = useCallback(
+    (taskId: number) => {
+      taskActions.alternarStatus(taskId, allTasks);
     },
-    [user, updateTaskMutation]
+    [taskActions, allTasks]
   );
 
   // Remover tarefa da rotina do pet (DELETE /tarefas/{id})
   const removerTarefa = useCallback(
     (taskId: number, callbacks?: ActionCallbacks) => {
-      deleteTaskMutation.mutate(taskId, mutationCallbacks('Erro ao Excluir Tarefa', 'Não foi possível excluir a tarefa.', callbacks));
+      taskActions.excluirComConfirmacao(taskId, callbacks);
     },
-    [deleteTaskMutation]
-  );
-
-  // Concluir ou desmarcar tarefa da rotina
-  const alternarStatusTarefa = useCallback(
-    (taskId: number) => {
-      if (!user) {
-        Alert.alert('Sessão expirada', 'Faça login novamente para atualizar tarefas.');
-        return;
-      }
-
-      const tarefa = allTasks.find((t) => t.id === taskId);
-      if (!tarefa) return;
-
-      if (tarefa.status === 'CONCLUIDO') {
-        uncompleteTaskMutation.mutate(
-          { id: taskId, usuarioId: user.id },
-          {
-            onError: (err) => {
-              Alert.alert('Erro ao Desmarcar', getApiErrorMessage(err, 'Não foi possível desmarcar a tarefa.'));
-            },
-          }
-        );
-      } else if (tarefa.status === 'EXPIRADO') {
-        Alert.alert(
-          'Tarefa Expirada',
-          'Esta tarefa já expirou e não pode ser concluída diretamente. Para reativá-la como pendente, clique no lápis de edição e defina uma nova data e horário futuro.',
-          [{ text: 'Entendi' }]
-        );
-      } else {
-        completeTaskMutation.mutate(
-          {
-            id: taskId,
-            request: { concluinteId: user.id },
-          },
-          {
-            onError: (err) => {
-              Alert.alert('Erro ao Concluir', getApiErrorMessage(err, 'Não foi possível concluir a tarefa.'));
-            },
-          }
-        );
-      }
-    },
-    [user, allTasks, completeTaskMutation, uncompleteTaskMutation]
+    [taskActions]
   );
 
   // Co-cuidadores da rede de cuidado
@@ -302,6 +218,38 @@ export function useFamilyCare() {
     emptyDesc: isHoje ? 'Nenhuma tarefa agendada para hoje na família.' : 'Crie rotinas diárias para seu pet acumular pontos XP!',
   };
 
+  // Controle Unificado de Modais da Tela Family via useFamilyModals
+  const modals = useFamilyModals({
+    user,
+    petsOndeSouPrincipal,
+    cadastrarTarefa,
+    atualizarTarefa: taskActions.atualizar,
+  });
+
+  const routineData = useMemo(() => ({
+    title: routineTexts.title,
+    subtitle: routineTexts.subtitle,
+    filter: filtroRotina,
+    onFilterChange: setFiltroRotina,
+    countHoje: tasksHoje.length,
+    countTodas: allTasks.length,
+    tasks: tasksExibidas,
+    onToggleTask: alternarStatusTarefa,
+    onEditTask: modals.abrirEdicaoTarefa,
+    onDeleteTask: removerTarefa,
+  }), [
+    routineTexts.title,
+    routineTexts.subtitle,
+    filtroRotina,
+    setFiltroRotina,
+    tasksHoje.length,
+    allTasks.length,
+    tasksExibidas,
+    alternarStatusTarefa,
+    modals.abrirEdicaoTarefa,
+    removerTarefa,
+  ]);
+
   const familySummary = {
     tutorNome: user?.nome,
     petsCount: pets.length,
@@ -309,17 +257,6 @@ export function useFamilyCare() {
     tarefasConcluidas: redeCuidado?.totalTarefasConcluidas ?? 0,
     pontosAcumulados: redeCuidado?.pontosAcumulados ?? 0,
   };
-
-  // Controle Unificado de Modais da Tela Family via useFamilyModals
-  const modals = useFamilyModals({
-    user,
-    petsOndeSouPrincipal,
-    cadastrarTarefa,
-    atualizarTarefa,
-    inviteMutation,
-    removeCaregiverMutation,
-    transferResponsibilityMutation,
-  });
 
   return {
     status: {
@@ -350,6 +287,7 @@ export function useFamilyCare() {
       filtroRotina,
       setFiltroRotina,
       routineTexts,
+      routineData,
       totalTarefasHoje: tasksHoje.length,
       totalTarefasGeral: allTasks.length,
       redeCuidado,
@@ -364,9 +302,9 @@ export function useFamilyCare() {
       alternarStatusTarefa,
       isCreatingPet: createPetMutation.isPending,
       isCreatingTask: createTaskMutation.isPending,
-      isUpdatingTask: updateTaskMutation.isPending,
+      isUpdatingTask: taskActions.isUpdating,
       isInvitingCaregiver: inviteMutation.isPending,
-      isDeletingTask: deleteTaskMutation.isPending,
+      isDeletingTask: taskActions.isDeleting,
     },
   };
 }

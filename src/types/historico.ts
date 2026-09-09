@@ -11,3 +11,11 @@ export interface HistoricoResponse {
   petId: number;
   nomePet: string;
 }
+
+export interface HistoricoFormData {
+  tipoHist: string;
+  dataHist: string;
+  petId: number;
+}
+
+export type HistoricoFormSubmitData = HistoricoFormData;
