@@ -15,6 +15,7 @@ export function HomeTaskModal({ taskModal, pets }: HomeTaskModalProps) {
       visible={Boolean(editingTask)}
       onClose={close}
       mode="edit"
+      taskId={editingTask?.id}
       pets={pets?.list ?? []}
       isLoading={isUpdating}
       initialData={initialData}

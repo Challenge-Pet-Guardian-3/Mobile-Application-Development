@@ -7,7 +7,7 @@ import { useActivePet } from './useActivePet';
 import { useTaskActions } from './useTaskActions';
 import { PetResponse } from '../types/pet';
 import { TarefaResponse, TaskFormData } from '../types/task';
-import { categorizarTarefas, filtrarTarefasHoje } from '../utils/taskUtils';
+import { categorizarTarefas, filtrarTarefasHoje, ordenarTarefasRotina } from '../utils/taskUtils';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../routes/types';
 import { calcularDiasSemanaAtual, calcularTotalOfensiva, formatarDataIsoYmd } from '../utils/streakUtils';
@@ -66,10 +66,10 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
 
   const hojeYmd = useMemo(() => formatarDataIsoYmd(new Date()), []);
 
-  // Tarefas da rotina do dia (hoje) para o pet ativo
+  // Tarefas da rotina do dia (hoje) para o pet ativo, com ordenação prioritária (expiradas ao final)
   const tarefasDoPetHoje = useMemo(() => {
     if (!activePet) return [];
-    return filtrarTarefasHoje(tarefasDoPet, hojeYmd);
+    return ordenarTarefasRotina(filtrarTarefasHoje(tarefasDoPet, hojeYmd));
   }, [tarefasDoPet, activePet, hojeYmd]);
 
   const metricasPetHoje = useMemo(() => categorizarTarefas(tarefasDoPetHoje), [tarefasDoPetHoje]);
@@ -105,19 +105,7 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
   const handleToggleTarefa = useCallback(
     (taskId: number) => {
       taskActions.alternarStatus(taskId, tarefasDoPet, {
-        onExpired: (tarefa) => {
-          Alert.alert(
-            'Tarefa Expirada',
-            'Esta tarefa expirou e não pode ser concluída diretamente. Deseja definir um novo horário futuro para reativá-la?',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              {
-                text: 'Editar Tarefa',
-                onPress: () => setTarefaEmEdicao(tarefa),
-              },
-            ]
-          );
-        },
+        onEdit: setTarefaEmEdicao,
       });
     },
     [taskActions, tarefasDoPet]
@@ -138,19 +126,23 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
 
   const rotinaAtual = useMemo(() => {
     const isHoje = filtroRotina === 'HOJE';
+    const tarefasFiltradas = isHoje ? tarefasDoPetHoje : ordenarTarefasRotina(tarefasDoPet);
     const m = isHoje ? metricasPetHoje : metricasPet;
-    const [c, a, e] = [m.concluidas.length, m.ativas.length, m.expiradas.length];
+    const c = m.concluidas.length;
+    const e = m.expiradas.length;
+    const total = tarefasFiltradas.length;
 
     return {
-      tarefas: isHoje ? tarefasDoPetHoje : tarefasDoPet,
+      tarefas: tarefasFiltradas,
       concluidas: c,
-      ativas: a,
+      ativas: m.ativas.length,
       expiradas: e,
+      total,
       title: isHoje ? 'Rotina de Hoje' : 'Todas as Tarefas',
-      subtitle: `${c} de ${a} concluídas ${isHoje ? 'hoje' : 'no total'}${e > 0 ? ` • ${e} expirada${e > 1 ? 's' : ''}` : ''}`,
-      emptyTitle: isHoje ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa cadastrada',
+      subtitle: `${c} de ${total} concluídas ${isHoje ? 'hoje' : 'no total'}${e > 0 ? ` • ${e} expirada${e > 1 ? 's' : ''}` : ''}`,
+      emptyTitle: isHoje ? 'Nenhuma tarefa agendada para hoje' : 'Nenhuma tarefa cadastrada',
       emptyDesc: isHoje
-        ? 'Nenhuma tarefa agendada para hoje. Crie novas tarefas para seu pet na aba Family Pet.'
+        ? 'Crie novas tarefas para seu pet na aba Family Pet.'
         : 'Crie novas tarefas para seu pet na aba Family Pet.',
     };
   }, [filtroRotina, tarefasDoPetHoje, tarefasDoPet, metricasPetHoje, metricasPet]);
@@ -232,6 +224,8 @@ export function useHomeData(navigation?: NativeStackNavigationProp<RootStackPara
       todayTasks: tarefasDoPetHoje,
       completedToday: metricasPetHoje.concluidas,
       activeToday: metricasPetHoje.ativas,
+      expiredToday: metricasPetHoje.expiradas,
+      metricsToday: metricasPetHoje,
       toggleTask: handleToggleTarefa,
     },
     taskModal: {

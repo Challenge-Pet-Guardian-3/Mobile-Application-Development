@@ -32,6 +32,7 @@ function getDiasDaSemanaVazios(): DiaOfensiva[] {
       dayNumber,
       done: false,
       isToday,
+      missed: false,
     };
   });
 }
@@ -75,17 +76,26 @@ export function HomeStreakCard({ streakDays, totalStreak, tasks }: StreakCardPro
                 styles.streakDayCircle,
                 item.done && styles.streakCompleted,
                 item.isToday && !item.done && styles.streakToday,
+                item.missed && styles.streakMissed,
               ]}
             >
               {item.done ? (
                 <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />
               ) : item.isToday ? (
                 <MaterialCommunityIcons name="paw" size={14} color="#2563EB" />
+              ) : item.missed ? (
+                <MaterialCommunityIcons name="close" size={15} color="#EF4444" />
               ) : (
                 <Text style={styles.streakDayNumber}>{item.dayNumber}</Text>
               )}
             </View>
-            <Text style={[styles.streakDayLabel, item.isToday && styles.streakDayLabelToday]}>
+            <Text
+              style={[
+                styles.streakDayLabel,
+                item.isToday && styles.streakDayLabelToday,
+                item.missed && styles.streakDayLabelMissed,
+              ]}
+            >
               {item.dayLabel}
             </Text>
           </View>
@@ -167,6 +177,11 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     borderWidth: 1.5,
   },
+  streakMissed: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1.5,
+  },
   streakDayNumber: {
     color: '#94A3B8',
     fontSize: 12,
@@ -180,5 +195,9 @@ const styles = StyleSheet.create({
   streakDayLabelToday: {
     color: '#2563EB',
     fontWeight: '800',
+  },
+  streakDayLabelMissed: {
+    color: '#EF4444',
+    fontWeight: '700',
   },
 });

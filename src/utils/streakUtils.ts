@@ -93,6 +93,7 @@ export function calcularDiasSemanaAtual(
     const dayNumber = String(dataDia.getDate());
     const isToday = idx === diaSemanaIndex;
     const isFuture = idx > diaSemanaIndex;
+    const isPast = idx < diaSemanaIndex;
 
     const ymd = formatarDataIsoYmd(dataDia);
     const tarefasDoDia = ymd ? mapaTarefas.get(ymd) || [] : [];
@@ -101,12 +102,16 @@ export function calcularDiasSemanaAtual(
     // Se não tiver tarefas agendadas ou se for dia futuro, não marca como done
     const done = !isFuture && tarefasDoDia.length > 0 && tarefasDoDia.every((t) => t.status === 'CONCLUIDO');
 
+    // Perdeu o dia se for passado, havia tarefas agendadas e nem todas foram concluídas
+    const missed = isPast && tarefasDoDia.length > 0 && !done;
+
     return {
       id: `dia_${idx}_${dayNumber}_${ymd || idx}`,
       dayLabel: label,
       dayNumber,
       done,
       isToday,
+      missed,
     };
   });
 }

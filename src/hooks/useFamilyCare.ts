@@ -24,7 +24,7 @@ import { RedeCuidadoResponse, InviteCaregiverData } from '../types/user';
 import { PetSchema, TaskSchema, InviteCaregiverSchema, formatZodError } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiError';
 import { formatarDataIsoYmd } from '../utils/streakUtils';
-import { filtrarTarefasHoje } from '../utils/taskUtils';
+import { filtrarTarefasHoje, ordenarTarefasRotina } from '../utils/taskUtils';
 
 export type { ActionCallbacks } from './useTaskActions';
 
@@ -76,13 +76,13 @@ export function useFamilyCare() {
   const hojeYmd = useMemo(() => formatarDataIsoYmd(new Date()), []);
 
   const tasksHoje = useMemo(() => {
-    return filtrarTarefasHoje(allTasks, hojeYmd);
+    return ordenarTarefasRotina(filtrarTarefasHoje(allTasks, hojeYmd));
   }, [allTasks, hojeYmd]);
 
   const [filtroRotina, setFiltroRotina] = useState<'HOJE' | 'TODAS'>('HOJE');
 
   const tasksExibidas = useMemo(() => {
-    return filtroRotina === 'HOJE' ? tasksHoje : allTasks;
+    return filtroRotina === 'HOJE' ? tasksHoje : ordenarTarefasRotina(allTasks);
   }, [filtroRotina, tasksHoje, allTasks]);
 
   // Cadastrar novo animal na família (POST /pets)
@@ -150,11 +150,32 @@ export function useFamilyCare() {
     [user, inviteMutation]
   );
 
+  // Mapeamento e estruturas pré-processadas (KISS & DRY)
+  const petsResumoMap = useMemo(
+    () => new Map((redeCuidado?.pets || []).map((p) => [p.id, p])),
+    [redeCuidado?.pets]
+  );
+
+  const petsOndeSouPrincipal = useMemo(
+    () => pets.filter((p) => petsResumoMap.get(p.id)?.responsavelPrincipal ?? true),
+    [pets, petsResumoMap]
+  );
+
+  // Controle Unificado de Modais da Tela Family via useFamilyModals
+  const modals = useFamilyModals({
+    user,
+    petsOndeSouPrincipal,
+    cadastrarTarefa,
+    atualizarTarefa: taskActions.atualizar,
+  });
+
   const alternarStatusTarefa = useCallback(
     (taskId: number) => {
-      taskActions.alternarStatus(taskId, allTasks);
+      taskActions.alternarStatus(taskId, allTasks, {
+        onEdit: modals.abrirEdicaoTarefa,
+      });
     },
-    [taskActions, allTasks]
+    [taskActions, allTasks, modals.abrirEdicaoTarefa]
   );
 
   // Remover tarefa da rotina do pet (DELETE /tarefas/{id})
@@ -167,17 +188,6 @@ export function useFamilyCare() {
 
   // Co-cuidadores da rede de cuidado
   const coCuidadores = redeCuidado?.coCuidadores || [];
-
-  // Mapeamento e estruturas pré-processadas (KISS & DRY)
-  const petsResumoMap = useMemo(
-    () => new Map((redeCuidado?.pets || []).map((p) => [p.id, p])),
-    [redeCuidado?.pets]
-  );
-
-  const petsOndeSouPrincipal = useMemo(
-    () => pets.filter((p) => petsResumoMap.get(p.id)?.responsavelPrincipal ?? true),
-    [pets, petsResumoMap]
-  );
 
   const petsComMetadados = useMemo(
     () => pets.map((p) => {
@@ -217,14 +227,6 @@ export function useFamilyCare() {
     emptyTitle: isHoje ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa ativa',
     emptyDesc: isHoje ? 'Nenhuma tarefa agendada para hoje na família.' : 'Crie rotinas diárias para seu pet acumular pontos XP!',
   };
-
-  // Controle Unificado de Modais da Tela Family via useFamilyModals
-  const modals = useFamilyModals({
-    user,
-    petsOndeSouPrincipal,
-    cadastrarTarefa,
-    atualizarTarefa: taskActions.atualizar,
-  });
 
   const routineData = useMemo(() => ({
     title: routineTexts.title,

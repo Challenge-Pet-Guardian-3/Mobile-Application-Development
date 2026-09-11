@@ -6,6 +6,7 @@ export interface MetricasTarefas {
   pendentes: TarefaResponse[];
   expiradas: TarefaResponse[];
   ativas: TarefaResponse[];
+  total: number;
 }
 
 /**
@@ -25,7 +26,32 @@ export function categorizarTarefas(lista: TarefaResponse[]): MetricasTarefas {
     if (t.status !== 'EXPIRADO') ativas.push(t);
   }
 
-  return { concluidas, pendentes, expiradas, ativas };
+  return { concluidas, pendentes, expiradas, ativas, total: lista.length };
+}
+
+const PRIORIDADE_STATUS: Record<string, number> = {
+  PENDENTE: 0,
+  CONCLUIDO: 1,
+  EXPIRADO: 2,
+};
+
+/**
+ * Ordena tarefas da rotina priorizando pendentes (0), concluídas (1) e posicionando
+ * as expiradas (2) automaticamente no final da fila. Tarefas com mesmo status são ordenadas por prazo.
+ */
+export function ordenarTarefasRotina(lista: TarefaResponse[]): TarefaResponse[] {
+  return [...lista].sort((a, b) => {
+    const pesoA = PRIORIDADE_STATUS[a.status] ?? 3;
+    const pesoB = PRIORIDADE_STATUS[b.status] ?? 3;
+
+    if (pesoA !== pesoB) {
+      return pesoA - pesoB;
+    }
+
+    const tempoA = a.prazo ? new Date(a.prazo).getTime() : 0;
+    const tempoB = b.prazo ? new Date(b.prazo).getTime() : 0;
+    return tempoA - tempoB;
+  });
 }
 
 /**
@@ -39,3 +65,4 @@ export function filtrarTarefasHoje(lista: TarefaResponse[], hojeYmd: string | nu
     return dataPrazo === hojeYmd || dataConclusao === hojeYmd;
   });
 }
+

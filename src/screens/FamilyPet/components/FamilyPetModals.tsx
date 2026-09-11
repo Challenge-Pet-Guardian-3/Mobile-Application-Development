@@ -28,6 +28,7 @@ export function FamilyPetModals({ familyCare }: FamilyPetModalsProps) {
         visible={modals.ativo === 'novaTarefa' || modals.ativo === 'editarTarefa'}
         onClose={modals.fecharModalTarefa}
         mode={modals.ativo === 'editarTarefa' ? 'edit' : 'create'}
+        taskId={modals.tarefaEmEdicao?.id}
         initialData={modals.initialTaskData}
         pets={family?.pets ?? []}
         isLoading={actions.isCreatingTask || actions.isUpdatingTask}

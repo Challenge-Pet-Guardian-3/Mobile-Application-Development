@@ -20,6 +20,7 @@ interface TaskFormModalProps {
   initialData?: TaskFormData;
   onSubmit: (data: TaskFormData) => Promise<void> | void;
   isLoading?: boolean;
+  taskId?: number;
 }
 
 interface TaskFormState {
@@ -207,12 +208,13 @@ export function TaskFormModal({
   initialData,
   onSubmit,
   isLoading = false,
+  taskId,
 }: TaskFormModalProps) {
   // Chave estável baseada em id/identidade que reinicializa o formulário de forma pura (sem useEffect + setState)
   const formKey = visible
-    ? (mode === 'edit' && initialData
-        ? `edit_${initialData.petId}_${initialData.titulo}`
-        : `create_${initialPetId || 'default'}`)
+    ? (mode === 'edit'
+        ? `edit_${taskId ?? initialData?.petId ?? 'default'}_${initialData?.titulo ?? 'default'}`
+        : `create_${initialPetId ?? 'default'}`)
     : 'closed';
 
   return (

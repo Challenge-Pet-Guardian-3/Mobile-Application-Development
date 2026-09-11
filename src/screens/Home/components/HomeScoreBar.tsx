@@ -18,23 +18,42 @@ export function HomeScoreBar({ pets, routine, onPress }: HomeScoreBarProps) {
   const score = routine?.score ?? 0;
   const petName = activePet?.nome ?? 'Pet';
   const tarefasConcluidas = routine?.completedToday?.length ?? 0;
-  const totalTarefas = routine?.activeToday?.length ?? 0;
+  const tarefasExpiradas = routine?.expiredToday?.length ?? 0;
+  const totalTarefas = routine?.todayTasks?.length ?? 0;
 
-  const percentage =
-    totalTarefas > 0 ? Math.round((tarefasConcluidas / totalTarefas) * 100) : 100;
+  const hasTasks = totalTarefas > 0;
+  const percentage = hasTasks ? Math.round((tarefasConcluidas / totalTarefas) * 100) : 0;
 
-  let statusTexto = 'Tarefas Pendentes 📋';
-  let statusCor: string = colors.danger[500];
-  let statusBg: string = colors.danger[50];
+  let statusTexto = 'Sem Tarefas Hoje 🐾';
+  let statusCor: string = colors.neutral[600];
+  let statusBg: string = colors.neutral[100];
+  let progressColor: string = colors.neutral[300];
 
-  if (percentage === 100) {
+  if (!hasTasks) {
+    statusTexto = 'Sem Tarefas Hoje 🐾';
+    statusCor = colors.neutral[600];
+    statusBg = colors.neutral[100];
+    progressColor = colors.neutral[300];
+  } else if (tarefasConcluidas === totalTarefas) {
     statusTexto = 'Tudo em Dia ✨';
     statusCor = colors.success.default;
     statusBg = colors.success[50];
+    progressColor = colors.success.default;
+  } else if (tarefasExpiradas > 0) {
+    statusTexto = tarefasExpiradas === 1 ? '1 Tarefa Expirada ⚠️' : `${tarefasExpiradas} Tarefas Expiradas ⚠️`;
+    statusCor = colors.danger[600];
+    statusBg = colors.danger[50];
+    progressColor = percentage > 0 ? colors.warning[500] : colors.danger[500];
   } else if (percentage >= 50) {
     statusTexto = 'Em Andamento 👍';
-    statusCor = colors.warning[500];
+    statusCor = colors.warning[600];
     statusBg = colors.warning[50];
+    progressColor = colors.warning[500];
+  } else {
+    statusTexto = 'Tarefas Pendentes 📋';
+    statusCor = colors.primary[600];
+    statusBg = colors.primary[50];
+    progressColor = colors.primary[600];
   }
 
   return (
@@ -63,13 +82,14 @@ export function HomeScoreBar({ pets, routine, onPress }: HomeScoreBarProps) {
 
         <View style={styles.progressContainer}>
           <View style={styles.progressBarBackground}>
-            <View style={[styles.progressBarFill, { width: `${percentage}%` }]} />
+            <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: progressColor }]} />
           </View>
         </View>
 
         <View style={styles.footerRow}>
           <Text style={styles.pointsLabel}>
             Rotina Diária: {tarefasConcluidas}/{totalTarefas} {totalTarefas === 1 ? 'tarefa' : 'tarefas'}
+            {tarefasExpiradas > 0 ? ` • ${tarefasExpiradas} expirada${tarefasExpiradas > 1 ? 's' : ''}` : ''}
           </Text>
           <Text style={styles.pointsValue}>
             <Text style={styles.currentPoints}>{score}</Text> XP Acumulados

@@ -21,4 +21,5 @@ export interface DiaOfensiva {
   dayNumber: string;
   done: boolean;
   isToday?: boolean;
+  missed?: boolean;
 }

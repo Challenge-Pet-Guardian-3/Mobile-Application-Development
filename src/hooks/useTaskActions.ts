@@ -14,6 +14,7 @@ export interface ActionCallbacks {
 
 export interface AlternarStatusOptions extends ActionCallbacks {
   onExpired?: (tarefa: TarefaResponse) => void;
+  onEdit?: (tarefa: TarefaResponse) => void;
 }
 
 /**
@@ -52,6 +53,18 @@ export function useTaskActions() {
       } else if (tarefa.status === 'EXPIRADO') {
         if (options?.onExpired) {
           options.onExpired(tarefa);
+        } else if (options?.onEdit) {
+          Alert.alert(
+            'Tarefa Expirada',
+            'Esta tarefa expirou e não pode ser concluída diretamente. Deseja definir um novo horário futuro para reativá-la?',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Editar Tarefa',
+                onPress: () => options.onEdit!(tarefa),
+              },
+            ]
+          );
         } else {
           Alert.alert(
             'Tarefa Expirada',
