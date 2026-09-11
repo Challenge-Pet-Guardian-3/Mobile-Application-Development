@@ -27,15 +27,37 @@ function formatPetContext(pet?: PetResponse): AiPetContextPayload | undefined {
   };
 }
 
+let inFlightAiPing: Promise<boolean> | null = null;
+let lastAiPingTimestamp = 0;
+const AI_PING_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutos de intervalo mínimo
+
 export const AiService = {
   // Realiza um ping leve no servidor Python para acordar a instância no Render (warm-up de cold start)
+  // Possui deduplicação estrita de promessa em voo e cooldown de 10 minutos para evitar requisições redundantes.
   async ping(): Promise<boolean> {
-    try {
-      await pythonClient.get('/');
+    const now = Date.now();
+
+    if (now - lastAiPingTimestamp < AI_PING_COOLDOWN_MS) {
       return true;
-    } catch {
-      return false;
     }
+
+    if (inFlightAiPing) {
+      return inFlightAiPing;
+    }
+
+    inFlightAiPing = (async () => {
+      try {
+        await pythonClient.get('/');
+        lastAiPingTimestamp = Date.now();
+        return true;
+      } catch {
+        return false;
+      } finally {
+        inFlightAiPing = null;
+      }
+    })();
+
+    return inFlightAiPing;
   },
 
   // Consulta o microserviço Python para obter insights preventivos gerados por IA

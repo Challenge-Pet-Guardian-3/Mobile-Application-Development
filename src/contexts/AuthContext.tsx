@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { AuthService } from '../services/auth';
-import { setOnUnauthorizedCallback } from '../services/http';
+import { setOnUnauthorizedCallback, HttpService } from '../services/http';
+import { AiService } from '../services/ai';
 import { queryClient } from '../lib/queryClient';
 import { UsuarioResponse } from '../types/user';
 import { LoginCredentials, RegisterCredentials } from '../types/auth';
@@ -45,6 +46,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     loadSession();
+
+    // Dispara warm-up proativo em segundo plano para acordar instâncias em nuvem (Railway e Render)
+    HttpService.warmup();
+    AiService.ping();
 
     // Callback para interceptor 401
     setOnUnauthorizedCallback(() => {

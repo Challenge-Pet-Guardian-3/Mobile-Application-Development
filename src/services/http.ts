@@ -1,12 +1,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { StorageService } from './storage';
 import { env } from '../config/env';
-import { ApiError, ApiErrorResponse } from '../types/api';
+import { ApiErrorResponse } from '../types/api';
+import { normalizeHttpError } from '../utils/apiError';
 
-// Instância centralizada do Axios
+// Instância centralizada do Axios configurada para ambientes em nuvem (Railway / Render)
 export const http = axios.create({
   baseURL: env.apiUrl,
-  timeout: 12000,
+  timeout: 40000, // 40 segundos para tolerar cold starts do container e pool de banco
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -38,19 +39,13 @@ export const setOnUnauthorizedCallback = (callback: () => void) => {
   onUnauthorizedCallback = callback;
 };
 
-// Interceptor de Response: Captura 401 e normaliza erros para ApiError (padrão mockmerce-app-prof)
+// Interceptor de Response: Orquestra limpeza de sessão em 401 e delega normalização a normalizeHttpError (SRP)
 http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorResponse>) => {
     const status = error.response?.status ?? 0;
-    const data = error.response?.data;
-    const fullUrl = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
 
-    if (!error.response) {
-      console.log(`[HTTP] Sem resposta do servidor para ${fullUrl} (${error.code || error.message})`);
-    }
-
-    // 401: Sessão expirada ou não autorizada
+    // 401: Notificação e limpeza de credenciais
     if (status === 401) {
       console.log('[HTTP] Erro 401 - Sessão expirada ou não autorizada.');
       try {
@@ -61,28 +56,50 @@ http.interceptors.response.use(
       if (onUnauthorizedCallback) {
         onUnauthorizedCallback();
       }
-      return Promise.reject(new ApiError('UNAUTHORIZED', 'E-mail ou senha incorretos / Sessão expirada.', 401));
     }
 
-    if (data?.erros && Array.isArray(data.erros) && data.erros.length > 0) {
-      const msg = data.erros.map((e) => `${e.campo}: ${e.mensagem}`).join('\n');
-      return Promise.reject(new ApiError(data.error ?? 'VALIDATION_ERROR', msg, status));
-    }
-
-    if (data?.mensagem) {
-      return Promise.reject(new ApiError(data.error ?? 'API_ERROR', data.mensagem, status));
-    }
-
-    if (data?.message) {
-      return Promise.reject(new ApiError(data.error ?? 'API_ERROR', data.message, status));
-    }
-
-    if (error.code === 'ECONNABORTED') {
-      return Promise.reject(new ApiError('TIMEOUT', 'A requisição demorou demais.', status));
-    }
-
-    return Promise.reject(
-      new ApiError('NETWORK_ERROR', 'Sem conexão com o servidor. Verifique a API.', status)
-    );
+    return Promise.reject(normalizeHttpError(error));
   }
 );
+
+let inFlightWarmup: Promise<boolean> | null = null;
+let lastWarmupTimestamp = 0;
+const WARMUP_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutos de intervalo mínimo
+
+export const HttpService = {
+  /**
+   * Dispara um ping assíncrono para o endpoint de saúde do Spring Boot (/actuator/health)
+   * para acordar preventivamente o container do Railway e aquecer o pool de conexões.
+   * Possui deduplicação estrita de promessa em voo e cooldown de 10 minutos para evitar requisições redundantes.
+   */
+  async warmup(): Promise<boolean> {
+    const now = Date.now();
+
+    // Se já foi aquecido na janela de cooldown, não repete a requisição
+    if (now - lastWarmupTimestamp < WARMUP_COOLDOWN_MS) {
+      return true;
+    }
+
+    // Se já existe uma requisição de warmup em andamento, reaproveita a mesma promessa
+    if (inFlightWarmup) {
+      return inFlightWarmup;
+    }
+
+    inFlightWarmup = (async () => {
+      try {
+        await http.get('/actuator/health', {
+          timeout: 20000,
+          headers: { 'X-Warmup-Ping': 'true' },
+        });
+        lastWarmupTimestamp = Date.now();
+        return true;
+      } catch {
+        return false;
+      } finally {
+        inFlightWarmup = null;
+      }
+    })();
+
+    return inFlightWarmup;
+  },
+};
