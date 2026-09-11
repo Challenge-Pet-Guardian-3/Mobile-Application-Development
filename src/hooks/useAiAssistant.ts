@@ -65,9 +65,14 @@ export function useAiChat(pet?: PetResponse) {
     [sendMutation, messages]
   );
 
+  const clearChat = useCallback(() => {
+    setMessages([]);
+  }, []);
+
   return {
     messages,
     sendMessage,
+    clearChat,
     isLoading: sendMutation.isPending,
   };
 }

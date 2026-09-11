@@ -93,7 +93,8 @@ export const AiService = {
       .map((m) => ({
         sender: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
         text: m.text,
-      }));
+      }))
+      .slice(-6);
 
     try {
       const response = await pythonClient.post<AiChatResponsePayload>('/ai/chat', {

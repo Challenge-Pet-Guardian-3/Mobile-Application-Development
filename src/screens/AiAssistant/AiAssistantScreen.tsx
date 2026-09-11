@@ -49,7 +49,11 @@ export default function AiAssistantScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
     >
-      <AiHeader onGoBack={handleGoBack} />
+      <AiHeader
+        onGoBack={handleGoBack}
+        onClearChat={chat.clearChat}
+        hasMessages={chat.messages.length > 0}
+      />
 
       <ScrollView
         ref={chat.scrollViewRef}

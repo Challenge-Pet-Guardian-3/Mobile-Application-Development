@@ -30,7 +30,7 @@ export function useAiAssistantScreen() {
   useAiWarmup();
 
   const { data: insights, isLoading: isLoadingInsights } = useAiInsights(activePet);
-  const { messages, sendMessage, isLoading: isChatSending } = useAiChat(activePet);
+  const { messages, sendMessage, clearChat, isLoading: isChatSending } = useAiChat(activePet);
 
   // Monitora visibilidade do teclado para ajuste de padding
   useEffect(() => {
@@ -84,6 +84,7 @@ export function useAiAssistantScreen() {
       inputText,
       setInputText,
       handleSend,
+      clearChat,
       sugestoesRapidas: SUGESTOES_RAPIDAS,
       scrollViewRef,
       isKeyboardVisible,
