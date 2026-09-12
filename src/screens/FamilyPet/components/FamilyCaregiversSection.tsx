@@ -23,7 +23,7 @@ export function FamilyCaregiversSection({
   return (
     <View style={styles.sectionBox}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Co-Cuidadores</Text>
+        <Text style={styles.sectionTitle}>Rede de Cuidados</Text>
         {isPrincipal && (
           <TouchableOpacity style={styles.btnInvite} onPress={onInvite} activeOpacity={0.8}>
             <Ionicons name="person-add" size={14} color="#2563EB" />
@@ -36,9 +36,10 @@ export function FamilyCaregiversSection({
       {user && (
         <CaregiverCard
           nome={user?.nome || 'Tutor'}
-          roleText="Responsável Principal"
+          email={user?.email}
+          roleText={isPrincipal ? 'Responsável Principal' : 'Co-cuidador Familiar'}
           isCurrentUser
-          isPrincipal
+          isPrincipal={isPrincipal}
         />
       )}
 
@@ -49,7 +50,7 @@ export function FamilyCaregiversSection({
           nome={c.nome}
           email={c.email}
           roleText={c.roleText}
-          isPrincipal={false}
+          isPrincipal={Boolean(c.responsavelPrincipal)}
           onPress={isPrincipal ? () => onManageCaregiver(c) : undefined}
         />
       ))}

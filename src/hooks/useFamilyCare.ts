@@ -204,7 +204,9 @@ export function useFamilyCare() {
   const coCuidadoresFormatados = useMemo(
     () => coCuidadores.map((c) => ({
       ...c,
-      roleText: c.petNomes?.length ? `Ajuda com: ${c.petNomes.join(', ')}` : 'Co-cuidador',
+      roleText: c.responsavelPrincipal
+        ? (c.petNomes?.length ? `Tutor Principal de: ${c.petNomes.join(', ')}` : 'Tutor Principal')
+        : (c.petNomes?.length ? `Ajuda com: ${c.petNomes.join(', ')}` : 'Co-cuidador'),
     })),
     [coCuidadores]
   );

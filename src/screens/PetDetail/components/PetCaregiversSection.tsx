@@ -43,9 +43,9 @@ export function PetCaregiversSection({ pet, user, onInvite }: PetCaregiversSecti
           <CaregiverCard
             nome={user?.nome || 'Tutor'}
             email={user?.email}
-            roleText="Responsável Principal"
+            roleText={isPrincipal ? 'Responsável Principal' : 'Co-cuidador'}
             isCurrentUser
-            isPrincipal
+            isPrincipal={isPrincipal}
           />
         )
       ) : (

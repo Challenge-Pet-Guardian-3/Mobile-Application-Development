@@ -74,7 +74,19 @@ export const colors = {
     blue: '#0066FF',
     purple: '#7C3AED',
   },
+
+  // Paleta de cores para os nós das trilhas de treinamento
+  trainingPalette: [
+    '#58CC02', // Duolingo Green
+    '#1CB0F6', // Vibrant Sky Blue
+    '#A855F7', // Amethyst Purple
+    '#F59E0B', // Amber Gold
+    '#EC4899', // Coral Pink
+    '#10B981', // Emerald
+  ],
 } as const;
+
+export const trainingPalette = colors.trainingPalette;
 
 export const spacing = {
   xs: 4,
