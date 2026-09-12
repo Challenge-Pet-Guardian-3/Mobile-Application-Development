@@ -112,7 +112,6 @@ export const AiService = {
           categoria: response.data.categoria,
           urgencia: response.data.urgencia,
           acoesRecomendadas: response.data.acoes_recomendadas,
-          scoreXpSugerido: response.data.score_xp_sugerido,
         };
       }
     } catch {
@@ -127,5 +126,98 @@ export const AiService = {
       timestamp: horaAtual,
       urgencia: 'BAIXA',
     };
+  },
+
+  // Consulta o histórico de mensagens gravadas no SQLite para o pet ativo
+  async getHistoricoDoPet(petId?: number): Promise<AiMessage[]> {
+    if (!petId) return [];
+
+    try {
+      const response = await pythonClient.get<{
+        total: number;
+        mensagens: Array<{
+          id: number;
+          session_id: string;
+          pet_id?: number;
+          sender: string;
+          text: string;
+          timestamp?: string;
+        }>;
+      }>('/ai/history', {
+        params: { pet_id: petId, limit: 50 },
+      });
+
+      if (response.data && Array.isArray(response.data.mensagens)) {
+        return response.data.mensagens.map((m) => ({
+          id: `sqlite_${m.id}`,
+          sender: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+          text: m.text,
+          timestamp: m.timestamp
+            ? new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : '',
+        }));
+      }
+    } catch {
+      return [];
+    }
+
+    return [];
+  },
+
+  // Consulta as auditorias clínicas de triagem gravadas no SQLite
+  async getAuditoriasDoPet(petId?: number): Promise<
+    Array<{
+      id: number;
+      sessionId: string;
+      petId?: number;
+      nomePet?: string;
+      pergunta: string;
+      resposta: string;
+      categoria: string;
+      urgencia: string;
+      origemResposta: string;
+      timestamp?: string;
+    }>
+  > {
+    if (!petId) return [];
+
+    try {
+      const response = await pythonClient.get<{
+        total: number;
+        auditorias: Array<{
+          id: number;
+          session_id: string;
+          pet_id?: number;
+          nome_pet?: string;
+          pergunta: string;
+          resposta: string;
+          categoria: string;
+          urgencia: string;
+          origem_resposta: string;
+          timestamp?: string;
+        }>;
+      }>('/ai/audit', {
+        params: { pet_id: petId, limit: 20 },
+      });
+
+      if (response.data && Array.isArray(response.data.auditorias)) {
+        return response.data.auditorias.map((a) => ({
+          id: a.id,
+          sessionId: a.session_id,
+          petId: a.pet_id,
+          nomePet: a.nome_pet,
+          pergunta: a.pergunta,
+          resposta: a.resposta,
+          categoria: a.categoria,
+          urgencia: a.urgencia,
+          origemResposta: a.origem_resposta,
+          timestamp: a.timestamp,
+        }));
+      }
+    } catch {
+      return [];
+    }
+
+    return [];
   },
 };

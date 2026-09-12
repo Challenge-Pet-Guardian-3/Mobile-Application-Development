@@ -17,11 +17,13 @@ import { AiPetContextSelector } from './components/AiPetContextSelector';
 import { AiPreventiveInsights } from './components/AiPreventiveInsights';
 import { AiChatMessages } from './components/AiChatMessages';
 import { AiChatInputBar } from './components/AiChatInputBar';
+import { AiHistoryModal } from './components/AiHistoryModal';
 
 export default function AiAssistantScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList>>();
   const insets = useSafeAreaInsets();
   const { isUserComum, pet, insights, chat } = useAiAssistantScreen();
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false);
 
   const handleGoBack = () => navigation.navigate('Home');
 
@@ -52,6 +54,7 @@ export default function AiAssistantScreen() {
       <AiHeader
         onGoBack={handleGoBack}
         onClearChat={chat.clearChat}
+        onOpenHistory={() => setIsHistoryModalOpen(true)}
         hasMessages={chat.messages.length > 0}
       />
 
@@ -75,6 +78,13 @@ export default function AiAssistantScreen() {
 
       {/* Painel Fixo Inferior: Sugestões de Perguntas + Barra de Input */}
       <AiChatInputBar chat={chat} insets={insets} />
+
+      {/* Modal de Histórico e Auditoria SQLite */}
+      <AiHistoryModal
+        visible={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        pet={pet.activePet}
+      />
     </KeyboardAvoidingView>
   );
 }

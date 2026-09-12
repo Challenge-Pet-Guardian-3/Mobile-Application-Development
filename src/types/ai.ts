@@ -9,7 +9,6 @@ export interface AiMessage {
   categoria?: AiCategory;
   urgencia?: AiUrgency;
   acoesRecomendadas?: string[];
-  scoreXpSugerido?: number;
   tags?: string[];
 }
 
@@ -48,6 +47,5 @@ export interface AiChatResponsePayload {
   categoria?: AiCategory;
   urgencia?: AiUrgency;
   acoes_recomendadas?: string[];
-  score_xp_sugerido?: number;
   origem_resposta?: string;
 }
