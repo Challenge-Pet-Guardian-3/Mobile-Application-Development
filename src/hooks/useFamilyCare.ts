@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { usePets, usePetsPontosMap, useCreatePet, useInviteCaregiver } from './usePets';
 import { useUserTasks, useTasks, useCreateTask } from './useTasks';
-import { useTaskActions, ActionCallbacks } from './useTaskActions';
+import { useTaskActions } from './useTaskActions';
 import { useRedeCuidado } from './useRedeCuidado';
 import { useFamilyModals } from './useFamilyModals';
 import { normalizarDataNascParaIso, normalizarPrazoParaIso, formatarPapelCuidador } from '../utils/petUtils';
@@ -11,21 +11,11 @@ import { PetResponse, PetFormData } from '../types/pet';
 import { TarefaResponse, TaskFormData } from '../types/task';
 import { RedeCuidadoResponse, InviteCaregiverData } from '../types/user';
 import { PetSchema, TaskSchema, InviteCaregiverSchema, formatZodError } from '../utils/schemas';
-import { getApiErrorMessage } from '../utils/apiError';
+import { createMutationCallbacks, ActionCallbacks } from '../utils/apiError';
 import { formatarDataIsoYmd } from '../utils/streakUtils';
 import { filtrarTarefasHoje, ordenarTarefasRotina } from '../utils/taskUtils';
 
-export type { ActionCallbacks } from './useTaskActions';
-
-function mutationCallbacks(title: string, defaultMsg: string, callbacks?: ActionCallbacks) {
-  return {
-    onSuccess: () => callbacks?.onSuccess?.(),
-    onError: (err: unknown) => {
-      Alert.alert(title, getApiErrorMessage(err, defaultMsg));
-      callbacks?.onError?.(err);
-    },
-  };
-}
+export type { ActionCallbacks };
 
 export function useFamilyCare() {
   const { user } = useSession();
@@ -89,7 +79,7 @@ export function useFamilyCare() {
           castrado: data.castrado,
           usuarioId: user.id,
         },
-        mutationCallbacks('Erro ao Cadastrar Pet', 'Não foi possível cadastrar o pet na API.', callbacks)
+        createMutationCallbacks('Erro ao Cadastrar Pet', 'Não foi possível cadastrar o pet na API.', callbacks)
       );
     },
     [user, createPetMutation]
@@ -112,7 +102,7 @@ export function useFamilyCare() {
           petId: data.petId,
           status: data.status || 'PENDENTE',
         },
-        mutationCallbacks('Erro ao Cadastrar Tarefa', 'Não foi possível cadastrar a tarefa na API.', callbacks)
+        createMutationCallbacks('Erro ao Cadastrar Tarefa', 'Não foi possível cadastrar a tarefa na API.', callbacks)
       );
     },
     [user, createTaskMutation]
@@ -131,7 +121,7 @@ export function useFamilyCare() {
           responsavelPrincipalId: user.id,
           email: data.email.trim().toLowerCase(),
         },
-        mutationCallbacks('Erro ao Convidar Cuidador', 'Não foi possível enviar o convite.', callbacks)
+        createMutationCallbacks('Erro ao Convidar Cuidador', 'Não foi possível enviar o convite.', callbacks)
       );
     },
     [user, inviteMutation]
@@ -230,16 +220,10 @@ export function useFamilyCare() {
   }, [user, pets, petsOndeSouPrincipal]);
 
   const isHoje = filtroRotina === 'HOJE';
-  const routineTexts = {
-    title: isHoje ? 'Rotina de Hoje' : 'Rotina & Tarefas',
-    subtitle: `${tasksExibidas.length} tarefa${tasksExibidas.length === 1 ? '' : 's'} ${isHoje ? 'hoje' : 'no total'}`,
-    emptyTitle: isHoje ? 'Tudo em dia para hoje!' : 'Nenhuma tarefa ativa',
-    emptyDesc: isHoje ? 'Nenhuma tarefa agendada para hoje na família.' : 'Crie rotinas diárias para seu pet acumular pontos XP!',
-  };
 
   const routineData = useMemo(() => ({
-    title: routineTexts.title,
-    subtitle: routineTexts.subtitle,
+    title: isHoje ? 'Rotina de Hoje' : 'Rotina & Tarefas',
+    subtitle: `${tasksExibidas.length} tarefa${tasksExibidas.length === 1 ? '' : 's'} ${isHoje ? 'hoje' : 'no total'}`,
     filter: filtroRotina,
     onFilterChange: setFiltroRotina,
     countHoje: tasksHoje.length,
@@ -249,8 +233,8 @@ export function useFamilyCare() {
     onEditTask: modals.abrirEdicaoTarefa,
     onDeleteTask: removerTarefa,
   }), [
-    routineTexts.title,
-    routineTexts.subtitle,
+    isHoje,
+    tasksExibidas.length,
     filtroRotina,
     setFiltroRotina,
     tasksHoje.length,
@@ -293,15 +277,7 @@ export function useFamilyCare() {
         onPageChange: setPetsPage,
       },
       summary: familySummary,
-      tasks: tasksExibidas,
-      allTasks,
-      todayTasks: tasksHoje,
-      filtroRotina,
-      setFiltroRotina,
-      routineTexts,
       routineData,
-      totalTarefasHoje: tasksHoje.length,
-      totalTarefasGeral: allTasks.length,
       redeCuidado,
       coCuidadores: coCuidadoresFormatados,
       petsOndeSouPrincipal,

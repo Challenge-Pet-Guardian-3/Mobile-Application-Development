@@ -1,5 +1,11 @@
+import { Alert } from 'react-native';
 import axios, { AxiosError } from 'axios';
 import { ApiError, ApiErrorResponse } from '../types/api';
+
+export interface ActionCallbacks {
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
 
 /**
  * Normaliza qualquer erro (AxiosError, ApiError, Error nativo ou desconhecido)
@@ -116,4 +122,21 @@ export function getAuthErrorMessage(
   }
 
   return normalized.message.trim() || defaultMessage;
+}
+
+/**
+ * Cria callbacks padronizados de sucesso e tratamento de erro com Alert nativo para mutações do TanStack Query.
+ */
+export function createMutationCallbacks(
+  errorTitle: string,
+  defaultErrorMsg: string,
+  callbacks?: ActionCallbacks
+) {
+  return {
+    onSuccess: () => callbacks?.onSuccess?.(),
+    onError: (err: unknown) => {
+      Alert.alert(errorTitle, getApiErrorMessage(err, defaultErrorMsg));
+      callbacks?.onError?.(err);
+    },
+  };
 }

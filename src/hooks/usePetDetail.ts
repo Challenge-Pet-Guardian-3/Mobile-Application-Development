@@ -8,12 +8,9 @@ import { usePetDetailModals } from './usePetDetailModals';
 import { CoCuidadorResponse, PetResponse, PetFormData } from '../types/pet';
 import { normalizarDataNascParaIso, formatarIsoParaBr } from '../utils/petUtils';
 import { PetSchema, formatZodError } from '../utils/schemas';
-import { getApiErrorMessage } from '../utils/apiError';
+import { createMutationCallbacks, ActionCallbacks } from '../utils/apiError';
 
-export interface ActionCallbacks {
-  onSuccess?: () => void;
-  onError?: (error: unknown) => void;
-}
+export type { ActionCallbacks };
 
 export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
   const { user } = useSession();
@@ -112,15 +109,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
             usuarioId: user.id,
           },
         },
-        {
-          onSuccess: () => {
-            callbacks?.onSuccess?.();
-          },
-          onError: (err) => {
-            Alert.alert('Erro ao Atualizar Pet', getApiErrorMessage(err, 'Não foi possível atualizar o pet na API.'));
-            callbacks?.onError?.(err);
-          },
-        }
+        createMutationCallbacks('Erro ao Atualizar Pet', 'Não foi possível atualizar o pet na API.', callbacks)
       );
     },
     [activePet, user, isResponsavelPrincipal, updatePetMutation]
@@ -146,23 +135,20 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
             onPress: () => {
               deletePetMutation.mutate(
                 { id: activePet.id, usuarioId: user?.id },
-                {
+                createMutationCallbacks('Erro ao Excluir Pet', 'Não foi possível excluir o pet.', {
                   onSuccess: () => {
                     setSelectedPetId(undefined);
                     callbacks?.onSuccess?.();
                   },
-                  onError: (err) => {
-                    Alert.alert('Erro ao Excluir Pet', getApiErrorMessage(err, 'Não foi possível excluir o pet.'));
-                    callbacks?.onError?.(err);
-                  },
-                }
+                  onError: callbacks?.onError,
+                })
               );
             },
           },
         ]
       );
     },
-    [activePet, isResponsavelPrincipal, user?.id, deletePetMutation]
+    [activePet, isResponsavelPrincipal, user?.id, deletePetMutation, setSelectedPetId]
   );
 
   // Convidar co-cuidador para o pet ativo
@@ -180,15 +166,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
           responsavelPrincipalId: user.id,
           email: email.trim().toLowerCase(),
         },
-        {
-          onSuccess: () => {
-            callbacks?.onSuccess?.();
-          },
-          onError: (err) => {
-            Alert.alert('Erro ao Convidar Cuidador', getApiErrorMessage(err, 'Não foi possível enviar o convite. Verifique se o e-mail está cadastrado.'));
-            callbacks?.onError?.(err);
-          },
-        }
+        createMutationCallbacks('Erro ao Convidar Cuidador', 'Não foi possível enviar o convite. Verifique se o e-mail está cadastrado.', callbacks)
       );
     },
     [activePet, user, isResponsavelPrincipal, inviteCaregiverMutation]
@@ -217,15 +195,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
                 usuarioId: cuidadorId,
                 solicitanteId: user.id,
               },
-              {
-                onSuccess: () => {
-                  callbacks?.onSuccess?.();
-                },
-                onError: (err) => {
-                  Alert.alert('Erro ao Desvincular Cuidador', getApiErrorMessage(err, 'Não foi possível desvincular o cuidador.'));
-                  callbacks?.onError?.(err);
-                },
-              }
+              createMutationCallbacks('Erro ao Desvincular Cuidador', 'Não foi possível desvincular o cuidador.', callbacks)
             );
           },
         },
@@ -254,15 +224,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
                   responsavelAtualId: user.id,
                   novoResponsavelId,
                 },
-                {
-                  onSuccess: () => {
-                    callbacks?.onSuccess?.();
-                  },
-                  onError: (err) => {
-                    Alert.alert('Erro na Transferência', getApiErrorMessage(err, 'Não foi possível transferir a responsabilidade principal.'));
-                    callbacks?.onError?.(err);
-                  },
-                }
+                createMutationCallbacks('Erro na Transferência', 'Não foi possível transferir a responsabilidade principal.', callbacks)
               );
             },
           },
@@ -283,15 +245,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
           dataHist: data.dataHist,
           petId: activePet.id,
         },
-        {
-          onSuccess: () => {
-            callbacks?.onSuccess?.();
-          },
-          onError: (err) => {
-            Alert.alert('Erro no Prontuário', getApiErrorMessage(err, 'Não foi possível registrar o histórico de saúde.'));
-            callbacks?.onError?.(err);
-          },
-        }
+        createMutationCallbacks('Erro no Prontuário', 'Não foi possível registrar o histórico de saúde.', callbacks)
       );
     },
     [activePet, createHistoricoMutation]
@@ -311,15 +265,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
             petId: activePet.id,
           },
         },
-        {
-          onSuccess: () => {
-            callbacks?.onSuccess?.();
-          },
-          onError: (err) => {
-            Alert.alert('Erro no Prontuário', getApiErrorMessage(err, 'Não foi possível atualizar o registro.'));
-            callbacks?.onError?.(err);
-          },
-        }
+        createMutationCallbacks('Erro no Prontuário', 'Não foi possível atualizar o registro.', callbacks)
       );
     },
     [activePet, updateHistoricoMutation]
@@ -341,15 +287,7 @@ export function usePetDetail(routePetId?: number, onGoBack?: () => void) {
             onPress: () => {
               deleteHistoricoMutation.mutate(
                 { id, petId: activePet.id },
-                {
-                  onSuccess: () => {
-                    callbacks?.onSuccess?.();
-                  },
-                  onError: (err) => {
-                    Alert.alert('Erro ao Excluir Registro', getApiErrorMessage(err, 'Não foi possível excluir o registro.'));
-                    callbacks?.onError?.(err);
-                  },
-                }
+                createMutationCallbacks('Erro ao Excluir Registro', 'Não foi possível excluir o registro.', callbacks)
               );
             },
           },
