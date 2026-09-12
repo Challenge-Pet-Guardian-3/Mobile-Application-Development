@@ -6,7 +6,7 @@ import { useUserTasks, useTasks, useCreateTask } from './useTasks';
 import { useTaskActions, ActionCallbacks } from './useTaskActions';
 import { useRedeCuidado } from './useRedeCuidado';
 import { useFamilyModals } from './useFamilyModals';
-import { normalizarDataNascParaIso, normalizarPrazoParaIso } from '../utils/petUtils';
+import { normalizarDataNascParaIso, normalizarPrazoParaIso, formatarPapelCuidador } from '../utils/petUtils';
 import { PetResponse, PetFormData } from '../types/pet';
 import { TarefaResponse, TaskFormData } from '../types/task';
 import { RedeCuidadoResponse, InviteCaregiverData } from '../types/user';
@@ -204,12 +204,32 @@ export function useFamilyCare() {
   const coCuidadoresFormatados = useMemo(
     () => coCuidadores.map((c) => ({
       ...c,
-      roleText: c.responsavelPrincipal
-        ? (c.petNomes?.length ? `Tutor Principal de: ${c.petNomes.join(', ')}` : 'Tutor Principal')
-        : (c.petNomes?.length ? `Ajuda com: ${c.petNomes.join(', ')}` : 'Co-cuidador'),
+      roleText: formatarPapelCuidador(
+        Boolean(c.responsavelPrincipal),
+        c.responsavelPrincipal ? (c.petNomes ?? []) : [],
+        !c.responsavelPrincipal ? (c.petNomes ?? []) : []
+      ),
     })),
     [coCuidadores]
   );
+
+  const currentUserCaregiver = useMemo(() => {
+    if (!user) return null;
+    const petsPrincipalNomes = petsOndeSouPrincipal.map((p) => p.nome).filter(Boolean);
+    const petsAjudaNomes = pets
+      .filter((p) => !petsOndeSouPrincipal.some((op) => op.id === p.id))
+      .map((p) => p.nome)
+      .filter(Boolean);
+    const isPrincipal = petsPrincipalNomes.length > 0;
+
+    return {
+      id: user.id,
+      nome: user.nome || 'Tutor',
+      email: user.email,
+      isPrincipal,
+      roleText: formatarPapelCuidador(isPrincipal, petsPrincipalNomes, petsAjudaNomes),
+    };
+  }, [user, pets, petsOndeSouPrincipal]);
 
   const isHoje = filtroRotina === 'HOJE';
   const routineTexts = {
@@ -264,6 +284,7 @@ export function useFamilyCare() {
     },
     family: {
       user,
+      currentUserCaregiver,
       pets,
       petsComMetadados,
       petsExibidos,

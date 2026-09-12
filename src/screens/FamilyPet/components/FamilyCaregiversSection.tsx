@@ -17,22 +17,8 @@ export function FamilyCaregiversSection({
   onInvite,
   onManageCaregiver,
 }: FamilyCaregiversSectionProps) {
-  const { user, coCuidadores, petsOndeSouPrincipal, pets } = family;
-  const isPrincipal = (petsOndeSouPrincipal?.length ?? 0) > 0;
-
-  const nomesPetsPrincipal = (petsOndeSouPrincipal ?? []).map((p) => p.nome).filter(Boolean).join(', ');
-  const petsOndeSouCoCuidador = (pets ?? []).filter(
-    (p) => !petsOndeSouPrincipal?.some((op) => op.id === p.id)
-  );
-  const nomesPetsCoCuidador = petsOndeSouCoCuidador.map((p) => p.nome).filter(Boolean).join(', ');
-
-  const myRoleText = isPrincipal
-    ? (nomesPetsPrincipal
-        ? `Tutor Principal de: ${nomesPetsPrincipal}${nomesPetsCoCuidador ? ` • Ajuda com: ${nomesPetsCoCuidador}` : ''}`
-        : 'Tutor Principal')
-    : (nomesPetsCoCuidador || nomesPetsPrincipal
-        ? `Ajuda com: ${nomesPetsCoCuidador || nomesPetsPrincipal}`
-        : 'Co-cuidador Familiar');
+  const { currentUserCaregiver, coCuidadores } = family;
+  const isPrincipal = currentUserCaregiver?.isPrincipal ?? false;
 
   return (
     <View style={styles.sectionBox}>
@@ -47,13 +33,13 @@ export function FamilyCaregiversSection({
       </View>
 
       {/* Meu perfil */}
-      {user && (
+      {currentUserCaregiver && (
         <CaregiverCard
-          nome={user?.nome || 'Tutor'}
-          email={user?.email}
-          roleText={myRoleText}
+          nome={currentUserCaregiver.nome}
+          email={currentUserCaregiver.email}
+          roleText={currentUserCaregiver.roleText}
           isCurrentUser
-          isPrincipal={isPrincipal}
+          isPrincipal={currentUserCaregiver.isPrincipal}
         />
       )}
 

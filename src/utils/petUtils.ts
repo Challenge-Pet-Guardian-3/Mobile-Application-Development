@@ -208,3 +208,31 @@ export function formatarPrazoAmigavel(isoDate?: string): string {
   return `${dia}/${mes} às ${horaMin}`;
 }
 
+/**
+ * Formata o papel de um cuidador (Tutor Principal ou Co-cuidador) indicando os pets sob sua responsabilidade.
+ */
+export function formatarPapelCuidador(
+  isPrincipal: boolean,
+  petsPrincipalNomes: string[] = [],
+  petsAjudaNomes: string[] = []
+): string {
+  const principalValidos = petsPrincipalNomes.filter(Boolean);
+  const ajudaValidos = petsAjudaNomes.filter(Boolean);
+
+  if (isPrincipal) {
+    if (principalValidos.length > 0) {
+      const partePrincipal = `Tutor Principal de: ${principalValidos.join(', ')}`;
+      const parteAjuda = ajudaValidos.length > 0 ? ` • Ajuda com: ${ajudaValidos.join(', ')}` : '';
+      return `${partePrincipal}${parteAjuda}`;
+    }
+    return 'Tutor Principal';
+  }
+
+  const nomesAjuda = ajudaValidos.length > 0 ? ajudaValidos : principalValidos;
+  if (nomesAjuda.length > 0) {
+    return `Ajuda com: ${nomesAjuda.join(', ')}`;
+  }
+
+  return 'Co-cuidador Familiar';
+}
+
