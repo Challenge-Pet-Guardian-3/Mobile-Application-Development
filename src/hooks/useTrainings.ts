@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { createMutationCallbacks } from '../utils/apiError';
 import { TrainingLesson, TrainingTrack } from '../types/training';
 import { usePets, usePetPontos } from './usePets';
 import { useSession } from './useSession';
@@ -55,14 +55,11 @@ export function useTrainings() {
           trilhaId,
           licaoId: licao.id,
         },
-        {
+        createMutationCallbacks('Erro', 'Não foi possível desmarcar a lição na API.', {
           onSuccess: () => {
             setLicaoSelecionada(undefined);
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível desmarcar a lição na API.');
-          },
-        }
+        })
       );
     } else {
       concluirLicaoMutation.mutate(
@@ -70,14 +67,11 @@ export function useTrainings() {
           trilhaId,
           licaoId: licao.id,
         },
-        {
+        createMutationCallbacks('Erro', 'Não foi possível registrar a lição na API.', {
           onSuccess: () => {
             setLicaoSelecionada(undefined);
           },
-          onError: () => {
-            Alert.alert('Erro', 'Não foi possível registrar a lição na API.');
-          },
-        }
+        })
       );
     }
   }, [licaoSelecionada, petAtivo, concluirLicaoMutation, desmarcarLicaoMutation]);

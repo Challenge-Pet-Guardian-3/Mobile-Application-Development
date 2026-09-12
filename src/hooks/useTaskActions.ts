@@ -4,13 +4,10 @@ import { useSession } from './useSession';
 import { useCompleteTask, useUncompleteTask, useUpdateTask, useDeleteTask } from './useTasks';
 import { TarefaResponse, TaskFormData } from '../types/task';
 import { TaskSchema, formatZodError } from '../utils/schemas';
-import { getApiErrorMessage } from '../utils/apiError';
 import { normalizarPrazoParaIso } from '../utils/petUtils';
+import { ActionCallbacks, createMutationCallbacks } from '../utils/apiError';
 
-export interface ActionCallbacks {
-  onSuccess?: () => void;
-  onError?: (err: unknown) => void;
-}
+export type { ActionCallbacks };
 
 export interface AlternarStatusOptions extends ActionCallbacks {
   onExpired?: (tarefa: TarefaResponse) => void;
@@ -42,13 +39,7 @@ export function useTaskActions() {
       if (tarefa.status === 'CONCLUIDO') {
         uncompleteTaskMutation.mutate(
           { id: taskId, usuarioId: user.id },
-          {
-            onSuccess: options?.onSuccess,
-            onError: (err) => {
-              Alert.alert('Erro ao Desmarcar', getApiErrorMessage(err, 'Não foi possível desmarcar a tarefa.'));
-              options?.onError?.(err);
-            },
-          }
+          createMutationCallbacks('Erro ao Desmarcar', 'Não foi possível desmarcar a tarefa.', options)
         );
       } else if (tarefa.status === 'EXPIRADO') {
         if (options?.onExpired) {
@@ -78,13 +69,7 @@ export function useTaskActions() {
             id: taskId,
             request: { concluinteId: user.id },
           },
-          {
-            onSuccess: options?.onSuccess,
-            onError: (err) => {
-              Alert.alert('Erro ao Concluir', getApiErrorMessage(err, 'Não foi possível concluir a tarefa.'));
-              options?.onError?.(err);
-            },
-          }
+          createMutationCallbacks('Erro ao Concluir', 'Não foi possível concluir a tarefa.', options)
         );
       }
     },
@@ -99,13 +84,10 @@ export function useTaskActions() {
           text: 'Excluir',
           style: 'destructive',
           onPress: () => {
-            deleteTaskMutation.mutate(taskId, {
-              onSuccess: callbacks?.onSuccess,
-              onError: (err) => {
-                Alert.alert('Erro ao Excluir', getApiErrorMessage(err, 'Não foi possível excluir a tarefa.'));
-                callbacks?.onError?.(err);
-              },
-            });
+            deleteTaskMutation.mutate(
+              taskId,
+              createMutationCallbacks('Erro ao Excluir', 'Não foi possível excluir a tarefa.', callbacks)
+            );
           },
         },
       ]);
@@ -147,13 +129,7 @@ export function useTaskActions() {
             conclusao: conclusaoIso,
           },
         },
-        {
-          onSuccess: callbacks?.onSuccess,
-          onError: (err) => {
-            Alert.alert('Erro ao Atualizar', getApiErrorMessage(err, 'Não foi possível atualizar a tarefa.'));
-            callbacks?.onError?.(err);
-          },
-        }
+        createMutationCallbacks('Erro ao Atualizar', 'Não foi possível atualizar a tarefa.', callbacks)
       );
     },
     [user, updateTaskMutation]

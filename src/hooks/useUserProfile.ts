@@ -4,7 +4,7 @@ import { useSession } from './useSession';
 import { useUpdateUser, useUserProfileData } from './useUsers';
 import { EditProfileFormData } from '../types/user';
 import { ProfileEditSchema, formatZodError } from '../utils/schemas';
-import { getApiErrorMessage } from '../utils/apiError';
+import { ActionCallbacks, createMutationCallbacks } from '../utils/apiError';
 
 export type UserProfileModal = 'editar' | 'faq' | 'termos' | null;
 
@@ -44,7 +44,7 @@ export function useUserProfile() {
   );
 
   const salvarPerfil = useCallback(
-    (formEdit: EditProfileFormData, callbacks?: { onSuccess?: () => void }) => {
+    (formEdit: EditProfileFormData, callbacks?: ActionCallbacks) => {
       if (!user) return;
 
       const validacao = ProfileEditSchema.safeParse({
@@ -75,15 +75,13 @@ export function useUserProfile() {
             },
           },
         },
-        {
+        createMutationCallbacks('Erro ao Atualizar Perfil', 'Não foi possível atualizar seus dados na API.', {
           onSuccess: () => {
             callbacks?.onSuccess?.();
             fecharModal();
           },
-          onError: (err) => {
-            Alert.alert('Erro ao Atualizar Perfil', getApiErrorMessage(err, 'Não foi possível atualizar seus dados na API.'));
-          },
-        }
+          onError: callbacks?.onError,
+        })
       );
     },
     [user, updateUserMutation, fecharModal]

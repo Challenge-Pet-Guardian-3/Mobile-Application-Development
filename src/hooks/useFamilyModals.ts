@@ -3,8 +3,7 @@ import { Alert } from 'react-native';
 import { PetResponse } from '../types/pet';
 import { TarefaResponse, TaskFormData } from '../types/task';
 import { CuidadorResumo, UsuarioResponse } from '../types/user';
-import { ActionCallbacks } from './useFamilyCare';
-import { getApiErrorMessage } from '../utils/apiError';
+import { ActionCallbacks, createMutationCallbacks, getApiErrorMessage } from '../utils/apiError';
 import { useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
 
 export type FamilyModalType =
@@ -20,9 +19,6 @@ interface UseFamilyModalsProps {
   petsOndeSouPrincipal: PetResponse[];
   cadastrarTarefa: (data: TaskFormData, callbacks?: ActionCallbacks) => void;
   atualizarTarefa: (taskId: number, data: TaskFormData, callbacks?: ActionCallbacks) => void;
-  inviteMutation?: ReturnType<typeof useInviteCaregiver>;
-  removeCaregiverMutation?: ReturnType<typeof useRemoveCaregiver>;
-  transferResponsibilityMutation?: ReturnType<typeof useTransferResponsibility>;
 }
 
 export function useFamilyModals({
@@ -30,17 +26,10 @@ export function useFamilyModals({
   petsOndeSouPrincipal,
   cadastrarTarefa,
   atualizarTarefa,
-  inviteMutation: providedInvite,
-  removeCaregiverMutation: providedRemove,
-  transferResponsibilityMutation: providedTransfer,
 }: UseFamilyModalsProps) {
-  const defaultInvite = useInviteCaregiver();
-  const defaultRemove = useRemoveCaregiver();
-  const defaultTransfer = useTransferResponsibility();
-
-  const inviteMutation = providedInvite ?? defaultInvite;
-  const removeCaregiverMutation = providedRemove ?? defaultRemove;
-  const transferResponsibilityMutation = providedTransfer ?? defaultTransfer;
+  const inviteMutation = useInviteCaregiver();
+  const removeCaregiverMutation = useRemoveCaregiver();
+  const transferResponsibilityMutation = useTransferResponsibility();
 
   const [modalAtivo, setModalAtivo] = useState<FamilyModalType>(null);
   const [tarefaEmEdicao, setTarefaEmEdicao] = useState<TarefaResponse | undefined>(undefined);
@@ -72,30 +61,24 @@ export function useFamilyModals({
       if (isCurrentlyLinked) {
         removeCaregiverMutation.mutate(
           { petId, usuarioId: cuidadorEmGestao.id, solicitanteId: user.id },
-          {
+          createMutationCallbacks('Erro ao Desvincular', 'Não foi possível desvincular o cuidador deste pet.', {
             onSuccess: () => {
               setCuidadorEmGestao((prev) =>
                 prev ? { ...prev, petIds: prev.petIds.filter((id) => id !== petId) } : undefined
               );
             },
-            onError: (err) => {
-              Alert.alert('Erro ao Desvincular', getApiErrorMessage(err, 'Não foi possível desvincular o cuidador deste pet.'));
-            },
-          }
+          })
         );
       } else {
         inviteMutation.mutate(
           { petId, responsavelPrincipalId: user.id, email: cuidadorEmGestao.email },
-          {
+          createMutationCallbacks('Erro ao Vincular', 'Não foi possível vincular o cuidador a este pet.', {
             onSuccess: () => {
               setCuidadorEmGestao((prev) =>
                 prev ? { ...prev, petIds: [...prev.petIds, petId] } : undefined
               );
             },
-            onError: (err) => {
-              Alert.alert('Erro ao Vincular', getApiErrorMessage(err, 'Não foi possível vincular o cuidador a este pet.'));
-            },
-          }
+          })
         );
       }
     },
@@ -108,14 +91,9 @@ export function useFamilyModals({
 
       transferResponsibilityMutation.mutate(
         { petId, responsavelAtualId: user.id, novoResponsavelId: cuidadorEmGestao.id },
-        {
-          onSuccess: () => {
-            handleFecharGerenciamento();
-          },
-          onError: (err) => {
-            Alert.alert('Erro ao Transferir Titularidade', getApiErrorMessage(err, 'Não foi possível transferir a titularidade do pet.'));
-          },
-        }
+        createMutationCallbacks('Erro ao Transferir Titularidade', 'Não foi possível transferir a titularidade do pet.', {
+          onSuccess: handleFecharGerenciamento,
+        })
       );
     },
     [cuidadorEmGestao, user, transferResponsibilityMutation, handleFecharGerenciamento]
@@ -197,7 +175,6 @@ export function useFamilyModals({
       setTarefaEmEdicao(undefined);
       setModalAtivo('novaTarefa');
     },
-    abrirEditarTarefa: handleEditTask,
     abrirEdicaoTarefa: handleEditTask,
     abrirConvite: handleAbrirConvite,
     tarefaEmEdicao,
