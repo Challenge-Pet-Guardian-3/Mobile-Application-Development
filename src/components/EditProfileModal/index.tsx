@@ -148,11 +148,11 @@ const EditProfileBody = memo(function EditProfileBody({
       </View>
 
       <CustomInput
-        label="Nova Senha (opcional)"
-        placeholder="Deixe em branco para manter a atual"
+        label="Senha (obrigatória para salvar)"
+        placeholder="Digite sua senha (mín. 6 caracteres)"
         secureTextEntry
         maxLength={64}
-        value={form.senha || ''}
+        value={form.senha}
         onChangeText={(t) => updateField('senha', t)}
         leftIcon={<Ionicons name="lock-closed-outline" size={18} color="#94A3B8" />}
       />

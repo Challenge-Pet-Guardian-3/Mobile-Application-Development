@@ -77,5 +77,5 @@ export interface EditProfileFormData {
   numeroTelefone: string;
   cep: string;
   numero: string;
-  senha?: string;
+  senha: string;
 }

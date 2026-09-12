@@ -64,12 +64,7 @@ export const ProfileEditSchema = z.object({
   role: z.enum(['COMUM', 'PREMIUM']).default('PREMIUM'),
   cep: CepPipeline,
   numero: NonEmptyString('O número do endereço é obrigatório.'),
-  senha: z
-    .string()
-    .optional()
-    .refine((val) => !val || val.length >= 6, {
-      message: 'A nova senha deve conter no mínimo 6 caracteres.',
-    }),
+  senha: z.string().min(6, 'A senha deve conter no mínimo 6 caracteres.'),
 });
 
 // Validador de data real no formato DD/MM/AAAA ou YYYY-MM-DD

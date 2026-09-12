@@ -65,7 +65,7 @@ export function useUserProfile() {
           data: {
             nome: formEdit.nome.trim(),
             email: formEdit.email.trim().toLowerCase(),
-            senha: formEdit.senha?.trim() || '',
+            senha: formEdit.senha.trim(),
             ddd: formEdit.ddd.replace(/\D/g, ''),
             numeroTelefone: formEdit.numeroTelefone.replace(/\D/g, ''),
             role: formEdit.role,
