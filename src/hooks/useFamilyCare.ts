@@ -191,14 +191,12 @@ export function useFamilyCare() {
 
   const coCuidadoresFormatados = useMemo(
     () => coCuidadores.map((c) => {
-      const principalIdsSet = new Set(petsOndeSouPrincipal.map((p) => p.id));
-      const cPetIds = c.petIds ?? [];
-      const isCoCuidadorDePetMeu = cPetIds.some((id) => principalIdsSet.has(id));
-
       let principalNomes = c.petsPrincipalNomes;
       let ajudaNomes = c.petsAjudaNomes;
 
       if (!principalNomes || !ajudaNomes) {
+        const principalIdsSet = new Set(petsOndeSouPrincipal.map((p) => p.id));
+        const cPetIds = c.petIds ?? [];
         const cPrincipal: string[] = [];
         const cAjuda: string[] = [];
 
@@ -216,12 +214,12 @@ export function useFamilyCare() {
         ajudaNomes = ajudaNomes ?? cAjuda;
       }
 
-      const hasPrincipalPet = (principalNomes?.length ?? 0) > 0;
+      const isPrincipal = (principalNomes?.length ?? 0) > 0 || Boolean(c.responsavelPrincipal);
 
       return {
         ...c,
-        badgeLabel: isCoCuidadorDePetMeu ? 'Co-cuidador' : null,
-        roleText: formatarPapelCuidador(hasPrincipalPet, principalNomes, ajudaNomes),
+        responsavelPrincipal: isPrincipal,
+        roleText: formatarPapelCuidador(isPrincipal, principalNomes, ajudaNomes),
       };
     }),
     [coCuidadores, pets, petsOndeSouPrincipal]

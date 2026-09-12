@@ -9,7 +9,6 @@ interface CaregiverCardProps {
   roleText?: string;
   isCurrentUser?: boolean;
   isPrincipal?: boolean;
-  badgeLabel?: string | null;
   onPress?: () => void;
   onTransfer?: () => void;
   onRemove?: () => void;
@@ -21,7 +20,6 @@ export function CaregiverCard({
   roleText,
   isCurrentUser = false,
   isPrincipal = false,
-  badgeLabel,
   onPress,
   onTransfer,
   onRemove,
@@ -29,8 +27,7 @@ export function CaregiverCard({
   const initials = (nome || 'TU').substring(0, 2).toUpperCase();
   const displayName = isCurrentUser ? `${nome} (Você)` : nome;
   const displayRole = roleText || (isPrincipal ? 'Tutor Principal' : email || 'Co-cuidador');
-  const badgeText = badgeLabel !== undefined ? badgeLabel : (isPrincipal ? 'Tutor Principal' : 'Co-cuidador');
-  const isPrincipalBadge = badgeText === 'Tutor Principal';
+  const badgeLabel = isPrincipal ? 'Tutor Principal' : 'Co-cuidador';
 
   const CardWrapper = onPress ? TouchableOpacity : View;
 
@@ -43,13 +40,13 @@ export function CaregiverCard({
       <View
         style={[
           styles.avatar,
-          !isPrincipalBadge && { backgroundColor: colors.neutral[100] },
+          !isPrincipal && { backgroundColor: colors.neutral[100] },
         ]}
       >
         <Text
           style={[
             styles.initials,
-            !isPrincipalBadge && { color: colors.neutral[600] },
+            !isPrincipal && { color: colors.neutral[600] },
           ]}
         >
           {initials}
@@ -61,23 +58,21 @@ export function CaregiverCard({
           <Text style={styles.name} numberOfLines={1}>
             {displayName}
           </Text>
-          {Boolean(badgeText) && (
-            <View
+          <View
+            style={[
+              styles.roleBadge,
+              !isPrincipal && { backgroundColor: colors.neutral[100] },
+            ]}
+          >
+            <Text
               style={[
-                styles.roleBadge,
-                !isPrincipalBadge && { backgroundColor: colors.neutral[100] },
+                styles.roleBadgeText,
+                !isPrincipal && { color: colors.neutral[500] },
               ]}
             >
-              <Text
-                style={[
-                  styles.roleBadgeText,
-                  !isPrincipalBadge && { color: colors.neutral[500] },
-                ]}
-              >
-                {badgeText}
-              </Text>
-            </View>
-          )}
+              {badgeLabel}
+            </Text>
+          </View>
         </View>
         <Text style={styles.role} numberOfLines={2}>
           {displayRole}

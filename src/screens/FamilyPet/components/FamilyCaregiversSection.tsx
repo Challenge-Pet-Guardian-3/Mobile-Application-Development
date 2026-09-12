@@ -50,7 +50,7 @@ export function FamilyCaregiversSection({
           nome={c.nome}
           email={c.email}
           roleText={c.roleText}
-          badgeLabel={c.badgeLabel}
+          isPrincipal={Boolean(c.responsavelPrincipal)}
           onPress={isPrincipal ? () => onManageCaregiver(c) : undefined}
         />
       ))}
