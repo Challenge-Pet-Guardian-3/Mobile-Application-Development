@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
 import { shadows } from '../../utils/shadow';
-import { colors, spacing, borderRadius } from '../../constants/theme';
+import { colors, spacing } from '../../constants/theme';
 
 export type HeaderProps = {
   title?: string;

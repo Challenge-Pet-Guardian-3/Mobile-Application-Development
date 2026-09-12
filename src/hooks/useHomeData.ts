@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { usePets, usePetPontos } from './usePets';
 import { useUserTasks, useTasks } from './useTasks';

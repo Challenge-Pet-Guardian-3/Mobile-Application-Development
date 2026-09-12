@@ -5,7 +5,7 @@ import { BaseModal } from '../BaseModal';
 import { CustomInput } from '../CustomInput';
 import { CustomButton } from '../CustomButton';
 import { RoleSelector } from '../RoleSelector';
-import { UsuarioRole, EditProfileFormData } from '../../types/user';
+import { EditProfileFormData } from '../../types/user';
 import { ProfileEditSchema, formatZodError } from '../../utils/schemas';
 export type { EditProfileFormData };
 
