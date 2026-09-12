@@ -190,15 +190,39 @@ export function useFamilyCare() {
   }, [petsComMetadados, safePetsPage]);
 
   const coCuidadoresFormatados = useMemo(
-    () => coCuidadores.map((c) => ({
-      ...c,
-      roleText: formatarPapelCuidador(
-        Boolean(c.responsavelPrincipal),
-        c.responsavelPrincipal ? (c.petNomes ?? []) : [],
-        !c.responsavelPrincipal ? (c.petNomes ?? []) : []
-      ),
-    })),
-    [coCuidadores]
+    () => coCuidadores.map((c) => {
+      let principalNomes = c.petsPrincipalNomes;
+      let ajudaNomes = c.petsAjudaNomes;
+
+      if (!principalNomes || !ajudaNomes) {
+        const principalIdsSet = new Set(petsOndeSouPrincipal.map((p) => p.id));
+        const cPetIds = c.petIds ?? [];
+        const cPrincipal: string[] = [];
+        const cAjuda: string[] = [];
+
+        cPetIds.forEach((id) => {
+          const petObj = pets.find((p) => p.id === id);
+          if (!petObj) return;
+          if (principalIdsSet.has(id)) {
+            cAjuda.push(petObj.nome);
+          } else {
+            cPrincipal.push(petObj.nome);
+          }
+        });
+
+        principalNomes = principalNomes ?? cPrincipal;
+        ajudaNomes = ajudaNomes ?? cAjuda;
+      }
+
+      const isPrincipal = (principalNomes?.length ?? 0) > 0 || Boolean(c.responsavelPrincipal);
+
+      return {
+        ...c,
+        responsavelPrincipal: isPrincipal,
+        roleText: formatarPapelCuidador(isPrincipal, principalNomes, ajudaNomes),
+      };
+    }),
+    [coCuidadores, pets, petsOndeSouPrincipal]
   );
 
   const currentUserCaregiver = useMemo(() => {

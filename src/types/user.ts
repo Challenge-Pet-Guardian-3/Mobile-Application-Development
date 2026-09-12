@@ -50,6 +50,8 @@ export interface CuidadorResumo {
   responsavelPrincipal: boolean;
   petIds: number[];
   petNomes: string[];
+  petsPrincipalNomes?: string[];
+  petsAjudaNomes?: string[];
 }
 
 export interface RedeCuidadoResponse {
