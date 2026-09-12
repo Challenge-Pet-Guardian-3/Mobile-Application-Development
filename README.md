@@ -218,7 +218,7 @@ O projeto segue rigorosamente o princípio de separação de responsabilidades (
 src/
 ├── components/          → Componentes visuais atômicos e reutilizáveis (PetScoreBar, RoutineCard, StreakCard, Header, etc.)
 ├── config/              → Variáveis de ambiente dinâmicas com fallback para localhost e emuladores (env.ts)
-├── constants/           → Tokens de design system, tipografia e paleta de cores institucional (theme.ts)
+├── constants/           → Tokens de design system, tipografia e paleta de cores institucional/gamificada (theme.ts com trainingPalette)
 ├── contexts/            → Gestão global de sessão e autenticação de usuários (AuthContext.tsx)
 ├── hooks/               → Custom hooks isolando TanStack Query, mutations, invalidações e formulários:
 │   ├── useSession.ts    → Hook para consumo simplificado do estado de autenticação e dados do tutor
@@ -258,7 +258,7 @@ src/
 │   ├── trainings.ts     → Serviços REST de trilhas e aulas didáticas
 │   └── ai.ts            → Serviços REST do microsserviço Python de IA Preventiva no Render
 ├── types/               → Tipagens TypeScript estritas espelhando a API Java (zero any)
-└── utils/               → Schemas de validação Zod (schemas.ts), cálculo de idade e helpers de domínio
+└── utils/               → Schemas Zod (schemas.ts), cálculo de idade, helpers de domínio e trilhas (trainingUtils.ts)
 ```
 
 ---
