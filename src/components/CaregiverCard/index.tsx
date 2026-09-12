@@ -26,7 +26,7 @@ export function CaregiverCard({
 }: CaregiverCardProps) {
   const initials = (nome || 'TU').substring(0, 2).toUpperCase();
   const displayName = isCurrentUser ? `${nome} (Você)` : nome;
-  const displayRole = roleText || (isPrincipal ? 'Responsável Principal' : email || 'Co-cuidador');
+  const displayRole = roleText || (isPrincipal ? 'Tutor Principal' : email || 'Co-cuidador');
   const badgeLabel = isPrincipal ? 'Tutor Principal' : 'Co-cuidador';
 
   const CardWrapper = onPress ? TouchableOpacity : View;
@@ -74,7 +74,7 @@ export function CaregiverCard({
             </Text>
           </View>
         </View>
-        <Text style={styles.role} numberOfLines={1}>
+        <Text style={styles.role} numberOfLines={2}>
           {displayRole}
         </Text>
       </View>
