@@ -1,12 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../routes/types';
 import { colors, spacing } from '../../constants/theme';

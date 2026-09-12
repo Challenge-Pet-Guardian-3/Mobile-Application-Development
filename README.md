@@ -126,6 +126,9 @@ O aplicativo é composto por **9 telas exclusivas, ricas e funcionais**, organiz
   * **Contexto Clínico Automático:** A IA recebe a idade, o porte, o sexo e o status de castração do animal ativo para respostas altamente personalizadas.
   * **Bloqueio de Automedicação Letal:** Identificação de substâncias humanas proibidas (Paracetamol, Ibuprofeno, Dipirona) com alerta visual imediato de emergência e recomendação de busca a atendimento veterinário 24h.
   * **Insights Preventivos:** Geração de cartões de recomendação nutricional e de atividade física adaptados ao porte e idade (`POST /ai/insights`).
+  * **Histórico Conversacional Estilo LLM (`AiHistoryModal`):** Navegação e recuperação de conversas anteriores do pet no padrão consagrado de mercado (estilo ChatGPT/Claude), permitindo carregar mensagens anteriores e retomar o contexto ativo.
+  * **Gestão Ágil de Sessões:** Exclusão direta de conversas passadas via botão de lixeira no modal e botão "Nova Conversa" para iniciar uma nova interação clínica limpa.
+  * **Foco Clínico Exclusivo:** Ausência deliberada de gamificação (sem pontuação de XP por uso do chat), priorizando a segurança e a sobriedade médica veterinária.
 
 #### 9. `UserProfileScreen` (Perfil do Tutor, Gamificação & Sessão)
 * **Objetivo:** Gestão cadastral do tutor, consulta de score acumulado e controle de logout seguro.
@@ -195,11 +198,14 @@ O aplicativo é composto por **9 telas exclusivas, ricas e funcionais**, organiz
 | `PATCH`| `/aulas/{id}/concluir` | Conclui lição educativa e soma pontos educacionais ao score do pet | `TrainingService.concluirLicao` |
 | `PATCH`| `/aulas/{id}/desmarcar` | Desmarca lição e estorna os pontos de aprendizado do animal | `TrainingService.desmarcarLicao` |
 
-### Grupo 7: Inteligência Artificial Preventiva (Guardian AI / FastAPI Render)
+### Grupo 7: Inteligência Artificial Preventiva & Sessões SQLite (Guardian AI / FastAPI Render)
 | Método | Endpoint | Finalidade no Mobile | Camada / Service |
 | :---: | :--- | :--- | :--- |
-| `POST` | `/ai/chat` | Chat conversacional com Google Gemini recebendo o contexto completo do pet | `AiService.enviarMensagem` |
+| `POST` | `/ai/chat` | Chat conversacional com Google Gemini recebendo o contexto do pet e sessionId | `AiService.enviarMensagem` |
 | `POST` | `/ai/insights` | Análise preditiva e recomendações de bem-estar personalizadas por idade e porte | `AiService.getInsightsDoPet` |
+| `GET` | `/ai/sessions` | Listagem de conversas anteriores do pet agrupadas por sessão (estilo ChatGPT/Claude) | `AiService.getSessoesDoPet` |
+| `GET` | `/ai/history` | Recuperação das mensagens de uma conversa pelo ID da sessão para restaurar o chat | `AiService.getMensagensDaSessao` |
+| `DELETE` | `/ai/sessions/{id}` | Exclusão permanente de uma conversa selecionada do histórico SQLite | `AiService.excluirSessao` |
 | `GET` | `/` | Warm-up inteligente de cold-start da instância no Render | `AiService.ping` |
 
 ---
@@ -220,7 +226,8 @@ src/
 │   ├── useTasks.ts      → Queries e mutations de tarefas da rotina, conclusão e pontuação
 │   ├── useTrainings.ts  → Queries e mutations de trilhas e aulas educativas
 │   ├── useUsers.ts      → Queries de perfil, dados de contato e visão agregada da rede
-│   ├── useAi.ts         → Hook de integração do chat e insights da Guardian AI
+│   ├── useAiAssistant.ts → Hooks de integração com a IA (useAiChat, useAiInsights, useAiWarmup)
+│   ├── useAiAssistantScreen.ts → Hook orquestrador de estado de tela, modal de histórico e pet ativo
 │   ├── useLoginForm.ts  → Gerenciamento do formulário de login com validação Zod
 │   └── useRegisterForm.ts → Gerenciamento do formulário de cadastro com validação Zod
 ├── lib/                 → Configurações de infraestrutura local:

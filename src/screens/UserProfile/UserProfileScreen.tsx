@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '../../components/Header';
 import { FaqModal } from './components/FaqModal';

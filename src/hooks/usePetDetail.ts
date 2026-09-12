@@ -2,23 +2,8 @@ import { useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useSession } from './useSession';
 import { useActivePet } from './useActivePet';
-import {
-  usePets,
-  usePetHistory,
-  usePetPontos,
-  useUpdatePet,
-  useDeletePet,
-  usePetCaregivers,
-  useInviteCaregiver,
-  useRemoveCaregiver,
-  useTransferResponsibility,
-} from './usePets';
-import {
-  usePetHistoricos,
-  useCreateHistorico,
-  useUpdateHistorico,
-  useDeleteHistorico,
-} from './useHistoricos';
+import { usePets, usePetHistory, usePetPontos, useUpdatePet, useDeletePet, usePetCaregivers, useInviteCaregiver, useRemoveCaregiver, useTransferResponsibility } from './usePets';
+import { usePetHistoricos, useCreateHistorico, useUpdateHistorico, useDeleteHistorico } from './useHistoricos';
 import { usePetDetailModals } from './usePetDetailModals';
 import { CoCuidadorResponse, PetResponse, PetFormData } from '../types/pet';
 import { normalizarDataNascParaIso, formatarIsoParaBr } from '../utils/petUtils';

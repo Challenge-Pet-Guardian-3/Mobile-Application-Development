@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,11 +73,16 @@ export default function AiAssistantScreen() {
       {/* Painel Fixo Inferior: Sugestões de Perguntas + Barra de Input */}
       <AiChatInputBar chat={chat} insets={insets} />
 
-      {/* Modal de Histórico e Auditoria SQLite */}
+      {/* Modal de Histórico de Conversas SQLite no Padrão LLM */}
       <AiHistoryModal
         visible={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
         pet={pet.activePet}
+        activeSessionId={chat.sessionId}
+        onSelectSession={(sessaoId, mensagens) => {
+          chat.carregarSessao(sessaoId, mensagens);
+        }}
+        onNewChat={chat.clearChat}
       />
     </KeyboardAvoidingView>
   );

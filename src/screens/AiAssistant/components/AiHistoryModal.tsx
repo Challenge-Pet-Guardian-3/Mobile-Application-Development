@@ -1,60 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AiService } from '../../../services/ai';
 import { PetResponse } from '../../../types/pet';
-
-interface AuditoriaItem {
-  id: number;
-  sessionId: string;
-  pergunta: string;
-  resposta: string;
-  categoria: string;
-  urgencia: string;
-  origemResposta: string;
-  timestamp?: string;
-}
+import { AiChatSession, AiMessage } from '../../../types/ai';
 
 interface AiHistoryModalProps {
   visible: boolean;
   onClose: () => void;
   pet?: PetResponse;
+  activeSessionId?: string;
+  onSelectSession: (sessionId: string, mensagens: AiMessage[]) => void;
+  onNewChat: () => void;
 }
 
-export function AiHistoryModal({ visible, onClose, pet }: AiHistoryModalProps) {
+export function AiHistoryModal({
+  visible,
+  onClose,
+  pet,
+  activeSessionId,
+  onSelectSession,
+  onNewChat,
+}: AiHistoryModalProps) {
   const [loading, setLoading] = useState(false);
-  const [auditorias, setAuditorias] = useState<AuditoriaItem[]>([]);
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
+  const [sessoes, setSessoes] = useState<AiChatSession[]>([]);
+
+  const carregarSessoes = useCallback(async () => {
+    if (!pet?.id) return;
+    setLoading(true);
+    try {
+      const dados = await AiService.getSessoesDoPet(pet.id);
+      setSessoes(dados);
+    } catch {
+      setSessoes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [pet?.id]);
 
   useEffect(() => {
     if (visible && pet?.id) {
-      setLoading(true);
-      AiService.getAuditoriasDoPet(pet.id)
-        .then((dados) => setAuditorias(dados))
-        .catch(() => setAuditorias([]))
-        .finally(() => setLoading(false));
+      carregarSessoes();
     }
-  }, [visible, pet?.id]);
+  }, [visible, pet?.id, carregarSessoes]);
 
-  const getUrgencyBadge = (urgencia: string) => {
-    const u = urgencia.toUpperCase();
-    if (u === 'EMERGENCIA') {
-      return { bg: '#FEE2E2', border: '#FCA5A5', text: '#DC2626', label: 'EMERGÊNCIA' };
+  const handleSelectSession = async (sessao: AiChatSession) => {
+    setLoadingSessionId(sessao.sessionId);
+    try {
+      const mensagens = await AiService.getMensagensDaSessao(sessao.sessionId);
+      onSelectSession(sessao.sessionId, mensagens);
+      onClose();
+    } catch {
+      // Falha de carregamento silenciosa
+    } finally {
+      setLoadingSessionId(null);
     }
-    if (u === 'ALTA') {
-      return { bg: '#FFEDD5', border: '#FDBA74', text: '#EA580C', label: 'ALTA' };
+  };
+
+  const handleDeleteSession = async (sessionIdParaExcluir: string) => {
+    // Exclusão direta no SQLite sem alerta bloqueante (conforme preferência do usuário)
+    setSessoes((prev) => prev.filter((s) => s.sessionId !== sessionIdParaExcluir));
+    await AiService.excluirSessao(sessionIdParaExcluir);
+
+    if (sessionIdParaExcluir === activeSessionId) {
+      onNewChat();
     }
-    if (u === 'MEDIA') {
-      return { bg: '#FEF9C3', border: '#FDE047', text: '#CA8A04', label: 'MÉDIA' };
-    }
-    return { bg: '#DCFCE7', border: '#86EFAC', text: '#16A34A', label: 'PREVENTIVA' };
+  };
+
+  const handleStartNewChat = () => {
+    onNewChat();
+    onClose();
   };
 
   return (
@@ -70,12 +86,12 @@ export function AiHistoryModal({ visible, onClose, pet }: AiHistoryModalProps) {
           <View style={styles.modalHeader}>
             <View style={styles.titleRow}>
               <View style={styles.iconCircle}>
-                <Ionicons name="server-outline" size={18} color="#2563EB" />
+                <Ionicons name="chatbubbles-outline" size={18} color="#2563EB" />
               </View>
               <View>
-                <Text style={styles.modalTitle}>Histórico & Auditoria SQLite</Text>
+                <Text style={styles.modalTitle}>Histórico de Conversas</Text>
                 <Text style={styles.modalSubtitle}>
-                  Atendimentos registrados para {pet?.nome || 'seu pet'}
+                  Conversas salvas de {pet?.nome || 'seu pet'}
                 </Text>
               </View>
             </View>
@@ -88,14 +104,14 @@ export function AiHistoryModal({ visible, onClose, pet }: AiHistoryModalProps) {
           {loading ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator size="large" color="#2563EB" />
-              <Text style={styles.loadingText}>Buscando registros no banco de dados...</Text>
+              <Text style={styles.loadingText}>Buscando conversas no banco de dados...</Text>
             </View>
-          ) : auditorias.length === 0 ? (
+          ) : sessoes.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Ionicons name="file-tray-outline" size={44} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>Nenhum histórico no banco</Text>
+              <Ionicons name="chatbubble-ellipses-outline" size={44} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>Nenhuma conversa anterior</Text>
               <Text style={styles.emptySubtitle}>
-                Faça uma pergunta sobre o {pet?.nome || 'pet'} no chat para registrar o primeiro atendimento no SQLite.
+                Envie uma dúvida sobre o {pet?.nome || 'pet'} no chat para que suas conversas fiquem registradas aqui.
               </Text>
             </View>
           ) : (
@@ -104,44 +120,77 @@ export function AiHistoryModal({ visible, onClose, pet }: AiHistoryModalProps) {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
             >
-              {auditorias.map((item) => {
-                const badge = getUrgencyBadge(item.urgencia);
+              {sessoes.map((item) => {
+                const isActive = item.sessionId === activeSessionId;
+                const isLoadingThis = loadingSessionId === item.sessionId;
+
                 return (
-                  <View key={`audit_${item.id}`} style={styles.cardAudit}>
-                    <View style={styles.cardTopRow}>
+                  <View
+                    key={`sessao_${item.sessionId}`}
+                    style={[styles.cardSession, isActive && styles.cardSessionActive]}
+                  >
+                    <TouchableOpacity
+                      style={styles.cardMainClickable}
+                      onPress={() => handleSelectSession(item)}
+                      disabled={isLoadingThis}
+                      activeOpacity={0.7}
+                    >
                       <View
                         style={[
-                          styles.badgeUrgency,
-                          { backgroundColor: badge.bg, borderColor: badge.border },
+                          styles.sessionIconCircle,
+                          isActive && styles.sessionIconCircleActive,
                         ]}
                       >
-                        <Text style={[styles.badgeText, { color: badge.text }]}>
-                          {badge.label}
-                        </Text>
+                        <Ionicons
+                          name={isActive ? 'chatbubble' : 'chatbubble-outline'}
+                          size={16}
+                          color={isActive ? '#2563EB' : '#64748B'}
+                        />
                       </View>
-                      <Text style={styles.cardTimestamp}>
-                        {item.timestamp ? item.timestamp.replace('T', ' ').slice(0, 16) : ''}
-                      </Text>
-                    </View>
 
-                    {/* Pergunta do Tutor */}
-                    <View style={styles.bubblePergunta}>
-                      <Text style={styles.labelPergunta}>Pergunta do Tutor:</Text>
-                      <Text style={styles.textPergunta}>{item.pergunta}</Text>
-                    </View>
+                      <View style={styles.sessionTextCol}>
+                        <View style={styles.sessionTitleRow}>
+                          <Text
+                            style={[styles.sessionTitle, isActive && styles.sessionTitleActive]}
+                            numberOfLines={1}
+                          >
+                            {item.titulo || 'Conversa sem título'}
+                          </Text>
+                          {isActive && (
+                            <View style={styles.badgeAtiva}>
+                              <Text style={styles.badgeAtivaText}>Ativa</Text>
+                            </View>
+                          )}
+                        </View>
 
-                    {/* Resposta da IA */}
-                    <View style={styles.bubbleResposta}>
-                      <Text style={styles.labelResposta}>Parecer Guardian AI:</Text>
-                      <Text style={styles.textResposta} numberOfLines={4}>
-                        {item.resposta}
-                      </Text>
-                    </View>
+                        <View style={styles.sessionMetaRow}>
+                          <Text style={styles.sessionTimestamp}>
+                            {item.lastActivity
+                              ? item.lastActivity.replace('T', ' ').slice(0, 16)
+                              : 'Recente'}
+                          </Text>
+                          <Text style={styles.sessionMetaDot}>•</Text>
+                          <Text style={styles.sessionCountText}>
+                            {item.totalMensagens} {item.totalMensagens === 1 ? 'msg' : 'msgs'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.cardFooter}>
-                      <Text style={styles.footerOrigem}>
-                        Mecanismo: {item.origemResposta}
-                      </Text>
+                    {/* Ações da Sessão: Loading ou Lixeira */}
+                    <View style={styles.cardActions}>
+                      {isLoadingThis ? (
+                        <ActivityIndicator size="small" color="#2563EB" />
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteSession(item.sessionId)}
+                          style={styles.btnDeleteSession}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          activeOpacity={0.6}
+                        >
+                          <Ionicons name="trash-outline" size={17} color="#94A3B8" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 );
@@ -149,10 +198,19 @@ export function AiHistoryModal({ visible, onClose, pet }: AiHistoryModalProps) {
             </ScrollView>
           )}
 
-          {/* Rodapé com Fechar */}
+          {/* Rodapé com botão de Nova Conversa e Fechar */}
           <View style={styles.modalFooter}>
+            <TouchableOpacity
+              onPress={handleStartNewChat}
+              style={styles.btnNovaConversa}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#2563EB" />
+              <Text style={styles.btnNovaConversaText}>Nova Conversa</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={onClose} style={styles.btnFechar} activeOpacity={0.8}>
-              <Text style={styles.btnFecharText}>Fechar Histórico</Text>
+              <Text style={styles.btnFecharText}>Fechar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -247,92 +305,129 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    gap: 14,
-  },
-  cardAudit: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    padding: 16,
     gap: 10,
   },
-  cardTopRow: {
+  cardSession: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'space-between',
+  },
+  cardSessionActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  cardMainClickable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingRight: 8,
+  },
+  sessionIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sessionIconCircleActive: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#93C5FD',
+  },
+  sessionTextCol: {
+    flex: 1,
+    gap: 3,
+  },
+  sessionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 6,
   },
-  badgeUrgency: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
+  sessionTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  badgeText: {
-    fontSize: 11,
+  sessionTitleActive: {
+    color: '#1D4ED8',
+  },
+  badgeAtiva: {
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  badgeAtivaText: {
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    color: '#2563EB',
   },
-  cardTimestamp: {
+  sessionMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sessionTimestamp: {
     fontSize: 11,
     color: '#94A3B8',
     fontWeight: '500',
   },
-  bubblePergunta: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
-  },
-  labelPergunta: {
+  sessionMetaDot: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#2563EB',
-    marginBottom: 2,
+    color: '#CBD5E1',
   },
-  textPergunta: {
-    fontSize: 13,
-    color: '#1E293B',
-    lineHeight: 18,
-  },
-  bubbleResposta: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#10B981',
-  },
-  labelResposta: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#059669',
-    marginBottom: 2,
-  },
-  textResposta: {
-    fontSize: 13,
-    color: '#334155',
-    lineHeight: 18,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  footerOrigem: {
+  sessionCountText: {
     fontSize: 11,
     color: '#64748B',
-    fontStyle: 'italic',
+    fontWeight: '600',
+  },
+  cardActions: {
+    paddingLeft: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnDeleteSession: {
+    padding: 6,
+    borderRadius: 8,
   },
   modalFooter: {
-    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
     paddingTop: 12,
   },
+  btnNovaConversa: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  btnNovaConversaText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
   btnFechar: {
+    flex: 1,
     backgroundColor: '#0F172A',
     paddingVertical: 12,
     borderRadius: 14,
@@ -340,7 +435,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnFecharText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },

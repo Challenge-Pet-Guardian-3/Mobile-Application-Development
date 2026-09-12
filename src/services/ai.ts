@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { env } from '../config/env';
-import { AiMessage, AiPetInsight, AiChatResponsePayload, AiPetContextPayload } from '../types/ai';
+import { AiMessage, AiPetInsight, AiChatResponsePayload, AiPetContextPayload, AiChatSession } from '../types/ai';
 import { PetResponse } from '../types/pet';
 import { calcularIdadePet } from '../utils/petUtils';
 
@@ -30,6 +30,26 @@ function formatPetContext(pet?: PetResponse): AiPetContextPayload | undefined {
 let inFlightAiPing: Promise<boolean> | null = null;
 let lastAiPingTimestamp = 0;
 const AI_PING_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutos de intervalo mínimo
+
+interface MensagemBancoRaw {
+  id: number;
+  session_id: string;
+  pet_id?: number;
+  sender: string;
+  text: string;
+  timestamp?: string;
+}
+
+function mapMensagemBancoToAiMessage(m: MensagemBancoRaw): AiMessage {
+  return {
+    id: `sqlite_${m.id}`,
+    sender: m.sender === 'user' ? 'user' : 'assistant',
+    text: m.text,
+    timestamp: m.timestamp
+      ? new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      : '',
+  };
+}
 
 export const AiService = {
   // Realiza um ping leve no servidor Python para acordar a instância no Render (warm-up de cold start)
@@ -83,7 +103,8 @@ export const AiService = {
   async enviarMensagem(
     pergunta: string,
     pet?: PetResponse,
-    historico?: AiMessage[]
+    historico?: AiMessage[],
+    sessionId?: string
   ): Promise<AiMessage> {
     const petContext = formatPetContext(pet);
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -101,6 +122,7 @@ export const AiService = {
         pergunta,
         petContext,
         historico: historicoPayload,
+        sessionId,
       });
 
       if (response.data && response.data.resposta) {
@@ -128,33 +150,29 @@ export const AiService = {
     };
   },
 
-  // Consulta o histórico de mensagens gravadas no SQLite para o pet ativo
-  async getHistoricoDoPet(petId?: number): Promise<AiMessage[]> {
+  // Consulta as sessões de chat anteriores do pet (estilo ChatGPT/Claude)
+  async getSessoesDoPet(petId?: number): Promise<AiChatSession[]> {
     if (!petId) return [];
 
     try {
       const response = await pythonClient.get<{
         total: number;
-        mensagens: Array<{
-          id: number;
+        sessoes: Array<{
           session_id: string;
-          pet_id?: number;
-          sender: string;
-          text: string;
-          timestamp?: string;
+          titulo: string;
+          total_mensagens: number;
+          last_activity?: string;
         }>;
-      }>('/ai/history', {
-        params: { pet_id: petId, limit: 50 },
+      }>('/ai/sessions', {
+        params: { pet_id: petId, limit: 30 },
       });
 
-      if (response.data && Array.isArray(response.data.mensagens)) {
-        return response.data.mensagens.map((m) => ({
-          id: `sqlite_${m.id}`,
-          sender: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
-          text: m.text,
-          timestamp: m.timestamp
-            ? new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-            : '',
+      if (response.data && Array.isArray(response.data.sessoes)) {
+        return response.data.sessoes.map((s) => ({
+          sessionId: s.session_id,
+          titulo: s.titulo,
+          totalMensagens: s.total_mensagens,
+          lastActivity: s.last_activity,
         }));
       }
     } catch {
@@ -164,60 +182,39 @@ export const AiService = {
     return [];
   },
 
-  // Consulta as auditorias clínicas de triagem gravadas no SQLite
-  async getAuditoriasDoPet(petId?: number): Promise<
-    Array<{
-      id: number;
-      sessionId: string;
-      petId?: number;
-      nomePet?: string;
-      pergunta: string;
-      resposta: string;
-      categoria: string;
-      urgencia: string;
-      origemResposta: string;
-      timestamp?: string;
-    }>
-  > {
-    if (!petId) return [];
+  // Recupera todas as mensagens de uma conversa específica pelo sessionId
+  async getMensagensDaSessao(sessionId: string): Promise<AiMessage[]> {
+    if (!sessionId) return [];
 
     try {
       const response = await pythonClient.get<{
         total: number;
-        auditorias: Array<{
-          id: number;
-          session_id: string;
-          pet_id?: number;
-          nome_pet?: string;
-          pergunta: string;
-          resposta: string;
-          categoria: string;
-          urgencia: string;
-          origem_resposta: string;
-          timestamp?: string;
-        }>;
-      }>('/ai/audit', {
-        params: { pet_id: petId, limit: 20 },
+        mensagens: MensagemBancoRaw[];
+      }>('/ai/history', {
+        params: { session_id: sessionId, limit: 100 },
       });
 
-      if (response.data && Array.isArray(response.data.auditorias)) {
-        return response.data.auditorias.map((a) => ({
-          id: a.id,
-          sessionId: a.session_id,
-          petId: a.pet_id,
-          nomePet: a.nome_pet,
-          pergunta: a.pergunta,
-          resposta: a.resposta,
-          categoria: a.categoria,
-          urgencia: a.urgencia,
-          origemResposta: a.origem_resposta,
-          timestamp: a.timestamp,
-        }));
+      if (response.data && Array.isArray(response.data.mensagens)) {
+        return response.data.mensagens.map(mapMensagemBancoToAiMessage);
       }
     } catch {
       return [];
     }
 
     return [];
+  },
+
+  // Exclui permanentemente uma sessão de chat e seus registros associados
+  async excluirSessao(sessionId: string): Promise<boolean> {
+    if (!sessionId) return false;
+
+    try {
+      const response = await pythonClient.delete<{ status: string; session_id: string }>(
+        `/ai/sessions/${sessionId}`
+      );
+      return response.data.status === 'ok';
+    } catch {
+      return false;
+    }
   },
 };

@@ -1,18 +1,5 @@
 import React, { ReactNode, useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  DimensionValue,
-  Keyboard,
-  useWindowDimensions,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, ScrollView, DimensionValue, Keyboard, useWindowDimensions, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { shadows } from '../../utils/shadow';
 import { colors, layout, borderRadius } from '../../constants/theme';

@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-  RefreshControl,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
 import { Header } from '../../components/Header';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { PremiumLockCard } from '../../components/PremiumLockCard';

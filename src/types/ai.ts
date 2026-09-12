@@ -48,4 +48,12 @@ export interface AiChatResponsePayload {
   urgencia?: AiUrgency;
   acoes_recomendadas?: string[];
   origem_resposta?: string;
+  sessionId?: string;
+}
+
+export interface AiChatSession {
+  sessionId: string;
+  titulo: string;
+  totalMensagens: number;
+  lastActivity?: string;
 }

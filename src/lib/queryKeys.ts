@@ -43,6 +43,7 @@ export const queryKeys = {
   ai: {
     insights: (petId?: number) => ['ai', 'insights', petId ?? 0] as const,
     messages: (petId?: number) => ['ai', 'messages', petId ?? 0] as const,
+    sessions: (petId?: number) => ['ai', 'sessions', petId ?? 0] as const,
   },
 
   // Prontuário de Saúde & Eventos Clínicos (Histórico)

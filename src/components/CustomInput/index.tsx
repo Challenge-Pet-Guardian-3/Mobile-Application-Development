@@ -1,12 +1,5 @@
 import React, { memo } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TextInputProps,
-  ViewStyle,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
 import { shadows } from '../../utils/shadow';
 import { colors, borderRadius } from '../../constants/theme';
 
