@@ -1,7 +1,7 @@
 # 🐾 PetGuardian — Mobile Application Development
 
 > **Arquitetura Pet-Centric, Governança Familiar Colaborativa & Autenticação JWT Real**  
-> *Aplicativo mobile corporativo desenvolvido para a 3ª Sprint do Challenge Clyvo 2026 (2TDSPG - FIAP).*
+> *Aplicativo mobile desenvolvido para a 3ª Sprint do Challenge Clyvo 2026 (2TDSPG - FIAP).*
 
 ---
 
