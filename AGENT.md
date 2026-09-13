@@ -31,36 +31,28 @@ Mobile-Application-Development/
 ├── package.json                   → Dependências alinhadas ao Expo SDK 57
 └── src/
     ├── components/                → Componentes visuais atômicos e modulares (DRY / SOLID / SRP)
-    │   ├── AuthFooter/            → Rodapé com links de alternância entre Login e Registro
     │   ├── AuthHeader/            → Cabeçalho temático com botão voltar para fluxos de autenticação
     │   ├── BaseModal/             → Modal acessível com backdrop, título, subtítulo, botão fechar e ScrollView
     │   ├── CaregiverCard/         → Card de cuidador familiar com status de responsável principal
     │   ├── CustomButton/          → Botão tátil com variantes: primary, success (verde #10B981), secondary, outline, danger
+    │   ├── CustomDateInput/       → Input com formatação automática de data (DD/MM/AAAA) e hora
     │   ├── CustomInput/           → Input com suporte a ícones esquerdo/direito, erro flutuante e foco
     │   ├── EditProfileModal/      → Modal tipado para edição cadastral do tutor
-    │   ├── EmptyState/            → Estado vazio padronizado com ícone, título, descrição e botão de ação
-    │   ├── FamilySummaryCard/     → Card resumo da família com contadores de pets, tarefas e XP da rede
-    │   ├── FamilyTaskItem/        → Item da lista de rotinas familiares com vinculação e exclusão nativa
     │   ├── Header/                → Cabeçalho limpo com título, subtítulo e avatar com iniciais
+    │   ├── HistoricoFormModal/    → Modal para criação e edição de registros clínicos
     │   ├── InviteCaregiverModal/  → Modal de convite de co-cuidadores por e-mail
     │   ├── LoadingSpinner/        → Indicador de carregamento com mensagem contextual
+    │   ├── PaginationControls/    → Controles padronizados de paginação (anterior/próxima)
     │   ├── PasswordInput/         → Input de senha com alternância de visibilidade (olho)
-    │   ├── PetAvatarCarousel/     → Carrossel horizontal de seleção de pets com mini avatares circulares
-    │   ├── PetCard/               → Card de pet para grids com raça, badge de tutor principal e porte
     │   ├── PetFormModal/          → Modal reutilizável para criação e edição da ficha do animal
-    │   ├── PetHeaderCard/         → Card principal de destaque do pet com tags dinâmicas e ações
-    │   ├── PetHistoryList/        → Histórico consolidado de cuidados com timeline, pontos e status
-    │   ├── PetScoreBar/           → Barra de bem-estar orgânica com pílulas de status e nível
+    │   ├── PetSelector/           → Seletor tátil de pets para formulários
     │   ├── PremiumLockCard/       → Card informativo de bloqueio e upgrade para recursos exclusivos Premium
     │   ├── RoleBadge/             → Badge visual de perfil (⭐ Tutor Premium ou 🐾 Tutor Comum)
     │   ├── RoleSelector/          → Seletor declarativo de plano ('cards' no cadastro e 'compact' em modais)
-    │   ├── RoutineCard/           → Card de tarefa com checkbox tátil, strike-through e badge de XP
-    │   ├── StatCard/              → Card atômico para métricas gamificadas (XP, Pets Família, Concluídas)
-    │   ├── TaskFormModal/         → Modal para criação de novas tarefas e rotinas
-    │   └── streakCard/            → Card de ofensiva familiar com pílulas dos 7 dias da semana
+    │   ├── TaskFormModal/         → Modal para criação e edição de tarefas e rotinas
+    │   └── TasksRoutineSection/   → Seção reutilizável de rotina diária com filtros Hoje/Todas e RoutineCard
     ├── constants/
-    │   ├── Avatares.ts            → Mapeamento de avatares ilustrados para pets
-    │   └── Keys.ts                → Chaves padronizadas do AsyncStorage
+    │   └── theme.ts               → Design system: paleta de cores (Tailwind slate/blue), espaçamentos, tipografia e raios
     ├── contexts/
     │   └── AuthContext.tsx        → Contexto global de autenticação, login, registro e persistência
     ├── hooks/                     → Custom Hooks & Domain Hooks (Separação de Responsabilidades)
